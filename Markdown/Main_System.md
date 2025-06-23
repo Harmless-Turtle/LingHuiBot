@@ -4,8 +4,9 @@
 
 <h2 align="center"><em>凌辉Bot 主系统功能列表</em></h2>
 
-<h3>主功能系统</h3>
-位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Main.py">Main.py</a> 中
+此系统脚本位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Main.py">Main.py</a> 中
+
+<h3>未分类系统</h3>
 
 | 可用 | 功能              | 语法示例/用法 | 效果                                                                  |
 | ---- | ----------------- | ------------- | --------------------------------------------------------------------- |
@@ -16,11 +17,9 @@
 | ✅   | 点赞/赞我         | `直接发送`    | 让凌辉 Bot 点赞你的资料卡 10 次<em>（偶尔无法点赞/可以点很多次）</em> |
 | ✅   | 今天吃什么        | `直接发送`    | 随便甩两个吃的/喝的，适合纠结症（？）                                 |
 
-<h3>群欢迎/送行系统</h3>
+<h3>群欢迎/送行功能</h3>
 
 > 神 tm 送行（
-
-位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Main.py">Main.py</a> 中
 
 | 可用 | 功能                                | 语法示例/用法         | 效果                                                    |
 | ---- | ----------------------------------- | --------------------- | ------------------------------------------------------- |
