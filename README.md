@@ -27,10 +27,11 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
 <h2 align="center"><em>How to use LingHuiBot?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
-联系方式：1097740481（QQ）<br>
+联系方式：<br>
+QQ：1097740481<br>
 项目链接（可直接跳转至哔哩哔哩主页）<br>
 加入凌辉Bot内测用群：795413705
 
 <h2 align="center"><em>What can LingHuiBot do?</em></h2>
-您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超连接：<br>
+您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Main_System.md">主要系统</a>
