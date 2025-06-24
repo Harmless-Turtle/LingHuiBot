@@ -142,6 +142,7 @@ async def FM_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
     if self_data and self_data.get(group_id) and self_data[group_id].get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id)+"你似乎还没有对象吧xwx")
     # 确定用户存在对象后，读取其对象的值
+    logger.info(f"{self_data}\n{type(self_data)}")
     self_data = self_data[group_id]
     logger.info(self_data)
     # 获取对象的QQ号
