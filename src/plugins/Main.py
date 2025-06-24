@@ -26,6 +26,7 @@ import random as rd
 from pathlib import Path
 from nonebot import logger, on_request,on_notice
 from types import SimpleNamespace
+from datetime import datetime as dt
 
 # 定义Data存放路径并作为全局变量使用
 path = Path.cwd() / 'data' / 'Main'
@@ -371,7 +372,6 @@ GroupExitMember = on_notice(
 async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, matcher: Matcher):
     logger.info(f"触发退群事件：{event.dict()}")
     # 处理 Bot 自己被踢的情况
-    from datetime import datetime as dt
     if event.sub_type == "kick_me":
         await bot.send_private_msg(
             user_id=1097740481,
@@ -410,7 +410,6 @@ async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, match
         reason = "未知原因"
     
     # 构造消息
-    from datetime import datetime as dt
     message = Message(
         f"似乎有人离开了我们...？"
         f"时间：{dt.fromtimestamp(event.time).strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -447,7 +446,7 @@ async def LF_Function(matcher:Matcher,event:NoticeEvent):
     Data = event.model_dump()
     Dict = Handler.load_json(f"{path}/Friend_Like.json",'r')
     user_id = Data['operator_id']
-    now = datetime.now()
+    now = dt.now()
     day = now.day
     Dict_day = day
     if not Dict.get(f"{user_id}",False):
