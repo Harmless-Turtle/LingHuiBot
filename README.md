@@ -34,4 +34,7 @@ QQ：1097740481<br>
 
 <h2 align="center"><em>What can LingHuiBot do?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
-<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Main_System.md">主要系统</a>
+
+|系统名称|系统介绍|
+|---|---|
+|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Main_System.md">主要系统</a>|基本的QRobot功能|
