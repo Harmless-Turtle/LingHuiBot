@@ -37,13 +37,13 @@
 |✅|兽图状态<数字 id>/兽图状态#<数字 id>|`兽图状态#9162`|查看`id为9162`的图片状态|
 |✅|服务状态|`直接发送`|检查与`兽云祭API`的连接是否有效|
 
+#### 关于投图
 > 类型：<br>0：设定图<br>1：毛图<br>2：插画
 
 > 没有留言留空即可
 
 > 在手机上使用投图功能需要将发图方式更改为半屏相册，操作指南：<br>在聊天页单击左上角头像（不是名字）或从左向右滑动一下屏幕->单击左下角设置->单击通用->单击发图方式->改为半屏相册->回到群聊发送投图命令
 
-#### 投图示例
 |在移动设备中上传|在Windows中上传|
 |----|----|
 |<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Example_Picture/mobile_upload.gif">上传示例（手机）</a>|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Example_Picture/PC_upload.gif">上传示例（电脑）</a>|
