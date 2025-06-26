@@ -18,6 +18,8 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 欢迎您来到由一只无害的 py 海龟（A Harmless Py Turtle）开发与维护的凌辉 Bot 开源仓库~ <br>
 您可以在这里提交 Issue 或 bug 以反馈您在使用凌辉 Bot 时遇到的问题。也可以在这里提出你的新功能诉求。
 
+> 您可以在`任何界面`通过单击头部的凌辉Bot图片回到本页。
+
 ## 用户协议
 
 详见 [用户协议](https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/User_Agreement.md)
