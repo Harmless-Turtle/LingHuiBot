@@ -4,7 +4,7 @@
 
 <h1 align="center"><em>凌辉Bot 主系统功能列表</em></h1>
 
-此系统功能代码位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Main.py" target="_blank">Main.py</a> 中
+此系统功能代码位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Main.py">Main.py</a> 中
 
 ## 如何阅读该文档？
 可用：表示该功能是否可以使用。<br>
