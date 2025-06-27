@@ -4,7 +4,7 @@
 
 <h1 align="center"><em>凌辉Bot Furry系统功能列表</em></h1>
 
-此系统功能代码位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Furry.py">Furry.py</a> 中
+此系统功能代码位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/Furry.py" target="_blank">Furry.py</a> 中
 
 ## 如何阅读该文档？
 可用：表示该功能是否可以使用。<br>
@@ -55,11 +55,11 @@
 
 |在移动设备中上传|在Windows中上传|
 |----|----|
-|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Example_Picture/mobile_upload.gif">上传示例（手机）</a>|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Example_Picture/PC_upload.gif">上传示例（电脑）</a>|
+|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Example_Picture/mobile_upload.gif" target="_blank">上传示例（手机）</a>|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Example_Picture/PC_upload.gif" target="_blank">上传示例（电脑）</a>|
 
 <h3>FurryFusion 兽聚汇总功能</h3>
 
-> 该功能由<a href="https://www.furryfusion.net/">furryfusion.net</a>提供服务与技术支持。
+> 该功能由<a href="https://www.furryfusion.net/" target="_blank">furryfusion.net</a>提供服务与技术支持。
 
 |可用|功能|语法示例/用法|效果|
 |----|----|----|----|
@@ -70,7 +70,7 @@
 
 <h3>FurryAI功能</h3>
 
-此系统功能代码位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/FurryBar.py">FurryBar.py</a> 中
+此系统功能代码位于 <a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/src/plugins/FurryBar.py" target="_blank">FurryBar.py</a> 中
 
 
 > 模型由FurryBar提供
