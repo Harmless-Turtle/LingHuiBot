@@ -4,7 +4,7 @@
 
 <h1 align="center"><em>凌辉Bot Furry系统功能列表</em></h1>
 
-此系统功能代码位于 <a href="./src/plugins/Furry.py">Furry.py</a> 中
+此系统功能代码位于 <a href="../src/plugins/Furry.py">Furry.py</a> 中
 
 ## 如何阅读该文档？
 可用：表示该功能是否可以使用。<br>
@@ -55,7 +55,7 @@
 
 |在移动设备中上传|在Windows中上传|
 |----|----|
-|<a href="./Markdown/Example_Picture/mobile_upload.gif">上传示例（手机）</a>|<a href="./Markdown/Example_Picture/PC_upload.gif">上传示例（电脑）</a>|
+|<a href="../Markdown/Example_Picture/mobile_upload.gif">上传示例（手机）</a>|<a href="../Markdown/Example_Picture/PC_upload.gif">上传示例（电脑）</a>|
 
 <h3>FurryFusion 兽聚汇总功能</h3>
 
@@ -70,7 +70,7 @@
 
 <h3>FurryAI功能</h3>
 
-此系统功能代码位于 <a href="./src/plugins/FurryBar.py">FurryBar.py</a> 中
+此系统功能代码位于 <a href="../src/plugins/FurryBar.py">FurryBar.py</a> 中
 
 
 > 模型由FurryBar提供
