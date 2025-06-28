@@ -39,5 +39,5 @@ QQ：1097740481<br>
 
 |系统名称|系统介绍|
 |---|---|
-|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Main_System.md">主要系统</a>|基本的QRobot功能|
-|<a href="https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/Furry_System.md">furry系统</a>|furry功能|
+|<a href="./Markdown/Main_System.md">主要系统</a>|基本的QRobot功能|
+|<a href="./Markdown/Furry_System.md">furry系统</a>|furry功能|
