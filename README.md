@@ -22,7 +22,7 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
 ## 用户协议
 
-详见 [用户协议](https://github.com/Harmless-Turtle/LingHuiBot/blob/main/Markdown/User_Agreement.md)
+详见 [用户协议](./Markdown/User_Agreement.md)
 
 <h2 align="center"><em>What is LingHuiBot?</em></h2>
 凌辉Bot是一个<em>Tencent QQ</em>的Q群Robot，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>Furry服务</em>，它使用OneBot V11标准、NoneBot作为Robot框架、NapCat作为监听客户端、使用Python语言进行功能开发。使用了部分<em>NoneBot商店功能</em>以改进凌辉Bot的部分功能。
