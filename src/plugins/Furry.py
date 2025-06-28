@@ -80,7 +80,7 @@ FurryFusion_List = on_command(
     "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
 FurryFusion_Check = on_command("兽聚查询", block=True) 
 FurryFusion_countdown = on_command("兽聚倒计时", block=True)
-FurryFusion_Quick_Information = on_command("兽聚快讯", block=True)
+FurryFusion_Quick_Information = on_command("兽聚快讯#", block=True)
 FurryFusion_Information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
 
 @RanFurry.handle()
@@ -212,7 +212,7 @@ async def Upload_Furry_handle(matcher:Matcher, event: MessageEvent,bot: Bot, gro
         UpLoad_List.append(data)
         Handler.load_json(f"{Data_Path}/Upload_Data.json", 'w',UpLoad_List)               
         Count = len(UpLoad_List)
-        await bot.call_api("send_private_msg", message=f"有人投图，请审核\n当前共有{Count}张图片待审核", user_id='1097740481')
+        await bot.call_api("send_private_msg", message=f"有人投图，请审核\n当前共有{Count}张图片待审核", user_id='1097740481', time_noend=True)
         await matcher.finish(MessageSegment.reply(event.message_id)+f"您的投图请求已提交给凌辉Bot管理员并进入等待审核状态。")
 
 # 定义获取批量投图图片列表函数
@@ -390,7 +390,7 @@ async def Furry_List(matcher:Matcher,event: MessageEvent,bot:Bot, args: Message 
             await matcher.finish(MessageSegment.reply(event.message_id)+f"服务器回报：{msg}。但并没有获取到任何数据，请检查名称是否正确")
         text = ""
         User_QQ = event.user_id
-        stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+        stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
         List.append(await Handler.Batch_Get(f"共获取到了{ListLength}条消息，下面为列表。",None,User_QQ,nickname))
         for i in range(0, ListLength):
@@ -541,7 +541,7 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
     State_Name_List = ['活动已结束', "活动正在预告中", "售票中", "活动正在举行", "活动已取消"]
     List = []
     User_QQ = event.user_id
-    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
     List.append(await Handler.Batch_Get("通过命令“兽聚快讯#<这里输入要查询的兽聚信息条数，仅需要数字即可。>”可以获取指定项目的详细信息",None,User_QQ,nickname))
     for i in range(0, len(Data)):
@@ -557,7 +557,7 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
 地点：{address}\n举办时间：共{time_day}天【{time_start}~{time_end}】"
         make_text = await Handler.Batch_Get(text,image,User_QQ,nickname)
         List.append(make_text)
-    # logger.info(List)
+    logger.info(List)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
 
@@ -585,7 +585,7 @@ async def FurryFusion_Check_Function(matcher:Matcher, event: MessageEvent,bot: B
     logger.info(message)
     logger.info(city_list)
     User_QQ = event.user_id
-    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
     if city_list == []:
         city_list = a['data']['history']['city']
@@ -625,7 +625,7 @@ async def FurryFusion_countdown_Function(matcher:Matcher,event: MessageEvent,bot
     State_text_List = ['活动结束', '预告中', '售票中', '活动中', '活动取消']
     List = []
     User_QQ = event.user_id
-    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
     for i in range(0, len(data)):
         title = data[i]['title']
@@ -680,7 +680,7 @@ async def FurryFusion_Quick_Information_Function(matcher:Matcher, event: Message
     time_end = Information['time_end']
     text = f"展会名称：{title}\n举办展会主题：{name}\n展会状态：{State_Text}\n官方群聊：{group_str}\n举办地点：{address}\n举办总时长：{time_day}天\n【{time_start}~{time_end}】\n推荐结合“今年兽聚”命令使用"
     User_QQ = event.user_id
-    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
     make_text = await Handler.Batch_Get(text,image,User_QQ,nickname)
     List.append(make_text)
@@ -745,7 +745,7 @@ bilibili：{bilibili_name}，URL：{bilibili_url}
 具有关联性的其他品牌名称：{correlation_str}
 下面为该展会举办的部分活动/线下兽聚"""
     User_QQ = event.user_id
-    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+    stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
     make_text = await Handler.Batch_Get(text,image,User_QQ,nickname)
     List.append(make_text)
@@ -822,7 +822,7 @@ async def CU_Function(matcher:Matcher, event: MessageEvent,bot: Bot):
 留言内容：{suggest}
 图片类型：{type_Text[type]}"""
         User_QQ = event.user_id
-        stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ)
+        stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
         make_text = await Handler.Batch_Get(text,Picture_URL,User_QQ,nickname)
         List.append(make_text)
@@ -877,7 +877,7 @@ async def CUD_Function(matcher:Matcher, event: MessageEvent,bot: Bot, args: Mess
 图片名字：{Name}
 图片类型：{TypeValue}
 图片留言：{Suggest}
-图片内容："""+MessageSegment.image(f"{Pic_URL}"))
+图片内容："""+MessageSegment.image(f"{Pic_URL}"), time_noend=True)
         os.remove(f"{Pic_URL}")
         await matcher.finish(MessageSegment.reply(event.message_id)+f"拒绝上载的操作已完成\n传入拒绝理由参数：{Caution}")
 
@@ -908,8 +908,8 @@ async def CUD_Function(matcher:Matcher, event: MessageEvent,bot: Bot, args: Mess
         if event.group_id != Group_id:
             await bot.call_api("send_group_msg", group_id=Group_id, message=f"""凌辉Bot管理员已经同意了来自{account}的投图请求，请等待兽云祭管理员进行审核
 上载图片："""+MessageSegment.image(f"{Pic_URL}")+f"""数字id：{id}
-【上传时间戳：{time.strftime("%Y-%m-%d %H:%M:%S", Time)}】""")
-        await bot.call_api("send_group_msg", group_id=event.group_id, message=f"{text}\n上载图片："+MessageSegment.image(f"{Pic_URL}"))
+【上传时间戳：{time.strftime("%Y-%m-%d %H:%M:%S", Time)}】""", time_noend=True)
+        await bot.call_api("send_group_msg", group_id=event.group_id, message=f"{text}\n上载图片："+MessageSegment.image(f"{Pic_URL}"), time_noend=True)
         os.remove(f"{Pic_URL}")
 
 @Debugger_Upload.handle()
