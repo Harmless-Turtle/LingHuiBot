@@ -13,7 +13,10 @@ from nonebot import logger
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timedelta
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
 
+furryfusion_bg_path = Path.cwd() / 'data' / 'Furry_System' / 'bg.png'
 # 定义处理函数
 class Handler():
     """
@@ -176,3 +179,28 @@ class Handler():
         ).strip() or '0秒'  # 处理全零情况
 
         return time_text
+    
+    async def furryfusion_picture_handle(picture: str,num: int) -> str:
+        #--------
+        response = httpx.get(picture)
+        if response.status_code != 200:
+            raise Exception(f"图片下载失败，状态码: {response.status_code}")
+        img = Image.open(BytesIO(response.content))
+        overlay_image = Image.open(furryfusion_bg_path).convert("RGBA")
+        _, _, _, alpha = overlay_image.split()
+        target_size = (1920, 1080)  # 设置目标尺寸
+        img_resized = img.resize(target_size, Image.LANCZOS)
+        img_resized.paste(
+        overlay_image, 
+        (0,0), 
+        alpha
+        )
+        output_dir = "processed_images"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 生成唯一文件名
+        unique_filename = f"result_{num}.png"
+        output_path = os.path.join(output_dir, unique_filename)
+        img_resized.save(output_path, format="PNG")
+        return os.path.abspath(output_path)
+        #--------
