@@ -180,7 +180,7 @@ class Handler():
 
         return time_text
     
-    async def furryfusion_picture_handle(picture: str,title: str,name:str,text:str) -> str:
+    async def furryfusion_picture_handle(picture: str,name:str,text:str) -> str:
         #--------
         response = httpx.get(picture)
         if response.status_code != 200:
@@ -188,25 +188,25 @@ class Handler():
         img = Image.open(BytesIO(response.content))
         overlay_image = Image.open(furryfusion_bg_path).convert("RGBA")
         _, _, _, alpha = overlay_image.split()
-        target_size = (1920, 1080)  # 设置目标尺寸
+        target_size = (1280, 720)  # 设置目标尺寸
         img_resized = img.resize(target_size, Image.LANCZOS)
         img_resized.paste(
         overlay_image, 
         (0,0), 
         alpha
         )
-        output_dir = "processed_images"
+        output_dir = Path.cwd() / 'data' / 'Furry_System' / "processed_images"
         os.makedirs(output_dir, exist_ok=True)
         
         draw = ImageDraw.Draw(img_resized)
-        Font_Path = Path.cwd() / 'data' / 'MiSans-Demibold.ttf'
-        font = ImageFont.truetype(Font_Path, size=70)
+        Font_Path = Path.cwd() / 'data' / 'SourceHanSansSC-VF.ttf'
+        font = ImageFont.truetype(Font_Path, size=78)
 
         text_color = (255, 255, 255)
         draw.text((10,50), text, font=font, fill=text_color)
 
         # 生成唯一文件名
-        unique_filename = f"{title}_{name}.png"
+        unique_filename = f"image_{name}.png"
         output_path = os.path.join(output_dir, unique_filename)
         img_resized.save(output_path, format="PNG")
         return os.path.abspath(output_path)
