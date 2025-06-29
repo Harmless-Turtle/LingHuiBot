@@ -555,12 +555,10 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
         image = Data[i]['image']
         text = f"第{i+1}条兽聚信息：\n展会举办者：{title}\n兽聚主题：{name}\n当前展会状态：{state}\n举办\
     地点：{address}\n举办时间：共{time_day}天【{time_start}~{time_end}】"
-        img = await Handler.furryfusion_picture_handle(image,i+1)
+        img = await Handler.furryfusion_picture_handle(image,title,name,text)
         make_text = await Handler.Batch_Get(text,img,User_QQ,nickname)
         logger.info(f"当前处理到第{i+1}条兽聚信息")
         List.append(make_text)
-    # logger.info(List)
-    List.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
 
