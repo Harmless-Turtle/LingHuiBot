@@ -1,5 +1,5 @@
 # 标准库
-import asyncio,json,os,shutil,time,httpx,math
+import asyncio,json,os,shutil,time,httpx,math,stat
 
 from .Handler import Handler
 # 第三方库
@@ -556,17 +556,20 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
         image = Data[i]['image']
         text = f"第{i+1}条兽聚信息：\n展会举办者：{title}\n兽聚主题：{name}\n当前展会状态：{state}\n举办\
     地点：{address}\n举办时间：共{time_day}天\n【{time_start}~{time_end}】"
-        # img = await Handler.furryfusion_picture_handle(image,i+1,text)
-        img = f"{allin_pic_prerequisite_path}/image_{i}.png"
+        img = f"{allin_pic_prerequisite_path}/image_{i+1}.png"
+        file_stat = os.stat(img)
+        if int(time.time()) - file_stat.st_mtime >= 86400:
+            logger.warning(f"图片 {img} 似乎已过期，正在重新生成...")
+            img = await Handler.furryfusion_picture_handle(image,i+1,text)
         make_text = await Handler.Batch_Get(text,img,User_QQ,nickname)
-        logger.info(f"当前处理到第{i+1}条兽聚信息")
+        logger.info(f"第{i+1}条兽聚信息已被处理完毕")
         List.append(make_text)
     # 合并图片
     furryfusion_allin_pic_path = [f"{allin_pic_prerequisite_path}/image_{i}.png" for i in range(1,len(os.listdir(allin_pic_prerequisite_path)))]
-    columns = 3  # 设置列数
+    columns = 1  # 设置列数
     background_color = (255, 255, 255)  # 设置背景颜色为白色
-    # 基础参数设置 (1080P尺寸)
-    IMG_WIDTH, IMG_HEIGHT = 1280, 720
+
+    IMG_WIDTH, IMG_HEIGHT = 400, 50
     
     # 计算行列数
     image_count = len(furryfusion_allin_pic_path)
@@ -588,7 +591,6 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
         # 打开图片并确保为RGB模式
         with Image.open(img_path) as img:
             img = img.convert('RGB')
-            # 确保图片尺寸为1080P (自动缩放)
             if img.size != (IMG_WIDTH, IMG_HEIGHT):
                 img = img.resize((IMG_WIDTH, IMG_HEIGHT), Image.LANCZOS)
             
@@ -601,7 +603,6 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
     canvas.save(f"{allin_pic_prerequisite_path}/allin.jpg")
     logger.success(f"拼接完成! 生成图片: {allin_pic_prerequisite_path}/allin.jpg")
     logger.info(f"布局: {columns}列 x {rows}行 | 总分辨率: {canvas.size[0]}x{canvas.size[1]}")
-    # await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
     await matcher.finish(MessageSegment.reply(event.message_id)+"输出完毕~"+MessageSegment.image(f"{allin_pic_prerequisite_path}/allin.jpg"))
 
 

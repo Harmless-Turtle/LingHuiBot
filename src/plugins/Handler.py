@@ -188,7 +188,7 @@ class Handler():
         img = Image.open(BytesIO(response.content))
         overlay_image = Image.open(furryfusion_bg_path).convert("RGBA")
         _, _, _, alpha = overlay_image.split()
-        target_size = (1280, 720)  # 设置目标尺寸
+        target_size = (1920, 1080)  # 设置目标尺寸
         img_resized = img.resize(target_size, Image.LANCZOS)
         img_resized.paste(
         overlay_image, 
