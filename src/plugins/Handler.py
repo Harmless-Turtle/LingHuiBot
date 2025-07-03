@@ -200,7 +200,7 @@ class Handler():
         
         draw = ImageDraw.Draw(img_resized)
         Font_Path = Path.cwd() / 'data' / 'SourceHanSansSC-VF.ttf'
-        font = ImageFont.truetype(Font_Path, size=78)
+        font = ImageFont.truetype(Font_Path, size=95)
 
         text_color = (255, 255, 255)
         draw.text((10,50), text, font=font, fill=text_color)
