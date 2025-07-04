@@ -59,9 +59,9 @@ Windows操作系统安装教程：<br>
 
 > 如果您不希望更改您现有的开发环境，建议您新建dotEnv或Anaconda等虚拟环境后再输入命令
 
-运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径。></code>
+运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径或虚拟环境路径></code>并使用<code>.\activate</code>以进入虚拟环境
 
-并且运行下面的这些命令，确保商店插件被正常执行：<br>
+随后运行下面的这些命令，确保商店插件被正常执行：<br>
 <code>nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_htmlrender" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_localstore" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
@@ -74,9 +74,14 @@ nb plugin install "nonebot_plugin_picmcstat" -i https://pypi.tuna.tsinghua.edu.c
 nb plugin install "nonebot_plugin_sentry" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_bison" -i https://pypi.tuna.tsinghua.edu.cn/simple</code>
 
-随后，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
 
 > [INFO] sentry_sdk | Uvicorn running on http://127.0.0.1:9090 (Press CTRL+C to quit)
+
+若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws://localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
+
+Linux操作系统安装流程：<br>
+<s>既然都用Linux了，安装流程就不必教了，和Windows操作系统安装流程差不太多，换个命令而已</s>
 
 <h2><em>凌辉Bot可以做什么?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
