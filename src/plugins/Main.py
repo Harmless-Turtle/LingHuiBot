@@ -560,9 +560,9 @@ async def handle_add_group(matcher:Matcher,bot:Bot,event:GroupRequestEvent):
     comment = event.comment
     if comment == "":
         comment = "未填写入群理由"
-    ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操你妈"
+    ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操妈"
     if comment in ban_text:
-        await bot.set_group_add_request(flag=str(event.flag),approve=False,reason="你的申请存在违禁词库中,请修改后重新申请。")
+        await bot.set_group_add_request(flag=str(event.flag),approve=False,reason="你的申请中存在违禁词,请修改后重新申请。")
         await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:\n（思考）...？似乎在凌辉的内置禁止词库中？\n⚠️已满足判决条件；自动处理生效，将主动拒绝此入群消息！")
     await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:{event.comment}\n要同意此人入群嘛awa？\n可以通过“允许加群{event.flag}”或“拒绝加群{event.flag}”来处理此请求（请在Bot为群管理员时进行操作~")
 
