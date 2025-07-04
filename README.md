@@ -62,8 +62,7 @@ Windows操作系统安装教程：<br>
 运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径。></code>
 
 并且运行下面的这些命令，确保商店插件被正常执行：<br>
-<code>
-nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
+<code>nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_htmlrender" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_localstore" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_picstatus" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
@@ -73,8 +72,7 @@ nb plugin install "nonebot_plugin_datastore" -i https://pypi.tuna.tsinghua.edu.c
 nb plugin install "nonebot_plugin_mc_server_status" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_picmcstat" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_sentry" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_bison" -i https://pypi.tuna.tsinghua.edu.cn/simple
-</code>
+nb plugin install "nonebot_bison" -i https://pypi.tuna.tsinghua.edu.cn/simple</code>
 
 随后，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
 
