@@ -73,7 +73,7 @@ nb plugin install "nonebot_plugin_datastore" -i https://pypi.tuna.tsinghua.edu.c
 nb plugin install "nonebot_plugin_mc_server_status" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_picmcstat" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
 nb plugin install "nonebot_plugin_sentry" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_bison"
+nb plugin install "nonebot_bison" -i https://pypi.tuna.tsinghua.edu.cn/simple
 </code>
 
 随后，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
