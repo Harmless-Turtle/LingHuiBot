@@ -28,6 +28,14 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 <h2><em>凌辉Bot是什么?</em></h2>
 凌辉Bot是一个<em>Tencent QQ</em>的Q群Robot，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>Furry服务</em>，它使用OneBot V11标准、NoneBot作为Robot框架、NapCat作为监听客户端、使用Python语言进行功能开发。使用了部分<em>NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 
+<h2><em>凌辉Bot可以做什么?</em></h2>
+您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
+
+|系统名称|系统介绍|
+|---|---|
+|<a href="./Markdown/Main_System.md">主要系统</a>|基本的QRobot功能|
+|<a href="./Markdown/Furry_System.md">furry系统</a>|furry功能|
+
 <h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
 联系方式：<br>
@@ -64,7 +72,7 @@ Windows操作系统安装教程：<br>
 
 运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径或虚拟环境路径></code>并使用<code>.\activate</code>以进入虚拟环境
 
-> 如您是自己新建的虚拟环境，则需先进行<code>pip install nb-cli</code>
+> 需先进行<code>pip install nb-cli</code>命令以安装NoneBot2，详情请见<a href="https://www.nonebot.dev/">NoneBot</a>
 
 随后运行下面的这些命令，确保商店插件被正常执行：<br>
 <code>nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
@@ -87,11 +95,3 @@ nb plugin install "nonebot_bison" -i https://pypi.tuna.tsinghua.edu.cn/simple</c
 
 Linux操作系统安装流程：<br>
 <s>既然都用Linux了，安装流程就不必教了，和Windows操作系统安装流程差不太多，换个命令而已</s>
-
-<h2><em>凌辉Bot可以做什么?</em></h2>
-您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
-
-|系统名称|系统介绍|
-|---|---|
-|<a href="./Markdown/Main_System.md">主要系统</a>|基本的QRobot功能|
-|<a href="./Markdown/Furry_System.md">furry系统</a>|furry功能|
