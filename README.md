@@ -72,7 +72,7 @@ Windows操作系统安装教程：<br>
 
 运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径或虚拟环境路径></code>并使用<code>.\activate</code>以进入虚拟环境
 
-> 需先进行<code>pip install nb-cli</code>命令以安装NoneBot2，详情请见<a href="https://www.nonebot.dev/">NoneBot</a>
+> 需先进行<code>pip install nb-cli</code>命令以安装NoneBot2，详情请见[NoneBot](https://nonebot.dev/)
 
 随后运行下面的这些命令，确保商店插件被正常执行：<br>
 <code>nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
