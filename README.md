@@ -28,14 +28,17 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 <h2><em>凌辉Bot是什么?</em></h2>
 凌辉Bot是一个<em>Tencent QQ</em>的Q群Robot，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>Furry服务</em>，它使用OneBot V11标准、NoneBot作为Robot框架、NapCat作为监听客户端、使用Python语言进行功能开发。使用了部分<em>NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 
-<h2><em>怎么使用凌辉Bot(用户)?</em></h2>
+<h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
 联系方式：<br>
 QQ：1097740481<br>
 项目链接（可直接跳转至哔哩哔哩主页）<br>
 加入凌辉Bot内测用群：795413705
 
-<h2><em>怎么使用凌辉Bot(开发者或想要自定义的用户)?</em></h2>
+<h2><em>怎么使用凌辉Bot(开发者和高级用户)?</em></h2>
+
+> 面向想要clone凌辉Bot并想要进行二次开发的用户和开发者。
+
 你需要准备：<br>
 一台搭载了任意Windows或Linux操作系统的设备，且性能不低于如下配置：
 
@@ -60,6 +63,8 @@ Windows操作系统安装教程：<br>
 > 如果您不希望更改您现有的开发环境，建议您新建dotEnv或Anaconda等虚拟环境后再输入命令
 
 运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径或虚拟环境路径></code>并使用<code>.\activate</code>以进入虚拟环境
+
+> 如您是自己新建的虚拟环境，则需先进行<code>pip install nb-cli</code>
 
 随后运行下面的这些命令，确保商店插件被正常执行：<br>
 <code>nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
