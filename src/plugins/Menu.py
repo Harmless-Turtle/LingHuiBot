@@ -37,9 +37,9 @@ async def Menu_Function(event:MessageEvent,args:Message = CommandArg()):
 
 @atmenu.handle()
 async def atmenu_Function(event:MessageEvent,args:Message = CommandArg()):
-    if args.extract_plain_text():
-        logger.info("Menu Function")
-        await atmenu.finish()    # 若消息后面存在文本则不响应
+    # if args.extract_plain_text():
+    #     logger.info("Menu Function")
+    #     await atmenu.finish()    # 若消息后面存在文本则不响应
     pic = await md_to_pic(md_path=All_Menu_Markdown,width=900)
     a = Image.open(io.BytesIO(pic))
     a.save("md2pic.png", format="PNG")
