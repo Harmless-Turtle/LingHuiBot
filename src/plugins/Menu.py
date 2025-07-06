@@ -8,14 +8,15 @@ from pathlib import Path
 from PIL import Image
 import io
 from nonebot.params import CommandArg
-
+from nonebot.rule import to_me
+from nonebot import logger
 
 Menu = on_command("菜单", aliases={"凌辉菜单"}, priority=100, block=True)
 Main_Menu = on_command("菜单01",aliases={"基本菜单"},priority=99,block=True)
 Furry_Menu = on_command("菜单02",aliases={"Furry菜单","furry菜单"}, priority=99, block=True)
 Marry_Menu = on_command("菜单03",aliases={"结婚菜单"},priority=99,block=True)
 Service_Menu = on_command("服务条款",aliases={"用户协议"},block=True)
-atmenu = on_message(rule=lambda event: event.is_tome() and "凌辉" in str(event.get_message()), priority=59, block=True)
+atmenu = on_message(rule=to_me(),priority=1, block=False)
 
 opendata = Path.cwd()
 All_Menu_Markdown = opendata / 'data/Menu/All_Menu.md'
@@ -37,6 +38,7 @@ async def Menu_Function(event:MessageEvent,args:Message = CommandArg()):
 @atmenu.handle()
 async def atmenu_Function(event:MessageEvent,args:Message = CommandArg()):
     if args.extract_plain_text():
+        logger.info("Menu Function")
         await atmenu.finish()    # 若消息后面存在文本则不响应
     pic = await md_to_pic(md_path=All_Menu_Markdown,width=900)
     a = Image.open(io.BytesIO(pic))

@@ -18,17 +18,8 @@ import os,zhconv,re,json,emoji,httpx,shutil,time
 from pathlib import Path
 from nonebot.matcher import Matcher
 from nonebot import logger
-import traceback
 
-async def chek_rule_at(event: GroupMessageEvent):
-    import re
-    s = re.match(r'^凌辉', str(event.original_message))
-    if s:
-        return False
-    else:
-        return True
-
-FurryBar = on_message(rule=to_me()&chek_rule_at,priority=60, block=True)
+FurryBar = on_message(rule=to_me(),priority=60, block=True)
 change_config = on_command("更改用户信息",aliases={"创建用户信息","定义个人信息"},block=False)
 Reset_FurryBar = on_command(
     "Reset", aliases={"重置对话", "重置模型"})
