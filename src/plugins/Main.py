@@ -156,7 +156,7 @@ Add_Welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_w
 @Add_Welcome.handle()
 @Handler.handle_errors
 async def Welcome(matcher:Matcher,event=GroupIncreaseNoticeEvent):
-    if event.user_id == event.self_id:await matcher.finish("嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n如果您有任何问题，请随时联系管理员[1097740481]哦~")
+    if event.user_id == event.self_id:await matcher.finish()
     Welcome_Dict = Handler.load_json(Welcome_Path,'r')
     Group_id = str(event.group_id)
     if Welcome_Dict.get(Group_id,False):
@@ -170,6 +170,14 @@ async def Welcome(matcher:Matcher,event=GroupIncreaseNoticeEvent):
             await matcher.finish("新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~")
     else:
         await matcher.finish()
+
+SelfJoinGroupWelcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent),priority=1,block=True)
+@SelfJoinGroupWelcome.handle()
+@Handler.handle_errors
+async def SelfJoinGroupWelcome_Function(matcher:Matcher,event=GroupIncreaseNoticeEvent):
+    if event.user_id == event.self_id:await Matcher.finish("嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n如果您有任何问题，请随时联系管理员[1097740481]哦~")
+    else:
+        pass
 
 @Change_Welcome.handle()
 @Handler.handle_errors

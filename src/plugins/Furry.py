@@ -392,7 +392,7 @@ async def Furry_List(matcher:Matcher,event: MessageEvent,bot:Bot, args: Message 
         User_QQ = event.user_id
         stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
-        List.append(await Handler.Batch_Get(f"共获取到了{ListLength}条消息，下面为列表。",None,User_QQ,nickname))
+        List.append(await Handler.Batch_Get(f"共获取到了{ListLength}条消息，下面为列表。",None,event.self_id,nickname))
         for i in range(0, ListLength):
             Now_Data = data[i]
             name = Now_Data['name']
@@ -401,7 +401,7 @@ async def Furry_List(matcher:Matcher,event: MessageEvent,bot:Bot, args: Message 
             if suggest == "":
                 suggest = "该图片暂无留言"
             temp = f"名字：{name}\nid：{id}\n留言：{suggest}\n=======================\n"
-            make_text = await Handler.Batch_Get(temp,None,User_QQ,nickname)
+            make_text = await Handler.Batch_Get(temp,None,event.self_id,nickname)
             List.append(make_text)
             text += temp
         if ListLength < 100:
@@ -543,7 +543,7 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
     User_QQ = event.user_id
     stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    List.append(await Handler.Batch_Get("通过命令“兽聚快讯#<这里输入要查询的兽聚信息条数，仅需要数字即可。>”可以获取指定项目的详细信息",None,User_QQ,nickname))
+    List.append(await Handler.Batch_Get("通过命令“兽聚快讯#<这里输入要查询的兽聚信息条数，仅需要数字即可。>”可以获取指定项目的详细信息",None,event.self_id,nickname))
     for i in range(0, len(Data)):
         title = Data[i]['title']  # 兽聚主体名称
         name = Data[i]['name']  # 当次兽聚的主题名称
@@ -555,7 +555,7 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
         image = Data[i]['image']
         text = f"第{i+1}条兽聚信息：\n展会举办者：{title}\n兽聚主题：{name}\n当前展会状态：{state}\n举办\
 地点：{address}\n举办时间：共{time_day}天【{time_start}~{time_end}】"
-        make_text = await Handler.Batch_Get(text,image,User_QQ,nickname)
+        make_text = await Handler.Batch_Get(text,image,event.self_id,nickname)
         List.append(make_text)
     logger.info(List)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
@@ -605,7 +605,7 @@ async def FurryFusion_Check_Function(matcher:Matcher, event: MessageEvent,bot: B
         time_day = city_list[i]['time_day']
         address = city_list[i]['address']
         text = f"展会名称：{title}\n举办展会主题：{name}\n官方群聊：{group_str}\n举办地点：{address}\n举办总时长：{time_day}天\n【{time_start}~{time_end}】"
-        make_text = await Handler.Batch_Get(text,image_url,User_QQ,nickname)
+        make_text = await Handler.Batch_Get(text,image_url,event.self_id,nickname)
         List.append(make_text)
     if List == []:
         await matcher.finish(MessageSegment.reply(event.message_id)+"未查找到任何兽聚。")
@@ -641,7 +641,7 @@ async def FurryFusion_countdown_Function(matcher:Matcher,event: MessageEvent,bot
         State = State_text_List[State]
         text = f"展会名称：{title}\n举办展会主题：{name}\n当前展会状态：{State}\n举办地点：{address}\n举办\
 总时长：{time_day}天\n【{time_start}~{time_end}】\n距离展会开始还有：{time_surplus+1}天\n该倒计时天数已加上今天"
-        make_text = await Handler.Batch_Get(f"{text}\n生成时间：{time.strftime('%Y-%m-%d %a %H:%M:%S', time.localtime())}",None,User_QQ,nickname)
+        make_text = await Handler.Batch_Get(f"{text}\n生成时间：{time.strftime('%Y-%m-%d %a %H:%M:%S', time.localtime())}",None,event.self_id,nickname)
         List.append(make_text)
     # logger.info(List)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
@@ -682,7 +682,7 @@ async def FurryFusion_Quick_Information_Function(matcher:Matcher, event: Message
     User_QQ = event.user_id
     stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    make_text = await Handler.Batch_Get(text,image,User_QQ,nickname)
+    make_text = await Handler.Batch_Get(text,image,event.self_id,nickname)
     List.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
@@ -747,7 +747,7 @@ bilibili：{bilibili_name}，URL：{bilibili_url}
     User_QQ = event.user_id
     stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    make_text = await Handler.Batch_Get(text,image,User_QQ,nickname)
+    make_text = await Handler.Batch_Get(text,image,event.self_id,nickname)
     List.append(make_text)
     info = a['info']
     Info_State_List_str = ['活动结束', '预告中', '售票中', '活动中', '活动取消']
@@ -765,7 +765,7 @@ bilibili：{bilibili_name}，URL：{bilibili_url}
 活动举办状态：{Info_state}
 活动举办地点：{Info_address}
 举办时间：【{Info_time_start}~{Info_time_end}】"""
-        make_text = await Handler.Batch_Get(text,Info_image,User_QQ,nickname)
+        make_text = await Handler.Batch_Get(text,Info_image,event.self_id,nickname)
         List.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
@@ -824,7 +824,7 @@ async def CU_Function(matcher:Matcher, event: MessageEvent,bot: Bot):
         User_QQ = event.user_id
         stranger_info = await bot.call_api('get_stranger_info', user_id=User_QQ, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
-        make_text = await Handler.Batch_Get(text,Picture_URL,User_QQ,nickname)
+        make_text = await Handler.Batch_Get(text,Picture_URL,event.self_id,nickname)
         List.append(make_text)
     logger.info(List)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
