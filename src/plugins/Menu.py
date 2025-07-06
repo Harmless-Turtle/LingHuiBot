@@ -16,7 +16,7 @@ Main_Menu = on_command("菜单01",aliases={"基本菜单"},priority=99,block=Tru
 Furry_Menu = on_command("菜单02",aliases={"Furry菜单","furry菜单"}, priority=99, block=True)
 Marry_Menu = on_command("菜单03",aliases={"结婚菜单"},priority=99,block=True)
 Service_Menu = on_command("服务条款",aliases={"用户协议"},block=True)
-atmenu = on_message(rule=to_me(),priority=1, block=False)
+atmenu = on_message(rule=to_me(),priority=59, block=False)
 
 opendata = Path.cwd()
 All_Menu_Markdown = opendata / 'data/Menu/All_Menu.md'
