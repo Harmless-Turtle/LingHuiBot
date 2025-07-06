@@ -90,6 +90,7 @@ Eat_What = on_command("今天吃什么")
 
 # 入群检查
 add_group = on_request(rule=add_group_switch)
+switch_add_group = on_command("入群检测",permission=SUPERUSER,block=True)
 
 #入群欢迎系统
 Change_Welcome = on_command("入群欢迎",permission=SUPERUSER,block=True)
@@ -560,11 +561,31 @@ async def handle_add_group(matcher:Matcher,bot:Bot,event:GroupRequestEvent):
     comment = event.comment
     if comment == "":
         comment = "未填写入群理由"
-    ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操妈"
+    ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操你妈"
     if comment in ban_text:
-        await bot.set_group_add_request(flag=str(event.flag),approve=False,reason="你的申请中存在违禁词,请修改后重新申请。")
-        await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:\n（思考）...？似乎在凌辉的内置禁止词库中？\n⚠️已满足判决条件；自动处理生效，将主动拒绝此入群消息！")
+        await bot.set_group_add_request(flag=str(event.flag),approve=False,reason="你的申请存在违禁词库中,请修改后重新申请。")
+        await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:\n（思考）...？似乎在凌辉的内置禁止词库中？\n⚠️已满足判决条件；自动处理生效，将主动拒绝此入群消息！\n如果要手动同意，请关闭入群审核功能后让用户重新申请。")
     await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:{event.comment}\n要同意此人入群嘛awa？\n可以通过“允许加群{event.flag}”或“拒绝加群{event.flag}”来处理此请求（请在Bot为群管理员时进行操作~")
+
+@switch_add_group.handle()
+async def handler_switch_add_group(matcher:Matcher,event:MessageEvent,args:Message=CommandArg()):
+    args = str(args)
+    Data = Handler.load_json(f'{path}/add_group_switch.json','r')
+    if "开" in args:
+        write = True
+        Temp = "打开"
+    elif "关" in args:
+        write = False
+        Temp = "关闭"
+    else:
+        Text = "当前Bot的入群检测状态为：关闭"
+        if Data.get(str(event.group_id),False):
+            if Data[str(event.group_id)]:
+                Text = "当前Bot的入群检测状态为：开启"
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}~\n输入“入群检测开”或“入群检测关”来更改功能开关")
+    Data[str(event.group_id)] = write
+    Handler.load_json(f'{path}/add_group_switch.json','w',Data)
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"好~凌辉Bot已经{Temp}了本群的入群检测功能w~")
 
 handle_group = on_command("允许加群",aliases={"拒绝加群"},block=True)
 @handle_group.handle()
@@ -584,4 +605,3 @@ async def handle_add_group(matcher:Matcher,event:MessageEvent,bot:Bot,args:Messa
         await matcher.finish(MessageSegment.reply(event.message_id)+"已经处理了此请求。")
     except ActionFailed:
         await matcher.finish(MessageSegment.reply(event.message_id)+"未找到对应的flag，请检查flag是否正确。")
-
