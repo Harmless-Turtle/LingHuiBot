@@ -18,6 +18,7 @@ import os,zhconv,re,json,emoji,httpx,shutil,time
 from pathlib import Path
 from nonebot.matcher import Matcher
 from nonebot import logger
+import traceback
 
 FurryBar = on_message(rule=to_me(),priority=60, block=True)
 change_config = on_command("更改用户信息",aliases={"创建用户信息","定义个人信息"},block=False)

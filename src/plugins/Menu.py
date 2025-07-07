@@ -16,7 +16,7 @@ Main_Menu = on_command("菜单01",aliases={"基本菜单"},priority=99,block=Tru
 Furry_Menu = on_command("菜单02",aliases={"Furry菜单","furry菜单"}, priority=99, block=True)
 Marry_Menu = on_command("菜单03",aliases={"结婚菜单"},priority=99,block=True)
 Service_Menu = on_command("服务条款",aliases={"用户协议"},block=True)
-atmenu = on_message(rule=to_me(),priority=59, block=False)
+atmenu = on_message(rule=to_me(),priority=1, block=False)
 
 opendata = Path.cwd()
 All_Menu_Markdown = opendata / 'data/Menu/All_Menu.md'
@@ -36,14 +36,16 @@ async def Menu_Function(event:MessageEvent,args:Message = CommandArg()):
     await Menu.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic))
 
 @atmenu.handle()
-async def atmenu_Function(event:MessageEvent,args:Message = CommandArg()):
-    # if args.extract_plain_text():
-    #     logger.info("Menu Function")
-    #     await atmenu.finish()    # 若消息后面存在文本则不响应
-    pic = await md_to_pic(md_path=All_Menu_Markdown,width=900)
-    a = Image.open(io.BytesIO(pic))
-    a.save("md2pic.png", format="PNG")
-    await atmenu.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic))
+async def atmenu_Function(event: MessageEvent,group:GroupMessageEvent):
+    if group.group_id == 0 or event.get_message().extract_plain_text() != "":
+        await atmenu.finish()
+    
+    # 直接生成并发送图片
+    pic = await md_to_pic(md_path=All_Menu_Markdown, width=900)
+    await atmenu.finish(
+        MessageSegment.reply(event.message_id) + 
+        MessageSegment.image(pic)
+    )        
 
 @Main_Menu.handle()
 async def Main_Menu_Function(event:MessageEvent,args:Message = CommandArg()):
