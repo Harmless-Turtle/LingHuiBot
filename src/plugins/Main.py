@@ -305,7 +305,8 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
     Sign_Dict[f'{Group}'] = New_Sign_Group_Dict
     # 将构建完成的信息写入本地json文件进行保存
     Handler.load_json(Sign_in_Path,'w',Sign_Dict)
-        
+    AwordDict = Handler.load_json(AWord_Path,'r')
+    Result = AwordDict[rd.randint(0,len(AwordDict)-1)]
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         #生成检测到“好久不见”字样的默认值
@@ -317,9 +318,9 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
             pic = Sign_in_Pic_True
         # 输出
         maomao = rd.randint(5,10)
-        await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic)+f"{Text}签到成功。本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位~\n[DEBUG]{maomao}")
+        await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic)+f"{Text}签到成功。本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位~\n[DEBUG]{maomao}\n——————\n“{Result}”")
     # 输出
-    await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}签到成功。您本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位。")
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}签到成功。您本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位。\n——————\n“{Result}”")
 
 @btfrk.handle()
 @Handler.handle_errors
