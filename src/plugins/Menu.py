@@ -1,4 +1,4 @@
-from nonebot.plugin import on_command  # 导入事件响应器
+from nonebot.plugin import on_command,on_message  # 导入事件响应器
 from nonebot.adapters import Message  # 导入抽象基类Message以允许Bot回复str
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent  # 导入事件响应器以进行操作
 from nonebot import require
@@ -8,13 +8,15 @@ from pathlib import Path
 from PIL import Image
 import io
 from nonebot.params import CommandArg
-
+from nonebot.rule import to_me
+from nonebot import logger
 
 Menu = on_command("菜单", aliases={"凌辉菜单"}, priority=100, block=True)
 Main_Menu = on_command("菜单01",aliases={"基本菜单"},priority=99,block=True)
 Furry_Menu = on_command("菜单02",aliases={"Furry菜单","furry菜单"}, priority=99, block=True)
 Marry_Menu = on_command("菜单03",aliases={"结婚菜单"},priority=99,block=True)
 Service_Menu = on_command("服务条款",aliases={"用户协议"},block=True)
+atmenu = on_message(rule=to_me(),priority=1, block=False)
 
 opendata = Path.cwd()
 All_Menu_Markdown = opendata / 'data/Menu/All_Menu.md'
@@ -32,6 +34,18 @@ async def Menu_Function(event:MessageEvent,args:Message = CommandArg()):
     a.save("md2pic.png", format="PNG")
 
     await Menu.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic))
+
+@atmenu.handle()
+async def atmenu_Function(event: MessageEvent,group:GroupMessageEvent):
+    if group.group_id == 0 or event.get_message().extract_plain_text() != "":
+        await atmenu.finish()
+    
+    # 直接生成并发送图片
+    pic = await md_to_pic(md_path=All_Menu_Markdown, width=900)
+    await atmenu.finish(
+        MessageSegment.reply(event.message_id) + 
+        MessageSegment.image(pic)
+    )        
 
 @Main_Menu.handle()
 async def Main_Menu_Function(event:MessageEvent,args:Message = CommandArg()):

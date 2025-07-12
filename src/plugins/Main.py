@@ -90,6 +90,7 @@ Eat_What = on_command("今天吃什么")
 
 # 入群检查
 add_group = on_request(rule=add_group_switch)
+switch_add_group = on_command("入群检测",permission=SUPERUSER,block=True)
 
 #入群欢迎系统
 Change_Welcome = on_command("入群欢迎",permission=SUPERUSER,block=True)
@@ -155,7 +156,7 @@ Add_Welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_w
 @Add_Welcome.handle()
 @Handler.handle_errors
 async def Welcome(matcher:Matcher,event=GroupIncreaseNoticeEvent):
-    if event.user_id == event.self_id:await matcher.finish("嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n如果您有任何问题，请随时联系管理员[1097740481]哦~")
+    if event.user_id == event.self_id:await matcher.finish()
     Welcome_Dict = Handler.load_json(Welcome_Path,'r')
     Group_id = str(event.group_id)
     if Welcome_Dict.get(Group_id,False):
@@ -169,6 +170,14 @@ async def Welcome(matcher:Matcher,event=GroupIncreaseNoticeEvent):
             await matcher.finish("新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~")
     else:
         await matcher.finish()
+
+SelfJoinGroupWelcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent),priority=1,block=True)
+@SelfJoinGroupWelcome.handle()
+@Handler.handle_errors
+async def SelfJoinGroupWelcome_Function(matcher:Matcher,event=GroupIncreaseNoticeEvent):
+    if event.user_id == event.self_id:await Matcher.finish("嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n如果您有任何问题，请随时联系管理员[1097740481]哦~")
+    else:
+        pass
 
 @Change_Welcome.handle()
 @Handler.handle_errors
@@ -296,7 +305,8 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
     Sign_Dict[f'{Group}'] = New_Sign_Group_Dict
     # 将构建完成的信息写入本地json文件进行保存
     Handler.load_json(Sign_in_Path,'w',Sign_Dict)
-        
+    AwordDict = Handler.load_json(AWord_Path,'r')
+    Result = AwordDict[rd.randint(0,len(AwordDict)-1)]
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         #生成检测到“好久不见”字样的默认值
@@ -308,9 +318,9 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
             pic = Sign_in_Pic_True
         # 输出
         maomao = rd.randint(5,10)
-        await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic)+f"{Text}签到成功。本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位~\n[DEBUG]{maomao}")
+        await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic)+f"{Text}签到成功。本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位~\n[DEBUG]{maomao}\n——————\n“{Result}”")
     # 输出
-    await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}签到成功。您本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位。")
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}签到成功。您本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位。\n——————\n“{Result}”")
 
 @btfrk.handle()
 @Handler.handle_errors
@@ -566,6 +576,26 @@ async def handle_add_group(matcher:Matcher,bot:Bot,event:GroupRequestEvent):
         await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:\n（思考）...？似乎在凌辉的内置禁止词库中？\n⚠️已满足判决条件；自动处理生效，将主动拒绝此入群消息！\n如果要手动同意，请关闭入群审核功能后让用户重新申请。")
     await matcher.finish(f"似乎有人想要加入我们awa...\n请求类型：{event.request_type}\n子类型：{event.sub_type}\n申请人信息：{User}[{event.user_id}]\n进群理由:{event.comment}\n要同意此人入群嘛awa？\n可以通过“允许加群{event.flag}”或“拒绝加群{event.flag}”来处理此请求（请在Bot为群管理员时进行操作~")
 
+@switch_add_group.handle()
+async def handler_switch_add_group(matcher:Matcher,event:MessageEvent,args:Message=CommandArg()):
+    args = str(args)
+    Data = Handler.load_json(f'{path}/add_group_switch.json','r')
+    if "开" in args:
+        write = True
+        Temp = "打开"
+    elif "关" in args:
+        write = False
+        Temp = "关闭"
+    else:
+        Text = "当前Bot的入群检测状态为：关闭"
+        if Data.get(str(event.group_id),False):
+            if Data[str(event.group_id)]:
+                Text = "当前Bot的入群检测状态为：开启"
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}~\n输入“入群检测开”或“入群检测关”来更改功能开关")
+    Data[str(event.group_id)] = write
+    Handler.load_json(f'{path}/add_group_switch.json','w',Data)
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"好~凌辉Bot已经{Temp}了本群的入群检测功能w~")
+
 handle_group = on_command("允许加群",aliases={"拒绝加群"},block=True)
 @handle_group.handle()
 async def handle_add_group(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message=CommandArg()):
@@ -584,4 +614,3 @@ async def handle_add_group(matcher:Matcher,event:MessageEvent,bot:Bot,args:Messa
         await matcher.finish(MessageSegment.reply(event.message_id)+"已经处理了此请求。")
     except ActionFailed:
         await matcher.finish(MessageSegment.reply(event.message_id)+"未找到对应的flag，请检查flag是否正确。")
-
