@@ -1,3 +1,4 @@
+from ast import Delete
 from nonebot.matcher import Matcher
 from .Handler import Handler
 import random as rd
@@ -10,17 +11,27 @@ from nonebot.adapters.onebot.v11 import (
     Bot
 )
 import os
+from nonebot import get_driver,logger
+
+
+# 获取配置
+config = get_driver().config
+min_players = 5
+max_players = 12
+try:
+    min_players = config.min_players_lrs
+    max_players = config.max_players_lrs
+except:
+    logger.error("读取配置失败！将使用默认配置！")
+    logger.info(f"默认最小玩家数: {min_players}, 最大玩家数: {max_players}")
+    logger.warning("请在配置文件中设置min_players_lrs和max_players_lrs！")
 
 path = Path.cwd() / 'data' / 'langrensha'
 
-
-
-start = on_command("langrensha", aliases={"创建狼人杀"}, priority=5, block=True)
+start = on_command("langrensha", aliases={"创建狼人杀","lrs"}, priority=5, block=True)
 @start.handle()
 async def _(matcher: Matcher, event: MessageEvent):
     args = str(event.get_plaintext()).strip().split()
-    min_players = 5  # 狼人杀最少人数
-    max_players = 12
 
     # 解析自定义人数
     num_players = min_players
@@ -59,7 +70,7 @@ async def _(matcher: Matcher, event: MessageEvent):
     Handler.load_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
-        f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，未达到人数前无法开始游戏。")
+        f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，未达到人数前无法开始游戏。\n通过“加入狼人杀”来加入游戏\n通过“开始狼人杀”可以开始游戏。\n通过“删除狼人杀房间”可以删除当前房间。")
 
 # 编写群员加入指令
 join = on_command("加入狼人杀", aliases={"langrensha加入"}, priority=4, block=True)
@@ -95,13 +106,13 @@ async def _(matcher: Matcher, event: MessageEvent):
     Handler.load_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
-        f"您已成功加入狼人杀游戏，当前玩家数：{len(data['players'])}/{data['max_players']}"
+        f"您已成功加入狼人杀游戏，当前玩家数：{len(data['players'])}/{data['max_players']}\n由于QQ限制，您必须添加凌辉Bot为好友后才能发起私聊会话，无法发起群聊临时会话。"
     )
 
 # 编写开始游戏指令
 start_game = on_command("开始狼人杀", aliases={"langrensha开始"}, priority=5, block=True)
 @start_game.handle()
-async def _(matcher: Matcher, event: MessageEvent):
+async def _(matcher: Matcher, event: MessageEvent,bot:Bot):
     room_file = path / f"{event.group_id}.json"
     if not room_file.exists():
         await matcher.finish(
@@ -116,10 +127,10 @@ async def _(matcher: Matcher, event: MessageEvent):
             "只有房主才能开始游戏"
         )
     
-    if len(data['players']) < 5:
+    if len(data['players']) < min_players:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
-            "当前玩家人数不足5人，无法开始游戏"
+            f"当前玩家人数不足{min_players}人，无法开始游戏"
         )
     
     # 游戏开始逻辑
@@ -129,9 +140,46 @@ async def _(matcher: Matcher, event: MessageEvent):
     
     for i, player in enumerate(data['players']):
         data['game_data'][player] = assigned_roles[i]
-    
+        await bot.send_private_msg(user_id=int(player),message=f"您的角色是：{data['game_data'][player]}。请注意保密！")
     Handler.load_json(room_file, 'w', data)
+        
+    for player in data['players']:
+        try:
+            logger.info(player)
+            
+        except:
+            os.remove(room_file)
+            await matcher.finish(
+                MessageSegment.reply(event.message_id) +
+                f"致命错误：分配玩家 {player}的身份时出现问题，请检查是否已允许私聊或网络连接是否存在问题，如未知原因，可添加凌辉Bot后再试。\n凌辉遇到了一个无法解决的错误，游戏已停止")
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
-        "游戏已开始！各位玩家请查看自己的角色"
+        "游戏已开始！凌辉Bot已经私信告知了每位玩家所分配到的角色。请注意查收私信~"
+    )
+
+
+
+
+
+Delete_Room = on_command("删除狼人杀房间", aliases={"langrensha删除","dellrs"}, priority=5, block=True)
+@Delete_Room.handle()
+async def _(matcher: Matcher, event: MessageEvent):
+    room_file = path / f"{event.group_id}.json"
+    if not room_file.exists():
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) +
+            "本群尚未创建狼人杀游戏房间，请先使用指令创建房间"
+        )
+    
+    data = Handler.load_json(room_file,'r')
+    if data['owner'] != event.user_id:
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) +
+            "只有房主才能删除游戏房间"
+        )
+    
+    os.remove(room_file)
+    await matcher.finish(
+        MessageSegment.reply(event.message_id) +
+        "狼人杀游戏房间已成功删除"
     )

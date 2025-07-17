@@ -32,8 +32,8 @@ USER_VIOLATIONS_PATH = DATA_DIR / "user_violations.json"
 # 确保目录存在
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-driver = get_driver()
-sensitive_admins = json.loads(os.getenv("SENSITIVEADMIN",'[1097740481,1692719245]'))
+config = get_driver().config
+sensitive_admins = config.sensitiveadmin or '[1097740481,1692719245]'
 logger.info(f"敏感词管理员列表: {sensitive_admins}")
 logger.info(f"{type(sensitive_admins)}")
 
