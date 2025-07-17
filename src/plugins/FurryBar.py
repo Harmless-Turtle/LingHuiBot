@@ -28,7 +28,13 @@ Clear = on_command("删除信息",aliases={"重置fb","清空数据"})
 latest = on_command("上次对话",aliases={"上次聊天","最后对话","最后记录"})
 
 config = get_driver().config
-KEY = config.furry_token
+try:
+    Talk_key = config.furry_aikey
+    logger.success("✅已成功加载FurryBar的相关配置！")
+except:
+    logger.error("请在配置文件中设置furry_token！")
+    logger.error("拒绝加载FurryBar.py！")
+    raise RuntimeError("被拒绝加载！")
 
 opendata = Path.cwd()
 Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"
@@ -37,7 +43,6 @@ Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"
 @FurryBar.handle()
 @Handler.handle_errors
 async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Reply:GroupMessageEvent):
-
     # await FurryBar.finish(MessageSegment.reply(event.message_id)+"该功能正在维护，暂停提供服务")
     logger.info("FB")
     content = str(event.get_message())
@@ -79,7 +84,7 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
     }
     logger.info("Debug:将使用"+model+"模型进行答复。")
     headers = {
-        'Authorization': f'{KEY}',
+        'Authorization': f'{Talk_key}',
         'Content-Type': 'application/json'
     }
     # response = requests.post(url, headers=headers, data=payload)
