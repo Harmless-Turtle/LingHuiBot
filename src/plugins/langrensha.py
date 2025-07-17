@@ -1,5 +1,3 @@
-from argparse import Action
-from email.errors import MessageError
 from nonebot.matcher import Matcher
 from .Handler import Handler
 import random as rd
@@ -15,12 +13,14 @@ import os
 
 path = Path.cwd() / 'data' / 'langrensha'
 
+
+
 start = on_command("langrensha", aliases={"创建狼人杀"}, priority=5, block=True)
 @start.handle()
 async def _(matcher: Matcher, event: MessageEvent):
     args = str(event.get_plaintext()).strip().split()
     min_players = 5  # 狼人杀最少人数
-    max_players = 12 # 可自定义最大人数
+    max_players = 12
 
     # 解析自定义人数
     num_players = min_players

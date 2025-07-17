@@ -4,7 +4,6 @@ import asyncio,json,os,shutil,time,httpx,math,stat
 from .Handler import Handler
 # 第三方库
 from types import SimpleNamespace
-from dotenv import load_dotenv
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
@@ -19,23 +18,19 @@ from nonebot.permission import SUPERUSER
 from nonebot.params import CommandArg
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+from nonebot import get_driver
 
-# 获取当前文件的绝对路径
-current_file = Path(__file__).resolve()
-# 获取项目根目录路径
-project_root = current_file.parents[2]  # 从 Furry.py 向上查找两层目录
-# 加载 .env.dev 文件
-load_dotenv(project_root / ".env.dev")
 
 # 定义全局变量
 login_cookie = {}
 timeout = None
 count = 0
 set_count = 0
-token = os.getenv('FURRY_TOKEN')
-account = os.getenv('FURRY_USER')
-password = os.getenv('FURRY_PASSWORD')
-api_base = os.getenv("FURRY_API_BASE")
+config = get_driver().config
+token = config.furry_token
+account = config.furry_user
+password = config.furry_password
+api_base = config.furry_api_base
 if not all([token, account, password]):
     raise ValueError("警告！在加载时缺少必要的环境变量！（FURRY_TOKEN/FURRY_USER/FURRY_PASSWORD）")
 

@@ -18,7 +18,7 @@ import os,zhconv,re,json,emoji,httpx,shutil,time
 from pathlib import Path
 from nonebot.matcher import Matcher
 from nonebot import logger
-import traceback
+from nonebot import get_driver
 
 FurryBar = on_message(rule=to_me(),priority=60, block=True)
 change_config = on_command("更改用户信息",aliases={"创建用户信息","定义个人信息"},block=False)
@@ -27,8 +27,8 @@ Reset_FurryBar = on_command(
 Clear = on_command("删除信息",aliases={"重置fb","清空数据"})
 latest = on_command("上次对话",aliases={"上次聊天","最后对话","最后记录"})
 
-KEY = os.getenv('FURRY_AIKEY')
-
+config = get_driver().config
+KEY = config.furry_token
 
 opendata = Path.cwd()
 Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"

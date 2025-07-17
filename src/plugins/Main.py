@@ -257,7 +257,6 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
     # 获取触发时间
     from datetime import date
     Time_Normal = str(date.today())
-    # Time_Normal = str(datetime.date.today())     #获取当前时间
     Time_Normal = Time_Normal.split("-")         #切片->构建基本时间
     Time = int(Time_Normal[-1])        # 获取签到天数
     Month = int(Time_Normal[-2])       # 获取签到月份
