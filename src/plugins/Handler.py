@@ -16,12 +16,56 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
+Font_Path = Path.cwd() / 'data' / 'MiSans-Demibold.ttf'
+
 furryfusion_bg_path = Path.cwd() / 'data' / 'Furry_System' / 'bg.png'
 # 定义处理函数
 class Handler():
     """
     处理函数类，包含异常处理、JSON 加载和批量转发内容构建等功能。
     """
+    @staticmethod
+    def create_text_canvas(lines, font):
+        from PIL import Image, ImageDraw
+        
+        # 计算画布尺寸 - 修正版
+        padding = 20  # 增加边距
+        line_height = 0
+        max_width = 0
+        
+        # 预先计算所有文本的尺寸
+        for line in lines:
+            # 使用 getbbox 获取文本边界框
+            bbox = font.getbbox(line)
+            # 计算实际宽度和高度
+            line_width = bbox[2] - bbox[0]
+            line_height = max(line_height, bbox[3] - bbox[1])
+            max_width = max(max_width, line_width)
+        
+        # 添加边距
+        total_width = int(max_width) + 2 * padding
+        total_height = len(lines) * (line_height + 5) + 2 * padding
+        
+        # 创建画布
+        image = Image.new("RGB", (total_width, total_height), (255, 255, 255))
+        draw = ImageDraw.Draw(image)
+        
+        # 绘制文字 - 居左显示
+        y = padding
+        for line in lines:
+            # 获取文本尺寸
+            bbox = font.getbbox(line)
+            text_height = bbox[3] - bbox[1]
+            
+            # 居左显示 - 固定从左侧padding位置开始
+            x = padding
+            
+            # 绘制文本
+            draw.text((x, y), line, fill=(0, 0, 0), font=font)
+            y += line_height + 5  # 行间距
+        
+        return image
+    
     @staticmethod
     def handle_errors(func):
         @wraps(func)
@@ -37,7 +81,16 @@ class Handler():
                     f"{traceback.format_exc()}\n"
                     "---------------------异常错误截止---------------------\n\n"
                 )
+                try:
+                    font = ImageFont.truetype(Font_Path, size=30)
+                except:
+                    font = ImageFont.load_default()
+                
+                text_lines = [line for line in error_msg.split('\n') if line.strip() != '']
+                image = Handler.create_text_canvas(text_lines, font)
                 error_dir = os.path.join(os.path.dirname(__file__), "error.log")
+                pic_dir = os.path.join(os.path.dirname(__file__), "error.png")
+                image.save(pic_dir, format="PNG")
                 with open(error_dir, 'a', encoding='utf-8') as f:
                     f.write(error_msg)
                 logger.error(error_msg)
@@ -68,7 +121,7 @@ class Handler():
                         await matcher.finish(
                             reply_part + "服务器断开了连接且未发送任何数据给凌辉qwq...请稍后再试"
                         )
-                    await matcher.finish(reply_part + "没有正确处理请求呢qwq...请联系管理员[1097740481]协助解决哦")
+                    await matcher.finish(reply_part + "没有正确处理请求呢qwq...请联系管理员[1097740481]协助解决哦\n错误日志如下："+MessageSegment.image(pic_dir))
         return wrapper
     
     # json加载函数

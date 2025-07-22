@@ -107,8 +107,10 @@ AT_Time = time.time()
 
 
 @Test.handle()
+@Handler.handle_errors
 async def Test_Function(matcher: Matcher,bot: Bot,event:MessageEvent, args: Message = CommandArg()):
     logger.info(await bot.get_group_member_info(group_id=event.group_id,user_id=event.self_id))
+    raise RuntimeError("Test Function Error")  # 测试用的异常抛出
 
 
 @Poke_Check.handle()
