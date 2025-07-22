@@ -350,27 +350,27 @@ async def Receive_Batch(matcher:Matcher,bot:Bot,event:MessageEvent):
     else:
         await matcher.finish("定义图片列表已为空，这意味着你已经定义完了全部的图片\n事件处理结束。")
 
-# 新增画布创建函数
-def create_text_canvas(text_lines, font, padding=50, line_spacing=20):
-    # 计算文本尺寸
-    max_width = 0
-    total_height = 0
-    temp_image = Image.new('RGB', (1, 1), (255, 255, 255))
-    draw = ImageDraw.Draw(temp_image)
+# # 新增画布创建函数
+# def create_text_canvas(text_lines, font, padding=50, line_spacing=20):
+#     # 计算文本尺寸
+#     max_width = 0
+#     total_height = 0
+#     temp_image = Image.new('RGB', (1, 1), (255, 255, 255))
+#     draw = ImageDraw.Draw(temp_image)
 
-    for line in text_lines:
-        bbox = draw.textbbox((0, 0), str(line), font=font)
-        line_width = bbox[2] - bbox[0]
-        line_height = bbox[3] - bbox[1]
+#     for line in text_lines:
+#         bbox = draw.textbbox((0, 0), str(line), font=font)
+#         line_width = bbox[2] - bbox[0]
+#         line_height = bbox[3] - bbox[1]
         
-        max_width = max(max_width, line_width)
-        total_height += line_height + line_spacing
+#         max_width = max(max_width, line_width)
+#         total_height += line_height + line_spacing
 
-    # 计算最终尺寸
-    canvas_width = max_width + 2*padding
-    canvas_height = total_height - line_spacing + 2*padding
+#     # 计算最终尺寸
+#     canvas_width = max_width + 2*padding
+#     canvas_height = total_height - line_spacing + 2*padding
 
-    return Image.new('RGB', (canvas_width, canvas_height), (255, 255, 255))
+#     return Image.new('RGB', (canvas_width, canvas_height), (255, 255, 255))
 
 @FurryList.handle()
 @Handler.handle_errors
@@ -419,18 +419,9 @@ async def Furry_List(matcher:Matcher,event: MessageEvent,bot:Bot, args: Message 
             font = ImageFont.load_default()
         
         text_lines = [line for line in text.split('\n') if line.strip() != '']
-        image = create_text_canvas(text_lines, font)
-        draw = ImageDraw.Draw(image)
-        
-        current_y = 50  # 起始Y坐标
-        for line in text_lines:
-            draw.text((50, current_y), line, fill='black', font=font)
-            bbox = draw.textbbox((50, current_y), line, font=font)
-            current_y += (bbox[3] - bbox[1]) + 20  # 自动换行
-            
-        url = Pic_URL
-        image.save(url)
-        await matcher.finish(MessageSegment.reply(event.message_id)+f"共获取到了{ListLength}条消息："+MessageSegment.image(url))
+        image = Handler.create_auto_newlines_picture(text_lines, font)
+        image.save(Pic_URL)
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"共获取到了{ListLength}条消息："+MessageSegment.image(Pic_URL))
 
 
 @Modify_Furry.handle()

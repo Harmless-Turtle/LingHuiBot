@@ -25,10 +25,7 @@ class Handler():
     处理函数类，包含异常处理、JSON 加载和批量转发内容构建等功能。
     """
     @staticmethod
-    def create_text_canvas(lines, font):
-        from PIL import Image, ImageDraw
-        
-        # 计算画布尺寸 - 修正版
+    def create_auto_newlines_picture(lines, font):
         padding = 20  # 增加边距
         line_height = 0
         max_width = 0
@@ -87,7 +84,7 @@ class Handler():
                     font = ImageFont.load_default()
                 
                 text_lines = [line for line in error_msg.split('\n') if line.strip() != '']
-                image = Handler.create_text_canvas(text_lines, font)
+                image = Handler.create_auto_newlines_picture(text_lines, font)
                 error_dir = os.path.join(os.path.dirname(__file__), "error.log")
                 pic_dir = os.path.join(os.path.dirname(__file__), "error.png")
                 image.save(pic_dir, format="PNG")
