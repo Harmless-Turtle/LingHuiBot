@@ -1,6 +1,5 @@
-from ast import Delete
 from nonebot.matcher import Matcher
-from .Handler import Handler
+from ..Handler import Handler
 import random as rd
 from pathlib import Path
 from nonebot.exception import ActionFailed
@@ -151,15 +150,11 @@ async def _(matcher: Matcher, event: MessageEvent,bot:Bot):
             os.remove(room_file)
             await matcher.finish(
                 MessageSegment.reply(event.message_id) +
-                f"致命错误：分配玩家 {player}的身份时出现问题，请检查是否已允许私聊或网络连接是否存在问题，如未知原因，可添加凌辉Bot后再试。\n凌辉遇到了一个无法解决的错误，游戏已停止")
+                f"致命错误：分配玩家 {player} 的身份时出现问题：发送私聊消息失败\n如未知原因，可添加凌辉Bot后再试。\n凌辉遇到了一个无法解决的错误，游戏已停止")
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         "游戏已开始！凌辉Bot已经私信告知了每位玩家所分配到的角色。请注意查收私信~"
     )
-
-
-
-
 
 Delete_Room = on_command("删除狼人杀房间", aliases={"langrensha删除","dellrs"}, priority=5, block=True)
 @Delete_Room.handle()
