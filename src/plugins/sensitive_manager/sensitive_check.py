@@ -1,26 +1,28 @@
+# 标准库导入
 import json
 import os
-import datetime
 from pathlib import Path
-from typing import Dict, Set, List, Optional
+from typing import Dict, Set
+from datetime import datetime as dt
+
+# 第三方库导入
 import ahocorasick
+
+# NoneBot相关导入
 from nonebot import get_driver, on_command, on_message
 from nonebot.adapters.onebot.v11 import (
-    MessageEvent,
     GroupMessageEvent,
     Bot,
     Message,
     MessageSegment,
 )
 from nonebot.params import CommandArg
-from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.exception import MatcherException
-import sys
-sys.path.append("/home/LingHui/NoneBot/LingHuiBot/src")
-from plugins.Handler import Handler
+
+# 本地模块导入
+from ..Handler import Handler
 
 # 配置文件路径
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -175,8 +177,7 @@ async def handle_check(matcher:Matcher,bot: Bot, event: GroupMessageEvent):
             )
         except Exception as e:
             logger.error(f"通知管理员失败：{e}")
-    
-    from datetime import datetime as dt
+
     timestamp = event.time  # 获取整数时间戳（秒级）
     dt_object = dt.fromtimestamp(timestamp)  # 转换为 datetime 对象
     formatted_time = dt_object.strftime("%Y-%m-%d %H:%M:%S")  # 格式化时间

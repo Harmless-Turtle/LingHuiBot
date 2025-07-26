@@ -18,31 +18,75 @@ from io import BytesIO
 
 furryfusion_bg_path = Path.cwd() / 'data' / 'Furry_System' / 'bg.png'
 # 定义处理函数
-class Handler():
+class Handler:
     """
     处理函数类，包含异常处理、JSON 加载和批量转发内容构建等功能。
     """
     @staticmethod
+    def generate_error_response(error: Exception, event = None) -> Optional[Message]:
+        """
+        根据异常类型生成用户友好的错误响应消息。
+
+        Args:
+            error: 捕获的异常对象
+            event: 事件对象，用于构建回复引用
+
+        Returns:
+            构建的错误响应消息，如果无法构建则返回None
+        """
+            
+        # 获取用户ID准备回复
+        reply_part = (
+            MessageSegment.reply(event.message_id)
+            if isinstance(event, MessageEvent)
+            else Message()
+        )
+        
+        # 根据异常类型构建不同的响应消息
+        if isinstance(error, httpx.ReadTimeout):
+            return reply_part + "请求超时了呢qwq...可能是网络波动，请稍后再试哦～"
+        if isinstance(error, httpcore.RemoteProtocolError):
+            return reply_part + "服务器断开了连接且未发送任何数据给凌辉qwq...请稍后再试"
+        
+        # 默认错误消息
+        return reply_part + "没有正确处理请求呢qwq...请联系管理员[1097740481]协助解决哦"
+    
+    @staticmethod
     def handle_errors(func):
+        """
+        装饰一个函数以捕获异常（除了 MatcherException），提供统一的错误处理逻辑。
+            - 记录详细的错误日志到文件
+            - 提供用户友好的错误提示
+            - 处理常见网络错误的特殊情况
+
+        Args:
+            func: 被装饰的异步函数，通常是一个事件处理函数。
+
+        Raises:
+            MatcherException: 这类异常会被直接抛出，不会被捕获处理。
+        """
         @wraps(func)
         async def wrapper(*args, **kwargs):
             try:
                 return await func(*args, **kwargs)
             except MatcherException:
                 raise
-            except Exception as e:
+            except Exception as error:
+                # 追踪并格式化错误日志
                 error_msg = (
                     f"脚本：{__file__}\n"
                     f"在“{time.strftime('%Y-%m-%d %a %H:%M:%S', time.localtime())}”时返回了异常错误。内容如下：\n\n"
                     f"{traceback.format_exc()}\n"
                     "---------------------异常错误截止---------------------\n\n"
                 )
-                error_dir = os.path.join(os.path.dirname(__file__), "error.log")
-                with open(error_dir, 'a', encoding='utf-8') as f:
-                    f.write(error_msg)
+
+                # 写入工作目录的 error.log
+                error_dir = Path() / "error.log"
+                with open(error_dir, 'a', encoding='utf-8') as filestream:
+                    filestream.write(error_msg)
                 logger.error(error_msg)
 
-                # 安全获取 matcher 和 event
+                # 从参数中查找 matcher 和 event 用于构建用户回复
                 matcher = next(
                     (arg for arg in args if isinstance(arg, Matcher)), 
                     kwargs.get("matcher")
@@ -52,23 +96,9 @@ class Handler():
                     kwargs.get("event")
                 )
 
-                # 构建安全回复
-                reply_part = (
-                    MessageSegment.reply(event.message_id)
-                    if isinstance(event, MessageEvent)
-                    else Message()
-                )
-
-                if matcher:
-                    if isinstance(e, httpx.ReadTimeout):
-                        await matcher.finish(
-                            reply_part + "请求超时了呢qwq...可能是网络波动，请稍后再试哦～"
-                        )
-                    if isinstance(e, httpcore.RemoteProtocolError):
-                        await matcher.finish(
-                            reply_part + "服务器断开了连接且未发送任何数据给凌辉qwq...请稍后再试"
-                        )
-                    await matcher.finish(reply_part + "没有正确处理请求呢qwq...请联系管理员[1097740481]协助解决哦")
+                # 生成错误响应并发送给用户
+                error_response = Handler.generate_error_response(error, event)
+                await matcher.finish(error_response)
         return wrapper
     
     # json加载函数
