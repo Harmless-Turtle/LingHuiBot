@@ -1,26 +1,28 @@
+# 标准库导入
 import json
 import os
-import datetime
 from pathlib import Path
-from typing import Dict, Set, List, Optional
+from typing import Dict, Set
+from datetime import datetime as dt
+
+# 第三方库导入
 import ahocorasick
+
+# NoneBot相关导入
 from nonebot import get_driver, on_command, on_message
 from nonebot.adapters.onebot.v11 import (
-    MessageEvent,
     GroupMessageEvent,
     Bot,
     Message,
     MessageSegment,
 )
 from nonebot.params import CommandArg
-from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.exception import MatcherException
-import sys
-sys.path.append("/home/LingHui/NoneBot/LingHuiBot/src")
-from plugins.Handler import Handler
+
+# 本地模块导入
+from ..Handler import Handler
 
 # 配置文件路径
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -32,8 +34,8 @@ USER_VIOLATIONS_PATH = DATA_DIR / "user_violations.json"
 # 确保目录存在
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-driver = get_driver()
-sensitive_admins = json.loads(os.getenv("SENSITIVEADMIN",'[1097740481,1692719245]'))
+config = get_driver().config
+sensitive_admins = config.sensitiveadmin or '[1097740481,1692719245]'
 logger.info(f"敏感词管理员列表: {sensitive_admins}")
 logger.info(f"{type(sensitive_admins)}")
 
@@ -175,8 +177,7 @@ async def handle_check(matcher:Matcher,bot: Bot, event: GroupMessageEvent):
             )
         except Exception as e:
             logger.error(f"通知管理员失败：{e}")
-    
-    from datetime import datetime as dt
+
     timestamp = event.time  # 获取整数时间戳（秒级）
     dt_object = dt.fromtimestamp(timestamp)  # 转换为 datetime 对象
     formatted_time = dt_object.strftime("%Y-%m-%d %H:%M:%S")  # 格式化时间

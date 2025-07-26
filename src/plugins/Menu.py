@@ -19,11 +19,11 @@ Service_Menu = on_command("服务条款",aliases={"用户协议"},block=True)
 atmenu = on_message(rule=to_me(),priority=1, block=False)
 
 opendata = Path.cwd()
-All_Menu_Markdown = opendata / 'data/Menu/All_Menu.md'
-Furry_Menu_Markdown = opendata / 'data/Menu/Furry_Menu.md'
-Main_Menu_Markdown = opendata / 'data/Menu/Main_Menu.md'
-Service_Menu_Markdown = opendata / 'data/Menu/Service.md'
-Marry_Menu_Markdown = opendata / 'data/Menu/Marry_Menu.md'
+All_Menu_Markdown = opendata / 'data'/'Menu'/'All_Menu.md'
+Furry_Menu_Markdown = opendata / 'Markdown'/'Furry_System.md'
+Main_Menu_Markdown = opendata / 'Markdown'/'Main_System.md'
+Service_Menu_Markdown = opendata /'Markdown'/'User_Agreement.md'
+Marry_Menu_Markdown = opendata / 'data'/'Menu'/'Marry_Menu.md'
 
 @Menu.handle()
 async def Menu_Function(event:MessageEvent,args:Message = CommandArg()):
@@ -72,6 +72,7 @@ async def Service_Menu_Function(event: GroupMessageEvent,args:Message = CommandA
         await Furry_Menu.finish()    # 若消息后面存在文本则不响应
     pic = await md_to_pic(md_path=Service_Menu_Markdown,width=900)
     a = Image.open(io.BytesIO(pic))
+
     a.save("md2pic.png", format="PNG")
     await Main_Menu.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic))
 

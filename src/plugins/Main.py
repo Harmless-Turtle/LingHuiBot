@@ -107,8 +107,10 @@ AT_Time = time.time()
 
 
 @Test.handle()
+@Handler.handle_errors
 async def Test_Function(matcher: Matcher,bot: Bot,event:MessageEvent, args: Message = CommandArg()):
     logger.info(await bot.get_group_member_info(group_id=event.group_id,user_id=event.self_id))
+    raise RuntimeError("Test Function Error")  # 测试用的异常抛出
 
 
 @Poke_Check.handle()
@@ -257,7 +259,6 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
     # 获取触发时间
     from datetime import date
     Time_Normal = str(date.today())
-    # Time_Normal = str(datetime.date.today())     #获取当前时间
     Time_Normal = Time_Normal.split("-")         #切片->构建基本时间
     Time = int(Time_Normal[-1])        # 获取签到天数
     Month = int(Time_Normal[-2])       # 获取签到月份
