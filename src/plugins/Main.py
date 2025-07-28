@@ -17,7 +17,7 @@ from nonebot.adapters.onebot.v11 import (
     Bot,
     )
 from nonebot.matcher import Matcher
-from .Handler import Handler
+import Handler
 from nonebot.rule import to_me,is_type,Rule
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
@@ -52,7 +52,7 @@ async def chek_boss(event:MessageEvent):
 
 
 async def chek_add_welcome(event:GroupIncreaseNoticeEvent):
-    Welcome_Dict = Handler.load_json(Welcome_Path,'r')
+    Welcome_Dict = Handler.handle_json(Welcome_Path, 'r')
     Group_id = str(event.group_id)
     logger.info(f"检查群 {Group_id} 的欢迎配置，当前数据：{Welcome_Dict.get(Group_id)}")
     if Welcome_Dict.get(Group_id,False):
@@ -64,7 +64,7 @@ async def chek_add_welcome(event:GroupIncreaseNoticeEvent):
 
 async def ChekGroupMemberChange(event:GroupDecreaseNoticeEvent):
     try:
-        Data = Handler.load_json(f'{path}/GroupMemberChange.json',"r")
+        Data = Handler.handle_json(f'{path}/GroupMemberChange.json', "r")
         logger.info(f"检查群 {event.group_id} 的退群通知开关，当前状态：{Data.get(str(event.group_id))}")
         return Data.get(str(event.group_id), False)
     except Exception as e:
@@ -72,7 +72,7 @@ async def ChekGroupMemberChange(event:GroupDecreaseNoticeEvent):
         return False
 
 async def add_group_switch(event:GroupRequestEvent):
-    Data = Handler.load_json(f'{path}/add_group_switch.json',"r")
+    Data = Handler.handle_json(f'{path}/add_group_switch.json', "r")
     logger.info(Data.get(str(event.group_id), False))
     logger.info(event.sub_type == "add")
     return Data.get(str(event.group_id), False) and event.sub_type == "add"
@@ -129,7 +129,7 @@ async def PC_Function(matcher:Matcher,event: PokeNotifyEvent):
                 pass
     else:
         Send = True
-        Text_List = Handler.load_json(Poke_Path, 'r')
+        Text_List = Handler.handle_json(Poke_Path, 'r')
             
         Poke_Count += 1
         Time_Count = time.time()
@@ -159,7 +159,7 @@ Add_Welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_w
 @Handler.handle_errors
 async def Welcome(matcher:Matcher,event=GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id:await matcher.finish()
-    Welcome_Dict = Handler.load_json(Welcome_Path,'r')
+    Welcome_Dict = Handler.handle_json(Welcome_Path, 'r')
     Group_id = str(event.group_id)
     if Welcome_Dict.get(Group_id,False):
         Group_Dict = Welcome_Dict[f'{Group_id}']
@@ -184,7 +184,7 @@ async def SelfJoinGroupWelcome_Function(matcher:Matcher,event=GroupIncreaseNotic
 @Change_Welcome.handle()
 @Handler.handle_errors
 async def Change_Welcome_Function(matcher:Matcher,event:GroupMessageEvent,Recivce:MessageEvent):
-    Dict = Handler.load_json(Welcome_Path,'r')
+    Dict = Handler.handle_json(Welcome_Path, 'r')
     Group_id = str(event.group_id)
     args = Recivce.get_message()
     if "开" in str(args):
@@ -211,14 +211,14 @@ async def Change_Welcome_Function(matcher:Matcher,event:GroupMessageEvent,Recivc
         elif Mode==None:
             Mode_Text = "未启动"
         await matcher.finish(MessageSegment.reply(event.message_id)+f"当前群聊的入群欢迎状态为：{Mode_Text}\n新人入群欢迎文本：{Text}")
-    Handler.load_json(Welcome_Path,'w',Dict)
+    Handler.handle_json(Welcome_Path, 'w', Dict)
     await matcher.finish(MessageSegment.reply(event.message_id)+"操作成功完成。")
 
 @Change_Welcome_Text.handle()
 @Handler.handle_errors
 async def CWT_Function(matcher:Matcher,event:MessageEvent,args:Message = CommandArg()):
     args = str(args)
-    Dict = Handler.load_json(Welcome_Path,'r')
+    Dict = Handler.handle_json(Welcome_Path, 'r')
     Group = str(event.group_id)
     Text = ""
     if not Dict.get(Group,False):
@@ -234,14 +234,14 @@ async def CWT_Function(matcher:Matcher,event:MessageEvent,args:Message = Command
     if args == "":
         Dict[Group]['Text'] = "新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~"
         Text_1 = "由于未找到对应的文本，所以本次操作将会使用默认文本来进行入群欢迎~"
-    Handler.load_json(Welcome_Path,'w',Dict)
+    Handler.handle_json(Welcome_Path, 'w', Dict)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}{Text_1}")        
 
 @AWord.handle()
 @Handler.handle_errors
 async def AWord_Function(matcher:Matcher,event=MessageEvent,args:Message = CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
-    Dict = Handler.load_json(AWord_Path,'r')
+    Dict = Handler.handle_json(AWord_Path, 'r')
         
     Result = Dict[rd.randint(0,len(Dict)-1)]
     await matcher.finish(MessageSegment.reply(event.message_id)+f"“{Result}”")
@@ -252,7 +252,7 @@ async def AWord_Function(matcher:Matcher,event=MessageEvent,args:Message = Comma
 async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMessageEvent,args:Message=CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
     # 打开文件并写入Sign_Dict字典
-    Sign_Dict = Handler.load_json(Sign_in_Path,'r')
+    Sign_Dict = Handler.handle_json(Sign_in_Path, 'r')
 
     # 获取触发人QQ号和群聊号
     User,Group = event.user_id,GroupEvent.group_id
@@ -305,8 +305,8 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
     Group_User_List[f"{User}"] = New_Sign_User_Dict
     Sign_Dict[f'{Group}'] = New_Sign_Group_Dict
     # 将构建完成的信息写入本地json文件进行保存
-    Handler.load_json(Sign_in_Path,'w',Sign_Dict)
-    AwordDict = Handler.load_json(AWord_Path,'r')
+    Handler.handle_json(Sign_in_Path, 'w', Sign_Dict)
+    AwordDict = Handler.handle_json(AWord_Path, 'r')
     Result = AwordDict[rd.randint(0,len(AwordDict)-1)]
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
@@ -351,7 +351,7 @@ async def wc_btfrk(bot:Bot,matcher:Matcher,event:MessageEvent):
 @Handler.handle_errors
 async def Change_Exit_Function(matcher:Matcher,event:MessageEvent,args:Message=CommandArg()):
     args = str(args)
-    Data = Handler.load_json(f'{path}/GroupMemberChange.json',"r")
+    Data = Handler.handle_json(f'{path}/GroupMemberChange.json', "r")
     Temp_1,write = "",None
     if "开" in args:
         write = True
@@ -368,7 +368,7 @@ async def Change_Exit_Function(matcher:Matcher,event:MessageEvent,args:Message=C
         await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}~\n输入“退群提示关”或“退群提示开”来更改功能开关")
     logger.info(args)
     Data[f'{event.group_id}']=write
-    Handler.load_json(f'{path}/GroupMemberChange.json',"w",Data)
+    Handler.handle_json(f'{path}/GroupMemberChange.json', "w", Data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"好~凌辉Bot已经{Temp}了本群的退群提示w~{Temp_1}")
 
 # 检查群成员减少事件
@@ -455,7 +455,7 @@ async def LF_Function(matcher:Matcher,event:NoticeEvent):
     from nonebot import get_bot
     bot = get_bot()
     Data = event.model_dump()
-    Dict = Handler.load_json(f"{path}/Friend_Like.json",'r')
+    Dict = Handler.handle_json(f"{path}/Friend_Like.json", 'r')
     user_id = Data['operator_id']
     now = dt.now()
     day = now.day
@@ -478,7 +478,7 @@ async def LF_Function(matcher:Matcher,event:NoticeEvent):
     Text = f"owo？是你给我点赞了嘛~谢谢~\n凌辉也给你点赞哦~（如果已经点过了那就不点了呐~嘻嘻ww）"
     Dict[f"{user_id}"]['Model'] = False
     Dict[f"{user_id}"]['Time'] = day
-    Handler.load_json(f"{path}/Friend_Like.json",'w',Dict)
+    Handler.handle_json(f"{path}/Friend_Like.json", 'w', Dict)
     try:
         if user_id != 1097740481:
             await bot.send_private_msg(user_id=user_id,message=Text)
@@ -561,7 +561,7 @@ async def Eat_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message =
 async def handle_add_group(matcher:Matcher,bot:Bot,event:GroupRequestEvent):
     User = await bot.get_stranger_info(group_id=event.group_id,user_id=event.user_id)
     User = User["nick"]
-    Data = Handler.load_json(f'{path}/add_group_switch.json','r')
+    Data = Handler.handle_json(f'{path}/add_group_switch.json', 'r')
     if Data.get(str(event.group_id),False):
         flag_list = Data[str(event.group_id)]
     else:
@@ -580,7 +580,7 @@ async def handle_add_group(matcher:Matcher,bot:Bot,event:GroupRequestEvent):
 @switch_add_group.handle()
 async def handler_switch_add_group(matcher:Matcher,event:MessageEvent,args:Message=CommandArg()):
     args = str(args)
-    Data = Handler.load_json(f'{path}/add_group_switch.json','r')
+    Data = Handler.handle_json(f'{path}/add_group_switch.json', 'r')
     if "开" in args:
         write = True
         Temp = "打开"
@@ -594,7 +594,7 @@ async def handler_switch_add_group(matcher:Matcher,event:MessageEvent,args:Messa
                 Text = "当前Bot的入群检测状态为：开启"
         await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}~\n输入“入群检测开”或“入群检测关”来更改功能开关")
     Data[str(event.group_id)] = write
-    Handler.load_json(f'{path}/add_group_switch.json','w',Data)
+    Handler.handle_json(f'{path}/add_group_switch.json', 'w', Data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"好~凌辉Bot已经{Temp}了本群的入群检测功能w~")
 
 handle_group = on_command("允许加群",aliases={"拒绝加群"},block=True)

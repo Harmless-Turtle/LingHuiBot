@@ -1,7 +1,7 @@
 # 标准库
 import asyncio,json,os,shutil,time,httpx,math,stat
 
-from .Handler import Handler
+import Handler
 # 第三方库
 from types import SimpleNamespace
 from nonebot import logger
@@ -210,17 +210,17 @@ async def Upload_Furry_handle(matcher:Matcher, event: MessageEvent,bot: Bot, gro
             'Group_id': f"{Group_Number}"
         }
         if os.path.exists(f'{Data_Path}/Upload_Data.json'):
-            UpLoad_List = Handler.load_json(f'{Data_Path}/Upload_Data.json', 'r')
+            UpLoad_List = Handler.handle_json(f'{Data_Path}/Upload_Data.json', 'r')
                 
         UpLoad_List.append(data)
-        Handler.load_json(f"{Data_Path}/Upload_Data.json", 'w',UpLoad_List)               
+        Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'w', UpLoad_List)
         Count = len(UpLoad_List)
         await bot.call_api("send_private_msg", message=f"有人投图，请审核\n当前共有{Count}张图片待审核", user_id='1097740481', time_noend=True)
         await matcher.finish(MessageSegment.reply(event.message_id)+f"您的投图请求已提交给凌辉Bot管理员并进入等待审核状态。")
 
 # 定义获取批量投图图片列表函数
 async def Get_Batch_Pic_List(User_QQ,bot):
-    pic_url = Handler.load_json(f"{opendata}/data/Furry_System/Upload/Batch/{User_QQ}/Upload.json",'r')
+    pic_url = Handler.handle_json(f"{opendata}/data/Furry_System/Upload/Batch/{User_QQ}/Upload.json", 'r')
     List = []
     logger.debug(f'debug message:{type(pic_url)}')
     for i in range(0,len(pic_url)):
@@ -245,7 +245,7 @@ async def Get_Upload_Mode(matcher:Matcher,event:MessageEvent,bot:Bot):
     if not os.path.exists(Temp_Path):
         os.makedirs(Temp_Path)
     if os.path.exists(f"{Temp_Path}/Upload.json"):
-        Data = Handler.load_json(f"{Temp_Path}/Upload.json",'r')
+        Data = Handler.handle_json(f"{Temp_Path}/Upload.json", 'r')
         Cycle_Count = len(Data)
         for i in Data:
             url_list.append(i)
@@ -275,7 +275,7 @@ async def Get_Upload_Mode(matcher:Matcher,event:MessageEvent,bot:Bot):
             else:
                 Count = 0
                 await matcher.finish(MessageSegment.reply(event.message_id)+"已退出批量投图。")
-    Handler.load_json(f"{Temp_Path}/Upload.json",'w',url_list)
+    Handler.handle_json(f"{Temp_Path}/Upload.json", 'w', url_list)
         
     List = await Get_Batch_Pic_List(event.user_id,Bot)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
@@ -289,7 +289,7 @@ async def Receive_Batch(matcher:Matcher,bot:Bot,event:MessageEvent):
     Temp_Path = f"{opendata}/data/Furry_System/Upload/Batch/{event.user_id}/Upload.json"
     if not os.path.exists(Temp_Path):
         await matcher.finish(MessageSegment.reply(event.message_id)+"遇到问题：未找到文件\n请检查是否已经批量投图图片。")
-    List = Handler.load_json(Temp_Path,'r')
+    List = Handler.handle_json(Temp_Path, 'r')
     Message = str(event.get_message())
     if "取消" in Message or "退出" in Message:
         await matcher.finish(MessageSegment.reply(event.message_id)+"已退出批量投图。")
@@ -338,11 +338,11 @@ async def Receive_Batch(matcher:Matcher,bot:Bot,event:MessageEvent):
     logger.info(data)
     del List[Pic_id]
     if len(List)+1 != 0:
-        Upload_Data = Handler.load_json(f"{Data_Path}/Upload_Data.json",'r')
+        Upload_Data = Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'r')
         Upload_Data.append(data)
-        Handler.load_json(Temp_Path,'w',List)
+        Handler.handle_json(Temp_Path, 'w', List)
         List = await Get_Batch_Pic_List(event.user_id,Bot)
-        Handler.load_json(f"{Data_Path}/Upload_Data.json",'w',Upload_Data)
+        Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'w', Upload_Data)
             
         logger.info(List)
         await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
@@ -562,7 +562,7 @@ async def FurryFusion_List_Function(matcher:Matcher, event: MessageEvent,bot: Bo
             file_stat = SimpleNamespace(st_mtime=0)
         if int(time.time()) - file_stat.st_mtime >= 86400:
             logger.warning(f"文件 image_{i+1}.png 似乎已过期或未生成，重新生成中。")
-            img = await Handler.furryfusion_picture_handle(image,i+1,text)
+            img = await Handler.furry_fusion_picture_handle(image, i + 1, text)
             logger.info(f"第{i+1}条兽聚信息已被处理。")
         make_text = await Handler.Batch_Get(text,img,User_QQ,nickname)
 
@@ -849,7 +849,7 @@ bilibili：{bilibili_name}，URL：{bilibili_url}
 @Handler.handle_errors
 async def CU_Function(matcher:Matcher, event: MessageEvent,bot: Bot):
     Data_List, List = [], []
-    Data_List = Handler.load_json(f"{Data_Path}/Upload_Data.json", 'r')
+    Data_List = Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'r')
     if Data_List == []:
         await matcher.finish(MessageSegment.reply(event.message_id)+"当前投图待审核列表是空的")
     Len = len(Data_List)
@@ -887,7 +887,7 @@ async def CUD_Function(matcher:Matcher, event: MessageEvent,bot: Bot, args: Mess
     args = args.split("#")
     Temp_args = args
     args = int(args[0])
-    List = Handler.load_json(f"{Data_Path}/Upload_Data.json", 'r')
+    List = Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'r')
     logger.info(List)
     logger.info(Temp_args)
     if args > len(List):
@@ -910,7 +910,7 @@ async def CUD_Function(matcher:Matcher, event: MessageEvent,bot: Bot, args: Mess
     del Data_Normal['Picturl_URL'], Data_Normal['Group_id'], Data_Normal['Upload_account'], Data_Normal['time']
     if "拒绝" in str(Data_Message):
         del List[args-1]
-        Handler.load_json(f"{Data_Path}/Upload_Data.json", 'w',List)
+        Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'w', List)
             
         Data_Message = str(Data_Message)
         if Data_Message.count("#") != 2:
@@ -952,7 +952,7 @@ async def CUD_Function(matcher:Matcher, event: MessageEvent,bot: Bot, args: Mess
 您的数字id：{id}
 您的图片码：{picture}"""
         del List[args-1]
-        Handler.load_json(f"{Data_Path}/Upload_Data.json", 'w',List)
+        Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'w', List)
         if event.group_id != Group_id:
             await bot.call_api("send_group_msg", group_id=Group_id, message=f"""凌辉Bot管理员已经同意了来自{account}的投图请求，请等待兽云祭管理员进行审核
 上载图片："""+MessageSegment.image(f"{Pic_URL}")+f"""数字id：{id}
@@ -963,7 +963,7 @@ async def CUD_Function(matcher:Matcher, event: MessageEvent,bot: Bot, args: Mess
 @Debugger_Upload.handle()
 async def Debugger(matcher:Matcher,event:MessageEvent):
     await matcher.send("调试器运行中...")
-    Data = Handler.load_json(f"{Data_Path}/Upload_Data.json", 'r')
+    Data = Handler.handle_json(f"{Data_Path}/Upload_Data.json", 'r')
     Dir_List = []
     for root, dirs, files in os.walk(f'{Data_Path}'):
         Dir_List.append(f'root={root}, dirs={dirs}, files={files}')

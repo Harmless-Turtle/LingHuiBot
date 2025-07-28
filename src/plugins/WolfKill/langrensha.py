@@ -66,7 +66,7 @@ async def _(matcher: Matcher, event: MessageEvent):
         "game_data": {},
         "max_players": num_players
     }
-    Handler.load_json(room_file, 'w', data)
+    Handler.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，未达到人数前无法开始游戏。\n通过“加入狼人杀”来加入游戏\n通过“开始狼人杀”可以开始游戏。\n通过“删除狼人杀房间”可以删除当前房间。")
@@ -82,7 +82,7 @@ async def _(matcher: Matcher, event: MessageEvent):
             "本群尚未创建狼人杀游戏房间，请先使用指令“创建狼人杀 <这里输入人数，支持5~12人游玩，默认5人>”创建房间"
         )
     
-    data = Handler.load_json(room_file,'r')
+    data = Handler.handle_json(room_file, 'r')
     if data['status'] != 'waiting':
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
@@ -102,7 +102,7 @@ async def _(matcher: Matcher, event: MessageEvent):
         )
     
     data['players'].append(event.user_id)
-    Handler.load_json(room_file, 'w', data)
+    Handler.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"您已成功加入狼人杀游戏，当前玩家数：{len(data['players'])}/{data['max_players']}\n由于QQ限制，您必须添加凌辉Bot为好友后才能发起私聊会话，无法发起群聊临时会话。"
@@ -119,7 +119,7 @@ async def _(matcher: Matcher, event: MessageEvent,bot:Bot):
             "本群尚未创建狼人杀游戏房间，请先使用指令创建房间"
         )
     
-    data = Handler.load_json(room_file,'r')
+    data = Handler.handle_json(room_file, 'r')
     if data['owner'] != event.user_id:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
@@ -140,7 +140,7 @@ async def _(matcher: Matcher, event: MessageEvent,bot:Bot):
     for i, player in enumerate(data['players']):
         data['game_data'][player] = assigned_roles[i]
         await bot.send_private_msg(user_id=int(player),message=f"您的角色是：{data['game_data'][player]}。请注意保密！")
-    Handler.load_json(room_file, 'w', data)
+    Handler.handle_json(room_file, 'w', data)
         
     for player in data['players']:
         try:
@@ -166,7 +166,7 @@ async def _(matcher: Matcher, event: MessageEvent):
             "本群尚未创建狼人杀游戏房间，请先使用指令创建房间"
         )
     
-    data = Handler.load_json(room_file,'r')
+    data = Handler.handle_json(room_file, 'r')
     if data['owner'] != event.user_id:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +

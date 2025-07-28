@@ -2,7 +2,7 @@ import ssl
 from h11 import Request
 from nonebot.plugin import on_command  # 导入事件响应器
 from nonebot.adapters import Message  # 导入抽象基类Message以允许Bot回复str
-from .Handler import Handler
+import Handler
 # 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
     MessageSegment,
@@ -43,7 +43,7 @@ async def MR_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
     # 若消息后存在其他消息则不响应
     if args.extract_plain_text():await matcher.finish()
     # 读取json数据
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     # 将自己的QQ号转为str格式，方便后续判断
     Self_QQ = str(event.user_id)
     group_id = str(event.group_id)
@@ -85,7 +85,7 @@ async def MR_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
             logger.info("已经达到了请求次数上限啦！本次跳过执行")
             if Switch:
                 Count_Json['switch'] = False
-                Handler.load_json(Marry_Count_Path,'w',Count_Json)
+                Handler.handle_json(Marry_Count_Path, 'w', Count_Json)
                 await matcher.finish(MessageSegment.reply(event.message_id)+"你已经结婚太多次了啦！第二天再结~\n（免打扰模式已开启，您在重置时间前只会看到此消息1次）")
             await matcher.finish()
     else:
@@ -114,7 +114,7 @@ async def MR_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
     Data[f"{Random_Select}"] = Random_Dict
     Data[f"{Self_QQ}"] = Master_Dict
     # 写入文件
-    Handler.load_json(Marry_Json_Path,'w',Data)
+    Handler.handle_json(Marry_Json_Path, 'w', Data)
     # 获取结束事件处理所必要的讯息
     stranger_info = await bot.get_stranger_info(user_id=Random_Select)
     nickname = stranger_info.get('nickname', '昵称获取失败')
@@ -136,7 +136,7 @@ async def FM_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
     Self_QQ = str(event.user_id)
     group_id = str(event.group_id)
     # 获取数据
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     self_data = Data.get(Self_QQ,False)
     # 异常处理
     if self_data and self_data.get(group_id) and self_data[group_id].get("cp_qq", 114514) == 114514:
@@ -155,7 +155,7 @@ async def FM_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
     # 直接删除用户和用户对象json
     del Data[Self_QQ][group_id]["cp_qq"],Data[cp_qq][group_id]["cp_qq"]
     # 将处理完的Data写入文件
-    Handler.load_json(Marry_Json_Path,'w',Data)
+    Handler.handle_json(Marry_Json_Path, 'w', Data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"你已经和你的群友对象“{nickname}”[{cp_qq}]离婚了呢www\n在一起的时间：{Time_Text}")
 
 @Marry_Propose.handle()
@@ -181,7 +181,7 @@ async def MP_Function(matcher:Matcher,event:MessageEvent,bot:Bot):
         await matcher.finish(MessageSegment.reply(event.message_id)+"凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
     if "CQ" not in Temp and "求婚" in Temp:
         await matcher.finish()
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     if Data.get(user_id,False) and Data[user_id].get(group_id,False) and Data[user_id][group_id].get("cp_qq",False):
         Text = "凌辉Bot小声提醒您：您请求的用户似乎已经有对象了awa"
         if Data[user_id][group_id].get("Request",False) != 0:
@@ -219,7 +219,7 @@ async def MP_Function(matcher:Matcher,event:MessageEvent,bot:Bot):
     # 更新当前群组数据
     self_data[group_id] = Self_Dict
     request_data[group_id] = Request_Dict
-    Handler.load_json(Marry_Json_Path,'w',Data)
+    Handler.handle_json(Marry_Json_Path, 'w', Data)
     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
     nickname = stranger_info.get('nickname', '昵称获取失败')
     await matcher.finish(MessageSegment.reply(event.message_id)+f"好嗷~你已经向“{nickname}”求婚了哦^_~\n{nickname}[{int(user_id)}]可以通过“同意求婚”或“拒绝求婚”同意或者拒绝求婚请求w")
@@ -229,7 +229,7 @@ async def MP_Function(matcher:Matcher,event:MessageEvent,bot:Bot):
 async def MS_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
     Text,Self_QQ,group_id = str(event.get_message()),str(event.user_id),str(event.group_id)
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     if Data.get(Self_QQ,{}).get(group_id,{}).get("Request",0) == 0:
         await matcher.finish(MessageSegment.reply(event.message_id)+"你似乎没有被求婚或正在向他人求婚呢owo")
     if Data.get(Self_QQ).get(group_id).get('cp_qq',0) != 114514 and Data.get(Self_QQ).get(group_id).get('cp_qq',0) != 0:
@@ -243,7 +243,7 @@ async def MS_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
             if Mode != 1:
                 await matcher.finish(MessageSegment.reply(event.message_id)+"这个命令不是你用的吧owo")
         del Data[Self_QQ][group_id]["cp_qq"],Data[Self_QQ][group_id]["Request"],Data[Self_QQ][group_id]["Request_Mode"],Data[str(Request)][group_id]["cp_qq"],Data[str(Request)][group_id]["Request"],Data[str(Request)][group_id]["Request_Mode"]
-        Handler.load_json(Marry_Json_Path,'w',Data)
+        Handler.handle_json(Marry_Json_Path, 'w', Data)
         Temp = "拒绝"
         Temp_1 = ""
         if "取消" in Text:
@@ -278,14 +278,14 @@ async def MS_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
     # 更新当前群组数据
     self_data[group_id] = Self_Dict
     request_data[group_id] = Request_Dict
-    Handler.load_json(Marry_Json_Path,'w',Data)
+    Handler.handle_json(Marry_Json_Path, 'w', Data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"好哦好哦~（拍爪子）你已经同意“{nickname}”的求婚请求了哦~")
 
 @Marry_Time_Check.handle()
 @Handler.handle_errors
 async def MTC_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     Self_QQ,group_id = str(event.user_id),str(event.group_id)
     if Data.get(Self_QQ) and Data[Self_QQ].get(group_id) and Data[Self_QQ][group_id].get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id)+"你似乎还没有对象吧xwx")
@@ -299,7 +299,7 @@ async def MTC_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message =
 @Handler.handle_errors
 async def MC_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = CommandArg()):
     # 读取前置数据
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     Self_QQ,group_id,user_id = str(event.user_id),str(event.group_id),0
     # 获取at值
     Text = event.get_message()
@@ -339,7 +339,7 @@ async def MC_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = 
 async def MarrySwitchHandler(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
     # 读取前置数据
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     Self_QQ = str(event.user_id)
     group_id = str(event.group_id)
     Count,Switch = 0,True
@@ -353,7 +353,7 @@ async def MarrySwitchHandler(matcher:Matcher,event:MessageEvent,bot:Bot,args:Mes
     # 若消息后存在其他消息则不响应
     if args.extract_plain_text():await matcher.finish()
     # 读取json数据
-    Data = Handler.load_json(Marry_Json_Path,'r')
+    Data = Handler.handle_json(Marry_Json_Path, 'r')
     # 将自己的QQ号转为str格式，方便后续判断
     Self_QQ = str(event.user_id)
     group_id = str(event.group_id)
@@ -383,7 +383,7 @@ async def MarrySwitchHandler(matcher:Matcher,event:MessageEvent,bot:Bot,args:Mes
             if Switch:
                 Count_Json['switch'] = False
                 logger.info(f"写入数据：{Count_Json}")
-                Handler.load_json(Marry_Json_Path,'w',Count_Json)
+                Handler.handle_json(Marry_Json_Path, 'w', Count_Json)
                 await matcher.finish(MessageSegment.reply(event.message_id)+"你已经结婚太多次了啦！第二天再结~\n（免打扰模式已开启，您在重置时间前只会看到此消息1次）")
             await matcher.finish()
     else:
@@ -412,7 +412,7 @@ async def MarrySwitchHandler(matcher:Matcher,event:MessageEvent,bot:Bot,args:Mes
     Data[f"{Random_Select}"] = Random_Dict
     Data[f"{Self_QQ}"] = Master_Dict
     # 写入文件
-    Handler.load_json(Marry_Json_Path,'w',Data)
+    Handler.handle_json(Marry_Json_Path, 'w', Data)
     # 获取结束事件处理所必要的讯息
     stranger_info = await bot.get_stranger_info(user_id=Random_Select)
     nickname = stranger_info.get('nickname', '昵称获取失败')
