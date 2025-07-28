@@ -21,7 +21,7 @@ from nonebot.rule import Rule
 from nonebot.log import logger
 from nonebot.matcher import Matcher
 
-from src.plugins import Handler
+from src.plugins import utils
 
 # 本地模块导入
 
@@ -74,18 +74,18 @@ class SensitiveManager:
         self.load_data()
         self.build_all_ac()
 
-        self.group_settings = Handler.handle_json(GROUP_SETTINGS_PATH, 'r') or {}
+        self.group_settings = utils.handle_json(GROUP_SETTINGS_PATH, 'r') or {}
         # 直接加载新格式的违规记录
-        self.group_violations = Handler.handle_json(USER_VIOLATIONS_PATH, 'r') or {}
+        self.group_violations = utils.handle_json(USER_VIOLATIONS_PATH, 'r') or {}
         
         # 初始化时遍历所有群组构建 AC 自动机
         self.build_all_ac()
 
-        self.group_settings = Handler.handle_json(GROUP_SETTINGS_PATH, 'r') or {}
-        self.user_violations = Handler.handle_json(USER_VIOLATIONS_PATH, 'r') or {}
+        self.group_settings = utils.handle_json(GROUP_SETTINGS_PATH, 'r') or {}
+        self.user_violations = utils.handle_json(USER_VIOLATIONS_PATH, 'r') or {}
 
     def load_data(self):
-        data = Handler.handle_json(SENSITIVE_DATA_PATH, 'r') or {}
+        data = utils.handle_json(SENSITIVE_DATA_PATH, 'r') or {}
         self.sensitive_words = {}
         for group_id, content in data.items():
             if isinstance(content, list):
@@ -214,13 +214,13 @@ async def handle_check(matcher:Matcher,bot: Bot, event: GroupMessageEvent):
                     if group_id in manager.group_violations and user_id in manager.group_violations[group_id]:
                         del manager.group_violations[group_id][user_id]
                     manager.build_ac(group_id)  # 重建当前群的AC自动机
-                    Handler.handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
+                    utils.handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
                     await matcher.finish(MessageSegment.reply(event.message_id)+f"检测到敏感词，并且已经累计9次违规，将踢出该群员")
         except Exception as e:
             logger.error(f"执行惩罚时出错：{e}")
     
     # 保存记录
-    Handler.handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
+    utils.handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
     if not action_taken:
         await matcher.finish(MessageSegment.reply(event.message_id)+f"检测到敏感词，请文明发言！（累计违规次数：{violations['count']}）")
 
@@ -264,7 +264,7 @@ async def handle_add(event: GroupMessageEvent, args: Message = CommandArg()):
         } 
         for gid, values in manager.sensitive_words.items()
     }
-    Handler.handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
+    utils.handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
     
     # 重建当前群的AC自动机 - 确保立即生效
     manager.build_ac(group_id)
@@ -308,7 +308,7 @@ async def handle_del(event: GroupMessageEvent, args: Message = CommandArg()):
         }
         for gid, words in manager.sensitive_words.items()
     }
-    Handler.handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
+    utils.handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
     
     await cmd_del.finish(MessageSegment.reply(event.message_id) + f"已删除敏感词：{word}")
 
@@ -344,5 +344,5 @@ async def handle_toggle(bot: Bot, event: GroupMessageEvent, args: Message = Comm
         current_status = "开启" if manager.group_settings.get(group_id, False) else "关闭"
         await cmd_group.finish(MessageSegment.reply(event.message_id)+f"参数错误！当前状态：{current_status}\n请使用【开启】或【关闭】")
 
-    Handler.handle_json(GROUP_SETTINGS_PATH, 'w', manager.group_settings)
+    utils.handle_json(GROUP_SETTINGS_PATH, 'w', manager.group_settings)
     await cmd_group.finish(MessageSegment.reply(event.message_id)+msg)

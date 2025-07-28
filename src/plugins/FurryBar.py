@@ -9,7 +9,7 @@ from nonebot.adapters.onebot.v11 import (
     Message,
     Bot
 )
-import Handler
+import utils
 from nonebot.rule import to_me
 from nonebot_plugin_alconna.uniseg import UniMsg, At, Reply
 from nonebot.params import CommandArg
@@ -41,7 +41,7 @@ Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"
 # Model_Path = opendata / "data/Furry_System/FurryBar/model.json"
 
 @FurryBar.handle()
-@Handler.handle_errors
+@utils.handle_errors
 async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Reply:GroupMessageEvent):
     # await FurryBar.finish(MessageSegment.reply(event.message_id)+"该功能正在维护，暂停提供服务")
     logger.info("FB")
@@ -54,17 +54,17 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
     if not os.path.exists(Dict):
         os.mkdir(Dict)
     if not os.path.exists(Main_Path):
-        Temp_Dict = Handler.handle_json(Normal_Path, 'r')
-        Handler.handle_json(Main_Path, 'w', Temp_Dict)
-        Handler.handle_json(Normal_Dict_Temp, 'w', Temp_Dict)
+        Temp_Dict = utils.handle_json(Normal_Path, 'r')
+        utils.handle_json(Main_Path, 'w', Temp_Dict)
+        utils.handle_json(Normal_Dict_Temp, 'w', Temp_Dict)
     url = "http://fb-ai.furrybar.com:3000/v1/chat/completions"
     Model_Path = opendata / f"data/Furry_System/FurryBar/{User}/model.json"
     model = {"model":'deepseek-reasoner'}
-    List = Handler.handle_json(Main_Path, 'r', None)
+    List = utils.handle_json(Main_Path, 'r', None)
     if os.path.exists(Model_Path):
-        model = Handler.handle_json(Model_Path, 'r', None)
+        model = utils.handle_json(Model_Path, 'r', None)
     else:
-        Handler.handle_json(Model_Path, 'w', model)
+        utils.handle_json(Model_Path, 'w', model)
         await matcher.send("未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息")
     model = model['model']
     simplified_text = zhconv.convert(content, 'zh-hans')
@@ -100,8 +100,8 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
             Error_Text = Json['error']['message']
             if "模型繁忙" in str(Error_Text):
                 await FurryBar.finish(MessageSegment.reply(event.message_id)+"遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。")
-            Normal_Data = Handler.handle_json(Normal_Path, 'r', None)
-            Handler.handle_json(Main_Path, 'w', Normal_Data)
+            Normal_Data = utils.handle_json(Normal_Path, 'r', None)
+            utils.handle_json(Main_Path, 'w', Normal_Data)
             await FurryBar.finish(MessageSegment.reply(event.message_id)+f"""遇到问题：{Error_Text}\n凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题""")
         logger.info(Json)
         Text = Json['choices'][0]['message']['content']
@@ -112,7 +112,7 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
             "content": Text
         }
         List.append(Assistant_Dict)
-        Handler.handle_json(Main_Path, 'w', List)
+        utils.handle_json(Main_Path, 'w', List)
         logger.success("Debug:处理完成，最终输出："+Text)
         await FurryBar.finish(MessageSegment.reply(event.message_id)+Text)
 
@@ -122,7 +122,7 @@ async def Reset_Function(event: MessageEvent):
     User = event.user_id
     Main_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}.json"
     Normal_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}_Normal.json"
-    Handler.handle_json(Main_Path, 'w', Handler.handle_json(Normal_Path, 'r'))
+    utils.handle_json(Main_Path, 'w', utils.handle_json(Normal_Path, 'r'))
     await Reset_FurryBar.finish(MessageSegment.reply(event.message_id)+"已重置聊天记录。")
 
 @change_config.handle()
@@ -137,7 +137,7 @@ async def change_config_Function(event:MessageEvent,args:Message = CommandArg())
     Main_Path_Temp = opendata / f"data/Furry_System/FurryBar/{User}"
     if not os.path.exists(Main_Path_Temp):
         os.mkdir(Main_Path_Temp)
-    Normal_Dict = Handler.handle_json(Normal_Path, 'r')
+    Normal_Dict = utils.handle_json(Normal_Path, 'r')
     for i in range(0,len(Normal_Dict)-1):
         if Normal_Dict[i].get("你知道我是谁吗") != None:
             del Normal_Dict[i],Normal_Dict[i+1]
@@ -150,7 +150,7 @@ async def change_config_Function(event:MessageEvent,args:Message = CommandArg())
         }
     Normal_Dict.append(Temp_Dict_1)
     Normal_Dict.append(Temp_Dict_2)
-    Handler.handle_json(Main_Path, 'w', Normal_Dict)
+    utils.handle_json(Main_Path, 'w', Normal_Dict)
     Temp = Temp_Dict_2['content']
     await change_config.finish(MessageSegment.reply(event.message_id)+f"已记录个人设定，内容如下：\nUser：你知道我是谁吗\nAssistant：{Temp}\n注：如需改动立即生效，请发送“重置模型”命令")
     
@@ -170,7 +170,7 @@ async def Latest_Talk(matcher:Matcher,event:MessageEvent):
     Path = f"{opendata}/data/Furry_System/FurryBar/{User}/{User}.json"
     if not os.path.exists(Path):
         await matcher.finish(MessageSegment.reply(event.message_id)+"未找到聊天记录")
-    Text = Handler.handle_json(f"{opendata}/data/Furry_System/FurryBar/{User}/{User}.json", 'r')
+    Text = utils.handle_json(f"{opendata}/data/Furry_System/FurryBar/{User}/{User}.json", 'r')
     if Text[-1]['role'] == 'system':
         await matcher.finish(MessageSegment.reply(event.message_id)+"未找到聊天记录")
     User = Text[-2]['content']

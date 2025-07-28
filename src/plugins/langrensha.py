@@ -1,7 +1,7 @@
 from argparse import Action
 from email.errors import MessageError
 from nonebot.matcher import Matcher
-import Handler
+import utils
 import random as rd
 from pathlib import Path
 from nonebot.exception import ActionFailed
@@ -56,7 +56,7 @@ async def _(matcher: Matcher, event: MessageEvent):
         "game_data": {},
         "max_players": num_players
     }
-    Handler.handle_json(room_file, 'w', data)
+    utils.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，未达到人数前无法开始游戏。")
@@ -72,7 +72,7 @@ async def _(matcher: Matcher, event: MessageEvent):
             "本群尚未创建狼人杀游戏房间，请先使用指令“创建狼人杀 <这里输入人数，支持5~12人游玩，默认5人>”创建房间"
         )
     
-    data = Handler.handle_json(room_file, 'r')
+    data = utils.handle_json(room_file, 'r')
     if data['status'] != 'waiting':
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
@@ -92,7 +92,7 @@ async def _(matcher: Matcher, event: MessageEvent):
         )
     
     data['players'].append(event.user_id)
-    Handler.handle_json(room_file, 'w', data)
+    utils.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"您已成功加入狼人杀游戏，当前玩家数：{len(data['players'])}/{data['max_players']}"
@@ -109,7 +109,7 @@ async def _(matcher: Matcher, event: MessageEvent):
             "本群尚未创建狼人杀游戏房间，请先使用指令创建房间"
         )
     
-    data = Handler.handle_json(room_file, 'r')
+    data = utils.handle_json(room_file, 'r')
     if data['owner'] != event.user_id:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
@@ -130,7 +130,7 @@ async def _(matcher: Matcher, event: MessageEvent):
     for i, player in enumerate(data['players']):
         data['game_data'][player] = assigned_roles[i]
     
-    Handler.handle_json(room_file, 'w', data)
+    utils.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         "游戏已开始！各位玩家请查看自己的角色"

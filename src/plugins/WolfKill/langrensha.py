@@ -1,5 +1,5 @@
 from nonebot.matcher import Matcher
-from ..Handler import Handler
+from src.plugins import utils
 import random as rd
 from pathlib import Path
 from nonebot.exception import ActionFailed
@@ -66,7 +66,7 @@ async def _(matcher: Matcher, event: MessageEvent):
         "game_data": {},
         "max_players": num_players
     }
-    Handler.handle_json(room_file, 'w', data)
+    utils.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，未达到人数前无法开始游戏。\n通过“加入狼人杀”来加入游戏\n通过“开始狼人杀”可以开始游戏。\n通过“删除狼人杀房间”可以删除当前房间。")
@@ -81,28 +81,28 @@ async def _(matcher: Matcher, event: MessageEvent):
             MessageSegment.reply(event.message_id) +
             "本群尚未创建狼人杀游戏房间，请先使用指令“创建狼人杀 <这里输入人数，支持5~12人游玩，默认5人>”创建房间"
         )
-    
-    data = Handler.handle_json(room_file, 'r')
+
+    data = utils.handle_json(room_file, 'r')
     if data['status'] != 'waiting':
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             "当前游戏已开始，无法加入新玩家"
         )
-    
+
     if event.user_id in data['players']:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             "您已经在游戏中"
         )
-    
+
     if len(data['players']) >= data['max_players']:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             f"当前游戏已满员（{data['max_players']}人），无法加入"
         )
-    
+
     data['players'].append(event.user_id)
-    Handler.handle_json(room_file, 'w', data)
+    utils.handle_json(room_file, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"您已成功加入狼人杀游戏，当前玩家数：{len(data['players'])}/{data['max_players']}\n由于QQ限制，您必须添加凌辉Bot为好友后才能发起私聊会话，无法发起群聊临时会话。"
@@ -118,34 +118,34 @@ async def _(matcher: Matcher, event: MessageEvent,bot:Bot):
             MessageSegment.reply(event.message_id) +
             "本群尚未创建狼人杀游戏房间，请先使用指令创建房间"
         )
-    
-    data = Handler.handle_json(room_file, 'r')
+
+    data = utils.handle_json(room_file, 'r')
     if data['owner'] != event.user_id:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             "只有房主才能开始游戏"
         )
-    
+
     if len(data['players']) < min_players:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             f"当前玩家人数不足{min_players}人，无法开始游戏"
         )
-    
+
     # 游戏开始逻辑
     data['status'] = 'playing'
     roles = ['狼人', '村民', '预言家', '女巫', '猎人']
     assigned_roles = rd.sample(roles * (len(data['players']) // len(roles) + 1), len(data['players']))
-    
+
     for i, player in enumerate(data['players']):
         data['game_data'][player] = assigned_roles[i]
         await bot.send_private_msg(user_id=int(player),message=f"您的角色是：{data['game_data'][player]}。请注意保密！")
-    Handler.handle_json(room_file, 'w', data)
-        
+    utils.handle_json(room_file, 'w', data)
+
     for player in data['players']:
         try:
             logger.info(player)
-            
+
         except:
             os.remove(room_file)
             await matcher.finish(
@@ -165,14 +165,14 @@ async def _(matcher: Matcher, event: MessageEvent):
             MessageSegment.reply(event.message_id) +
             "本群尚未创建狼人杀游戏房间，请先使用指令创建房间"
         )
-    
-    data = Handler.handle_json(room_file, 'r')
+
+    data = utils.handle_json(room_file, 'r')
     if data['owner'] != event.user_id:
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             "只有房主才能删除游戏房间"
         )
-    
+
     os.remove(room_file)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
