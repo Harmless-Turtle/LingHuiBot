@@ -1,7 +1,7 @@
 import nonebot
 from nonebot.adapters.onebot.v11 import Adapter
 
-nonebot.init(dotenv_path=".env.dev")
+nonebot.init(dotenv_path=".env")
 
 # 注册适配器
 driver = nonebot.get_driver()

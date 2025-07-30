@@ -2,7 +2,7 @@ import ssl
 from h11 import Request
 from nonebot.plugin import on_command  # 导入事件响应器
 from nonebot.adapters import Message  # 导入抽象基类Message以允许Bot回复str
-import utils
+from src.plugins import utils
 # 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
     MessageSegment,

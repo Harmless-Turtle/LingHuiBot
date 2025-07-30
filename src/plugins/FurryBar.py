@@ -9,7 +9,7 @@ from nonebot.adapters.onebot.v11 import (
     Message,
     Bot
 )
-import utils
+from src.plugins import utils
 from nonebot.rule import to_me
 from nonebot_plugin_alconna.uniseg import UniMsg, At, Reply
 from nonebot.params import CommandArg
@@ -34,7 +34,6 @@ try:
 except:
     logger.error("请在配置文件中设置furry_token！")
     logger.error("拒绝加载FurryBar.py！")
-    raise RuntimeError("被拒绝加载！")
 
 opendata = Path.cwd()
 Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"

@@ -17,7 +17,7 @@ from nonebot.adapters.onebot.v11 import (
     Bot,
     )
 from nonebot.matcher import Matcher
-import utils
+from src.plugins import utils
 from nonebot.rule import to_me,is_type,Rule
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER

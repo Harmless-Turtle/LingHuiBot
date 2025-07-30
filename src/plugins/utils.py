@@ -1,3 +1,5 @@
+import io
+
 from nonebot.matcher import Matcher
 from nonebot.adapters.onebot.v11 import (
     MessageSegment,
@@ -7,7 +9,7 @@ from nonebot.adapters.onebot.v11 import (
 from functools import wraps
 from nonebot.exception import MatcherException
 import time, traceback, os, json, httpx, httpcore
-from nonebot import logger
+from nonebot import logger, get_driver
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timedelta
@@ -50,6 +52,7 @@ def handle_errors(func):
             )
 
             # 追加到工作目录的 ERROR_DIR/error.log
+            ERROR_DIR.mkdir(parents=True, exist_ok=True)
             with open(ERROR_DIR / "error.log", 'a', encoding='utf-8') as filestream:
                 filestream.write(error_msg)
             logger.error(error_msg)
@@ -58,6 +61,12 @@ def handle_errors(func):
             font = ImageFont.truetype(FONT_PATH, size=30) if FONT_PATH.exists() else ImageFont.load_default()
             text_lines = [line for line in error_msg.split('\n') if line.strip() != '']
             error_image = generate_text_image(text_lines, font)
+
+            # 将错误图片保存到内存中以便发送
+            buffer_image = io.BytesIO()
+            error_image.save(buffer_image,format="PNG")
+            buffer_image.seek(0)
+
             error_image.save(ERROR_DIR / f"error_{times("%Y%m%d%H%M%S")}.png", format="PNG")
 
             # 从参数中查找 matcher 和 event 用于构建用户回复
@@ -65,14 +74,14 @@ def handle_errors(func):
             event = next((x for x in args if isinstance(x, MessageEvent)), kwargs.get("event"))
 
             # 生成错误响应并发送给用户
-            error_response = create_error_reply(error, event, error_image)
+            error_response = create_error_reply(error, event, buffer_image)
             await matcher.finish(error_response)
 
     return wrapper
 
 
 # 根据异常类型生成对应的错误回复消息
-def create_error_reply(error: Exception, event, error_image) -> Optional[Message]:
+def create_error_reply(error: Exception, event, error_image:BytesIO) -> Optional[Message]:
     """
     根据异常类型生成用户友好的错误响应消息。
 
@@ -85,7 +94,10 @@ def create_error_reply(error: Exception, event, error_image) -> Optional[Message
         构建的错误响应消息，如果无法构建则返回None
     """
     # 获取消息 ID 上下文
-    reply_part = (MessageSegment.reply(event.message_id))
+    if hasattr(event, "message_id"):
+        reply_part = MessageSegment.reply(event.message_id)
+    else:
+        reply_part = MessageSegment.text("")  # 或者直接空，不加回复引用
 
     # 根据异常类型构建不同的响应消息
     if isinstance(error, httpx.ReadTimeout):
@@ -99,6 +111,7 @@ def create_error_reply(error: Exception, event, error_image) -> Optional[Message
 
 
 # 根据多行文本和字体生成一张自动排版的图片
+# TODO: 需要重构，有乱码问题，格式欠佳
 def generate_text_image(lines, font):
     padding = 20  # 增加边距
     line_height = 0
@@ -145,7 +158,7 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict] = None) -> dict
 
     Args:
         json_path (Path): JSON 文件的路径。
-        mode (str): open 函数的操作模式。'r' 表示读取，'w' 表示覆盖写入。
+        mode (Literal["r", "w"]): 操作模式。'r' 表示读取，'w' 表示覆盖写入。
         data (Optional[dict]): 要写入的 JSON 数据，仅在 mode 为 'w' 时填写。
 
     Raises:
@@ -155,27 +168,27 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict] = None) -> dict
     Returns:
         dict | None: 读取时返回 JSON 数据（字典），写入成功时返回 None。
     """
-    if mode == "r":
-        try:
-            with open(json_path, mode, encoding='utf-8') as fp:
-                return json.load(fp)
-        except FileNotFoundError as e:
-            logger.exception(f"未找到指定的 JSON 文件: {json_path}")
-            raise FileNotFoundError(f"未找到指定的 JSON 文件: {json_path}") from e
-        except json.JSONDecodeError as e:
-            logger.exception(f"JSON 解码失败: {e}")
-            raise ValueError(f"JSON 解码失败: {e}") from e
-    elif mode == "w":
-        if data is None:
-            logger.exception(f"未找到应写入的 data！")
-            raise ValueError("未找到应写入的 data！")
-        with open(json_path, mode, encoding='utf-8') as fp:
-            json.dump(data, fp, ensure_ascii=False, indent=4)
+    try:
+        if mode == "r":
+            content = json_path.read_text(encoding="utf-8")
+            return json.loads(content)
+        elif mode == "w":
+            if data is None:
+                raise ValueError("未找到应写入的 data！")
+            content = json.dumps(data, ensure_ascii=False, indent=4)
+            json_path.write_text(content, encoding="utf-8")
             return None
-    else:
-        logger.error(f"非法的 mode 参数: {mode}")
-        raise ValueError(f"非法的 mode 参数: {mode}")
-
+        else:
+            raise ValueError(f"非法的 mode 参数: {mode}")
+    except FileNotFoundError as e:
+        logger.exception(f"未找到 JSON 文件: {json_path}")
+        raise FileNotFoundError(f"未找到 JSON 文件: {json_path}") from e
+    except json.JSONDecodeError as e:
+        logger.exception(f"JSON 解码失败: {e}")
+        raise ValueError(f"JSON 解码失败: {e}") from e
+    except Exception as e:
+        logger.exception(f"处理 JSON 文件时发生未知错误: {e}")
+        raise
 
 # 批量转发内容构建函数
 async def batch_get(text: str, picture: Optional[str], qq: int, name: str) -> MessageSegment:
@@ -298,3 +311,18 @@ async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str
     img_resized.save(output_path, format="PNG")
     return os.path.abspath(output_path)
     # --------
+
+
+# 配置项读取函数
+def get_config_item(key: str, default=None, required=False, desc=None):
+    config = get_driver().config
+    try:
+        value = getattr(config, key)
+        if value:
+            return value
+    except AttributeError:
+        pass
+    if required:
+        logger.warning(f"[Furry模块] 缺少必要配置项: {key} ，{desc or ''}")
+    return default
+
