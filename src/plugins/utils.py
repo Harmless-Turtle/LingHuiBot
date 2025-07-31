@@ -55,49 +55,45 @@ def handle_errors(func):
             ERROR_DIR.mkdir(parents=True, exist_ok=True)
             with open(ERROR_DIR / "error.log", 'a', encoding='utf-8') as filestream:
                 filestream.write(error_msg)
-            logger.error(error_msg)
 
             # 按时间戳生成并保存报错图片到 logs/error_****.png
             font = ImageFont.truetype(FONT_PATH, size=30) if FONT_PATH.exists() else ImageFont.load_default()
             text_lines = [line for line in error_msg.split('\n') if line.strip() != '']
             error_image = generate_text_image(text_lines, font)
-
-            # 将错误图片保存到内存中以便发送
-            buffer_image = io.BytesIO()
-            error_image.save(buffer_image,format="PNG")
-            buffer_image.seek(0)
-
             error_image.save(ERROR_DIR / f"error_{times("%Y%m%d%H%M%S")}.png", format="PNG")
 
-            # 从参数中查找 matcher 和 event 用于构建用户回复
-            matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
+            # 如果事件是消息类型，则回复用户错误图片和消息
             event = next((x for x in args if isinstance(x, MessageEvent)), kwargs.get("event"))
+            matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
 
-            # 生成错误响应并发送给用户
-            error_response = create_error_reply(error, event, buffer_image)
-            await matcher.finish(error_response)
+            if isinstance(event, MessageEvent) and matcher:
+                buffer_image = io.BytesIO()
+                error_image.save(buffer_image, format="PNG")
+                buffer_image.seek(0)
+                error_response = create_error_reply(error, event, buffer_image)
+                await matcher.finish(error_response)
+            else:
+                logger.warning(
+                    f"{__name__}捕获到错误，但由于被装饰的函数没有正确注入 matcher 或 event 实例，无法告知用户")
 
     return wrapper
 
 
 # 根据异常类型生成对应的错误回复消息
-def create_error_reply(error: Exception, event, error_image:BytesIO) -> Optional[Message]:
+def create_error_reply(error: Exception, event: MessageEvent, buffer_image: BytesIO) -> Optional[Message]:
     """
     根据异常类型生成用户友好的错误响应消息。
 
     Args:
         error: 捕获的异常对象
-        error_image: 传入报错图片，用于回复用户
+        buffer_image: 传入报错图片，用于回复用户
         event: 事件对象，用于构建回复引用
 
     Returns:
         构建的错误响应消息，如果无法构建则返回None
     """
     # 获取消息 ID 上下文
-    if hasattr(event, "message_id"):
-        reply_part = MessageSegment.reply(event.message_id)
-    else:
-        reply_part = MessageSegment.text("")  # 或者直接空，不加回复引用
+    reply_part = (MessageSegment.reply(event.message_id))
 
     # 根据异常类型构建不同的响应消息
     if isinstance(error, httpx.ReadTimeout):
@@ -107,7 +103,7 @@ def create_error_reply(error: Exception, event, error_image:BytesIO) -> Optional
 
     # 默认错误消息
     return (reply_part + "没有正确处理请求呢qwq...请联系管理员[1097740481]协助解决哦"
-            + MessageSegment.image(error_image))
+            + MessageSegment.image(buffer_image))
 
 
 # 根据多行文本和字体生成一张自动排版的图片
@@ -189,6 +185,7 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict] = None) -> dict
     except Exception as e:
         logger.exception(f"处理 JSON 文件时发生未知错误: {e}")
         raise
+
 
 # 批量转发内容构建函数
 async def batch_get(text: str, picture: Optional[str], qq: int, name: str) -> MessageSegment:
@@ -325,4 +322,3 @@ def get_config_item(key: str, default=None, required=False, desc=None):
     if required:
         logger.warning(f"[Furry模块] 缺少必要配置项: {key} ，{desc or ''}")
     return default
-
