@@ -1,89 +1,80 @@
 import io
 from pathlib import Path
+
 from PIL import Image
-from nonebot.plugin import on_command,on_message  # 导入事件响应器
-from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent  # 导入事件响应器以进行操作
-from nonebot import require
+from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent
+from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot.rule import to_me
-require("nonebot_plugin_htmlrender")
+from nonebot.plugin import on_command
 from nonebot_plugin_htmlrender import md_to_pic
 
-
 menu = on_command("菜单", aliases={"凌辉菜单"}, priority=100, block=True)
-main_Menu = on_command("菜单01", aliases={"基本菜单"}, priority=99, block=True)
-furry_Menu = on_command("菜单02", aliases={"Furry菜单", "furry菜单"}, priority=99, block=True)
-marry_Menu = on_command("菜单03", aliases={"结婚菜单"}, priority=99, block=True)
-service_Menu = on_command("服务条款", aliases={"用户协议"}, block=True)
-at_menu = on_message(rule=to_me(), priority=1, block=False)
+main_menu = on_command("菜单01", aliases={"基本菜单"}, priority=99, block=True)
+furry_menu = on_command("菜单02", aliases={"Furry菜单", "furry菜单"}, priority=99, block=True)
+marry_menu = on_command("菜单03", aliases={"结婚菜单"}, priority=99, block=True)
+service_menu = on_command("服务条款", aliases={"用户协议"}, block=True)
 
 WORK_DATA = Path()
-All_MENU_MARKDOWN = str(WORK_DATA / 'data' / 'Menu' / 'All_Menu.md')
-FURRY_MENU_MARKDOWN = str(WORK_DATA / 'Markdown' / 'Furry_System.md')
-MAIN_MENU_MARKDOWN = str(WORK_DATA / 'Markdown' / 'Main_System.md')
-SERVICE_MENU_MARKDOWN = str(WORK_DATA / 'Markdown' / 'User_Agreement.md')
-MARRY_MENU_MARKDOWN = str(WORK_DATA / 'data' / 'Menu' / 'Marry_Menu.md')
+ALL_MENU_MD = WORK_DATA / 'Markdown' / 'All_Menu.md'
+FURRY_MENU_MD = WORK_DATA / 'Markdown' / 'Furry_System.md'
+MAIN_MENU_MD = WORK_DATA / 'Markdown' / 'Main_System.md'
+SERVICE_MENU_MD = WORK_DATA / 'Markdown' / 'User_Agreement.md'
+MARRY_MENU_MD = WORK_DATA / 'Markdown' / 'Marry_Menu.md'
+
+ALL_MENU_PIC_DATA = WORK_DATA / 'data' / 'Menu' / 'All_Menu.png'
+FURRY_MENU_PIC_DATA = WORK_DATA / 'data' / 'Menu' / 'Furry_Menu.png'
+MAIN_MENU_PIC_DATA = WORK_DATA / 'data' / 'Menu' / 'Main_Menu.png'
+SERVICE_MENU_PIC_DATA = WORK_DATA / 'data' / 'Menu' / 'Service_Menu.png'
+MARRY_MENU_PIC_DATA = WORK_DATA / 'data' / 'Menu' / 'Marry_Menu.png'
+
 
 @menu.handle()
-async def menu_func(event:MessageEvent, args:Message = CommandArg()):
-    if args.extract_plain_text():
-        await menu.finish()    # 若消息后面存在文本则不响应
-    pic = await md_to_pic(md_path=All_MENU_MARKDOWN, width=900)
-    a = Image.open(io.BytesIO(pic))
-    a.save("md2pic.png", format="PNG")
-
-    await menu.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic))
+async def menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+    await handle_menu_command(matcher, event, ALL_MENU_MD, ALL_MENU_PIC_DATA, args)
 
 
-@at_menu.handle()
-async def at_menu_func(event: MessageEvent):
-    if event.get_message().extract_plain_text() != "":
-        await at_menu.finish()
+@main_menu.handle()
+async def main_menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+    await handle_menu_command(matcher, event, MAIN_MENU_MD, MAIN_MENU_PIC_DATA, args)
 
-    # 直接生成并发送图片
-    pic = await md_to_pic(md_path=All_MENU_MARKDOWN, width=900)
-    await at_menu.finish(
+
+@furry_menu.handle()
+async def furry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
+    await handle_menu_command(matcher, event, FURRY_MENU_MD, FURRY_MENU_PIC_DATA, args)
+
+
+@service_menu.handle()
+async def service_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
+    await handle_menu_command(matcher, event, SERVICE_MENU_MD, SERVICE_MENU_PIC_DATA, args)
+
+
+@marry_menu.handle()
+async def marry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
+    await handle_menu_command(matcher, event, MARRY_MENU_MD, MARRY_MENU_PIC_DATA, args)
+
+
+async def get_menu_pic(md_path: Path, pic_path: Path = None, width: int = 900) -> bytes:
+    # 判断图片是否存在且比md文件新，否则重新生成
+    if pic_path and pic_path.exists() and md_path.exists():
+        pic_mtime = pic_path.stat().st_mtime
+        md_mtime = md_path.stat().st_mtime
+        if pic_mtime > md_mtime:
+            with open(pic_path, 'rb') as f:
+                return f.read()
+
+    image_bytes = await md_to_pic(md_path=str(md_path), width=width)
+    with Image.open(io.BytesIO(image_bytes)) as img:
+        img.save(pic_path)
+    return image_bytes
+
+
+async def handle_menu_command(matcher: Matcher, event: MessageEvent, md_path: Path, pic_path: Path, args: Message):
+    """通用的菜单命令处理函数"""
+    if args.to_rich_text():
+        await matcher.finish()
+
+    pic = await get_menu_pic(md_path=md_path, pic_path=pic_path)
+    await matcher.finish(
         MessageSegment.reply(event.message_id) +
         MessageSegment.image(pic)
     )
-
-
-@main_Menu.handle()
-async def main_menu_func(event: MessageEvent, args: Message = CommandArg()):
-    if args.extract_plain_text():
-        await main_Menu.finish()  # 若消息后面存在文本则不响应
-    pic = await md_to_pic(md_path=MAIN_MENU_MARKDOWN, width=900)
-    a = Image.open(io.BytesIO(pic))
-    a.save("md2pic.png", format="PNG")
-    await main_Menu.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(pic))
-
-
-@furry_Menu.handle()
-async def furry_menu_func(event: GroupMessageEvent, args: Message = CommandArg()):
-    if args.extract_plain_text():
-        await furry_Menu.finish()  # 若消息后面存在文本则不响应
-    pic = await md_to_pic(md_path=FURRY_MENU_MARKDOWN, width=900)
-    a = Image.open(io.BytesIO(pic))
-    a.save("md2pic.png", format="PNG")
-    await main_Menu.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(pic))
-
-
-@service_Menu.handle()
-async def service_menu_func(event: GroupMessageEvent, args: Message = CommandArg()):
-    if args.extract_plain_text():
-        await furry_Menu.finish()  # 若消息后面存在文本则不响应
-    pic = await md_to_pic(md_path=SERVICE_MENU_MARKDOWN, width=900)
-    a = Image.open(io.BytesIO(pic))
-
-    a.save("md2pic.png", format="PNG")
-    await main_Menu.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(pic))
-
-
-@marry_Menu.handle()
-async def mm_func(event: MessageEvent, args: Message = CommandArg()):
-    if args.extract_plain_text():
-        await furry_Menu.finish()  # 若消息后面存在文本则不响应
-    pic = await md_to_pic(md_path=MARRY_MENU_MARKDOWN, width=900)
-    a = Image.open(io.BytesIO(pic))
-    a.save("md2pic.png", format="PNG")
-    await main_Menu.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(pic))
