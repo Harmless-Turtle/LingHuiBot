@@ -4,7 +4,7 @@ from nonebot import on_command
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 from nonebot.params import CommandArg
 from nonebot.matcher import Matcher
-from .models import Item
+from .models import create_item_model, Base, engine
 
 # ====== 命令注册 ======
 add_item    = on_command("sql_add",    priority=5, block=True)
@@ -23,7 +23,7 @@ async def _(matcher: Matcher, args: Message = CommandArg()):
     parts = text.split(maxsplit=1)
     name, value = parts[0], (parts[1] if len(parts) > 1 else None)
     try:
-        Item.create(name=name, data=value)
+        create_item_model.create(name=name, data=value)
         await matcher.finish(f"已添加：{name}")
     except Exception as e:
         await matcher.finish(f"添加失败：{e}")
@@ -32,7 +32,7 @@ async def _(matcher: Matcher, args: Message = CommandArg()):
 async def _(matcher: Matcher, args: Message = CommandArg()):
     try:
         pk = int(args.extract_plain_text().strip())
-        item = Item.get(pk)
+        item = create_item_model.get(pk)
         if not item:
             await matcher.finish("未找到记录")
         item.delete()
@@ -53,7 +53,7 @@ async def _(matcher: Matcher, args: Message = CommandArg()):
         await matcher.finish("参数不足")
     try:
         pk, name, value = int(parts[0]), parts[1], (parts[2] if len(parts) == 3 else None)
-        item = Item.get(pk)
+        item = create_item_model.get(pk)
         if not item:
             await matcher.finish("未找到记录")
         item.update(name=name, data=value)
@@ -67,7 +67,7 @@ async def _(matcher: Matcher, args: Message = CommandArg()):
 async def _(matcher: Matcher, args: Message = CommandArg()):
     try:
         pk = int(args.extract_plain_text().strip())
-        item = Item.get(pk)
+        item = create_item_model.get(pk)
         if not item:
             await matcher.finish("未找到记录")
         await matcher.finish(f"id={item.id}\nname={item.name}\ndata={item.data}")
@@ -78,7 +78,7 @@ async def _(matcher: Matcher, args: Message = CommandArg()):
 
 @list_items.handle()
 async def _(matcher: Matcher):
-    rows: List[Item] = Item.list_all()
+    rows: List[create_item_model] = create_item_model.list_all()
     if not rows:
         await matcher.finish("当前无数据")
     msg = "当前列表：\n" + "\n".join([f"{r.id}: {r.name} | {r.data}" for r in rows])

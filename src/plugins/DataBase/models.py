@@ -1,65 +1,54 @@
-# plugins/sql_tool/models.py
-from typing import Optional, List, Dict, Any
+from typing import Optional, Type
 from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
-# 读取 NoneBot 全局配置
 from nonebot import get_driver
 config = get_driver().config
 
-# 如果 `nb run` 已经设置了环境变量可直接用，否则给个默认值
 DATABASE_URL = getattr(config, "mysql_url", None)
 if not DATABASE_URL:
     raise ValueError("请在 NoneBot 配置中设置 mysql_url")
 
-# SQLAlchemy 基础
 Base = declarative_base()
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
-class Item(Base):
-    """示例表：可自由扩展字段"""
-    __tablename__ = "items"
+def create_item_model(tablename: str = "items") -> Type:
+    class Item(Base):
+        __tablename__ = tablename
+        __table_args__ = {'extend_existing': True}  # 允许重复定义表
 
-    id   = Column(Integer, primary_key=True, index=True)
-    name = Column(String(64), unique=True, nullable=False)
-    data = Column(Text, nullable=True)
+        id    = Column(Integer, primary_key=True, index=True)
+        name  = Column(String(64), unique=True, nullable=False)
+        data  = Column(Text, nullable=True)
+        count = Column(Integer, default=0, nullable=False)
+        
 
-    @staticmethod
-    def create(name: str, data: Optional[str] = None) -> "Item":
-        with SessionLocal() as db:
-            item = Item(name=name, data=data)
-            db.add(item)
-            db.commit()
-            db.refresh(item)
-            return item
+        @staticmethod
+        def create(name: str, data: Optional[str] = None, count: int = 0) -> "Item":
+            with SessionLocal() as db:
+                exists = db.query(Item).filter_by(name=name).first()
+                if exists:
+                    raise ValueError(f"name 应是唯一值，而它现在已存在于表 {name} 中。")
+                obj = Item(name=name, data=data, count=count)
+                db.add(obj)
+                db.commit()
+                db.refresh(obj)
+                return obj
 
-    @staticmethod
-    def get(pk: int) -> Optional["Item"]:
-        with SessionLocal() as db:
-            return db.get(Item, pk)
+        def save(self) -> "Item":
+            with SessionLocal() as db:
+                db.merge(self)
+                db.commit()
+                db.refresh(self)
+                return self
 
-    @staticmethod
-    def list_all() -> List["Item"]:
-        with SessionLocal() as db:
-            return db.query(Item).all()
+        def delete(self) -> None:
+            with SessionLocal() as db:
+                db.delete(self)
+                db.commit()
 
-    def update(self, **kwargs) -> "Item":
-        with SessionLocal() as db:
-            for k, v in kwargs.items():
-                setattr(self, k, v)
-            db.merge(self)
-            db.commit()
-            db.refresh(self)
-            return self
+    return Item
 
-    def delete(self) -> None:
-        with SessionLocal() as db:
-            db.delete(self)
-            db.commit()
-
-# 首次运行自动建表
-Base.metadata.create_all(bind=engine)
-
-__all__ = ['Item', 'SessionLocal', 'engine', 'Base']
+__all__ = ['create_item_model', 'SessionLocal', 'engine', 'Base']

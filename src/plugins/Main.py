@@ -18,6 +18,7 @@ from nonebot.adapters.onebot.v11 import (
     )
 from nonebot.matcher import Matcher
 from src.plugins import utils
+from src.plugins.DataBase.models import create_item_model, Base, engine
 from nonebot.rule import to_me,is_type,Rule
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
@@ -108,8 +109,26 @@ AT_Time = time.time()
 
 @Test.handle()
 @utils.handle_errors
-async def Test_Function(matcher: Matcher,bot: Bot,event:MessageEvent, args: Message = CommandArg()):
-    import sqlite3
+async def Test_Function(matcher: Matcher, bot: Bot, event: MessageEvent, args: Message = CommandArg()):
+    args = str(args)
+    List = args.split(" ")
+    if len(List) < 3:
+        await matcher.finish("请提供至少3个参数：表名、name、data")
+    table_name = List[0]  # 第一个参数为表名
+    name = List[1]        # 第二个参数为 name
+    data = List[2]        # 第三个参数为 data
+    count = List[3]
+
+    Item = create_item_model(table_name)
+    Base.metadata.create_all(bind=engine,checkfirst=True)
+    Item.create(name=name, data=data,count=count)
+
+    # 获取数据库名
+    db_url = engine.url
+    db_name = db_url.database
+
+    msg = f"已在 {db_name} 数据库中的 {table_name} 表新建了 name 为 {name}，data 为 {data} 的数据"
+    await matcher.finish(MessageSegment.reply(event.message_id)+msg)
 
 
 @Poke_Check.handle()
