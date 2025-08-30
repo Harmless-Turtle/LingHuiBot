@@ -166,13 +166,15 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict] = None) -> dict
     """
     try:
         if mode == "r":
-            content = json_path.read_text(encoding="utf-8")
+            path_obj = Path(json_path)
+            content = path_obj.read_text(encoding="utf-8")
             return json.loads(content)
         elif mode == "w":
             if data is None:
                 raise ValueError("未找到应写入的 data！")
+            path_obj = Path(json_path)
             content = json.dumps(data, ensure_ascii=False, indent=4)
-            json_path.write_text(content, encoding="utf-8")
+            path_obj.write_text(content, encoding="utf-8")
             return None
         else:
             raise ValueError(f"非法的 mode 参数: {mode}")
