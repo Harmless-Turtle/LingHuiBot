@@ -16,7 +16,7 @@ body:
           required: false
         - label: 我愿意参与此功能的讨论或开发
           required: false
-   - type: checkboxes
+  - type: checkboxes
     id: precheck
     attributes:
       label: 🧩 诉求类型
