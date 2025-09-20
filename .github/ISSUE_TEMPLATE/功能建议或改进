@@ -1,0 +1,41 @@
+name: ✨ 新功能期望或改进旧功能
+description: 提出一个功能建议或改进
+title: "[Feature] 简短描述功能"
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: checkboxes
+    id: precheck
+    attributes:
+      label: 🧩 提交前确认
+      options:
+        - label: 我已确认当前全部 issue 中并无重复功能建议
+          required: true
+        - label: 我已确认此功能尚未在路线图或项目中提及
+          required: false
+        - label: 我愿意参与此功能的讨论或开发
+          required: false
+   - type: checkboxes
+    id: precheck
+    attributes:
+      label: 🧩 诉求类型
+      options:
+        - label: 新功能建议
+          required: false
+        - label: 旧功能改进
+          required: false
+
+  - type: textarea
+    id: feature
+    attributes:
+      label: 💡 你希望添加什么功能？或者您遇到了什么问题？
+      placeholder: 请用一句话概括，再详细说明
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 📎 附加信息
+      placeholder: 草图、参考链接、截图等
