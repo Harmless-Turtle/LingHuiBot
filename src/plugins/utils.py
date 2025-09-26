@@ -1,22 +1,23 @@
 import io
-
-from nonebot.matcher import Matcher
-from nonebot.adapters.onebot.v11 import (
-    MessageSegment,
-    MessageEvent,
-    Message
-)
+import json
+import os
+import time
+import traceback
+from datetime import datetime, timedelta
 from functools import wraps
-from nonebot.exception import MatcherException
-import time, traceback, os, json, httpx, httpcore
-from nonebot import logger, get_driver
+from io import BytesIO
 from pathlib import Path
 from typing import Optional
-from datetime import datetime, timedelta
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
 
-FONT_PATH = Path() / 'data' / 'MiSans-Demibold.ttf'
+import httpcore
+import httpx
+from PIL import Image, ImageDraw, ImageFont
+from nonebot import get_driver, logger
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
+from nonebot.exception import MatcherException
+from nonebot.matcher import Matcher
+
+FONT_PATH = Path() / 'data' / 'font' / 'MiSans-Demibold.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'Furry_System' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
@@ -24,7 +25,7 @@ ERROR_DIR = Path() / "logs"
 # 捕获并处理函数执行中的异常，生成错误日志并构造用户友好的反馈
 def handle_errors(func):
     """
-    装饰一个函数以捕获异常（除了 MatcherException），提供统一的错误处理逻辑。
+    装饰一个函数以捕获异常（除了 MatcherException），提供统一的错误处理逻辑，使用该装饰器需要填写 matcher 和 event 参数。
         - 记录详细的错误日志到文件
         - 提供用户友好的错误提示
 
@@ -43,12 +44,13 @@ def handle_errors(func):
             raise
         except Exception as error:
             # 追踪并格式化错误日志
+            error_script = traceback.extract_tb(error.__traceback__)[-1].filename
             times = lambda x: time.strftime(x)
             error_msg = (
-                f"脚本：{__file__}\n"
+                f"脚本：{error_script}\n"
                 f"在“{times('%Y-%m-%d %a %H:%M:%S')}”时返回了异常错误。内容如下：\n\n"
                 f"{traceback.format_exc()}\n"
-                "---------------------异常错误截止---------------------\n\n"
+                "---------------------异常错误截止---------------------"
             )
 
             # 追加到工作目录的 ERROR_DIR/error.log
@@ -57,12 +59,10 @@ def handle_errors(func):
                 filestream.write(error_msg)
 
             # 按时间戳生成并保存报错图片到 logs/error_****.png
-            font = ImageFont.truetype(FONT_PATH, size=30) if FONT_PATH.exists() else ImageFont.load_default()
-            text_lines = [line for line in error_msg.split('\n') if line.strip() != '']
-            error_image = generate_text_image(text_lines, font)
-            error_image.save(ERROR_DIR / f"error_{times("%Y%m%d%H%M%S")}.png", format="PNG")
+            error_image = generate_text_image(error_msg, FONT_PATH)
+            error_image.save(ERROR_DIR / f"error_{times('%Y%m%d%H%M%S')}.png", format="PNG")
 
-            # 如果事件是消息类型，则回复用户错误图片和消息
+            # 如果事件是消息类型，则尝试回复用户报错图片和消息
             event = next((x for x in args if isinstance(x, MessageEvent)), kwargs.get("event"))
             matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
 
@@ -74,7 +74,7 @@ def handle_errors(func):
                 await matcher.finish(error_response)
             else:
                 logger.warning(
-                    f"{__name__}捕获到错误，但由于被装饰的函数没有正确注入 matcher 或 event 实例，无法告知用户")
+                    f"{__name__}捕获到错误，但由于被装饰的函数没有填写 matcher 和 event 参数，无法告知用户")
 
     return wrapper
 
