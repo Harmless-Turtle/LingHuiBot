@@ -1,3 +1,4 @@
+__import__("nonebot").require("nonebot_plugin_alconna")
 from nonebot.plugin import on_command,on_message
 # 导入异常基类MatcherException，以限制try-except捕获正常finish函数抛出的异常
 from nonebot.exception import MatcherException
