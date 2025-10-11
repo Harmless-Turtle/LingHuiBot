@@ -71,13 +71,13 @@ async def get_user_group_usage_last_7_days(session: async_scoped_session, event:
     )
     return int(result.scalar_one())
 
-
-async def get_or_create_group_settings(session: async_scoped_session, event: GroupMessageEvent) -> GroupSettings:
+async def get_or_create_group_settings(session: async_scoped_session, event: GroupMessageEvent):
     group_id = str(event.group_id)
-    obj = await session.get(GroupSettings, group_id)
-    if obj is not None:
-        return obj
+    if (obj := await session.get(GroupSettings, group_id)) is None:
+        obj = GroupSettings(group_id=group_id, enable=False)
 
-    obj = GroupSettings(group_id=group_id, enable=False)
-    session.add(obj)
-    return obj
+    try:
+        yield obj
+    finally:
+        session.add(obj)
+        await session.commit()

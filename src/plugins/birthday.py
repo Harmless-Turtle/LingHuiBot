@@ -23,15 +23,13 @@ user_group_usage = on_message(is_type(GroupMessageEvent), priority=5, block=Fals
 
 
 @utils.handle_errors
-@happy_birthday_option.handle()
-async def happy_birthday(matcher: Matcher, session: async_scoped_session,
-                         event: GroupMessageEvent,
-                         group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)],
-                         ):
-    group_settings.enable = True if not group_settings.enable else False
-    await session.commit()
-
-    await matcher.finish("已开启生日祝贺功能" if group_settings.enable else "已关闭生日祝贺功能")
+@birthday_option.handle()
+async def birthday_option_func(matcher: Matcher,
+                               _event: GroupMessageEvent,
+                               group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)],
+                               ):
+    group_settings.enable = not group_settings.enable
+    await matcher.send("已开启生日祝贺功能" if group_settings.enable else "已关闭生日祝贺功能")
 
 
 @utils.handle_errors
