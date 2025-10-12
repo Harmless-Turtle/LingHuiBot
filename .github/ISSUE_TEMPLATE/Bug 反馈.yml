@@ -1,0 +1,56 @@
+name: Bug 报告
+description: 提交一个 bug 或异常行为
+title: "[Bug] 简短描述问题"
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: checkboxes
+    id: precheck
+    attributes:
+      label: 🧩 提交前确认
+      description: 请勾选以下事项
+      options:
+        - label: 我已确认当前全部 issue 中并无重复问题提交
+          required: true
+        - label: 我已确认此问题在最新版本中仍未修复
+          required: false
+        - label: 我已确认此问题非因本地配置错误导致
+          required: false
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 🔁 复现步骤
+      description: 请按顺序填写操作步骤，能稳定复现是关键
+      placeholder: |
+        1. 打开 …
+        2. 点击 …
+        3. 出现 …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ 预期行为
+      description: 描述你期望的正常结果
+      placeholder: 应该出现 …
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ 实际行为
+      description: 描述实际发生的异常结果
+      placeholder: 实际出现 …
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 📎 附加信息
+      description: 日志、截图、代码片段等任意补充
+      placeholder: 可拖拽图片到此处
