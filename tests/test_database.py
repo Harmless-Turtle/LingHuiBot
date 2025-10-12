@@ -1,42 +1,91 @@
-from nonebot import logger
-from nonebot.adapters.onebot.v11 import (
-    MessageSegment,
-    MessageEvent,
-    Message,
-    Bot,
-)
-from nonebot.matcher import Matcher
-from nonebot.params import CommandArg
+import nonebot
+from typing import Annotated
+
+# Ensure NoneBot is initialized for plugin loading
+try:
+    nonebot.get_driver()
+except ValueError:
+    nonebot.init()
+
+__import__("nonebot").require("nonebot_plugin_orm")
+from nonebot.internal.matcher import Matcher
+from nonebot.internal.params import Depends
 from nonebot.plugin import on_command
-from sqlalchemy import inspect
 
-from src.plugins import utils
-from src.plugins.DataBase.models import create_item_model, Base, engine
+from src.plugins.birthday.models import GroupSettings, get_or_create_group_settings
 
-Test = on_command("Test")
-@Test.handle()
-@utils.handle_errors
-async def Test_Function(matcher: Matcher, bot: Bot, event: MessageEvent, args: Message = CommandArg()):
-    args = str(args).strip()
-    List = args.split(" ")
-    if len(List) < 3:
-        await matcher.finish("请提供至少3个参数：表名、name、data，可选第4个参数为count")
-    table_name = List[0]
-    name = List[1]
-    data = List[2]
-    count = int(List[3]) if len(List) > 3 else 0
 
-    Item = create_item_model(table_name)
-    inspector = inspect(engine)
-    if table_name in inspector.get_table_names():
-        logger.success(f"表 {table_name} 已存在")
-    else:
-        logger.warning(f"表 {table_name} 不存在，将在MySQL中新建表")
-        Base.metadata.create_all(bind=engine, checkfirst=True)
+test_db = on_command("test_db", priority=100, block=False)
 
-    Item.create(name=name, data=data, count=count)
 
-    db_url = engine.url
-    db_name = db_url.database
-    msg = f"已在 {db_name} 数据库中的 {table_name} 表新建了 name 为 {name}，data 为 {data} 的数据"
-    await matcher.finish(MessageSegment.reply(event.message_id) + msg)
+@test_db.handle()
+async def handle_test_db_func(matcher: Matcher,
+                       group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)]):
+    await matcher.send("Testing database...")
+    await matcher.send(f"group_settings.enable={group_settings.enable}")
+
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+
+from nonebot.adapters.onebot.v11 import GroupMessageEvent
+
+from src.plugins.birthday.models import GroupSettings, get_or_create_group_settings
+
+
+# Helper to consume async generator
+async def anext(async_generator):
+    return await async_generator.__anext__()
+
+
+@pytest.mark.asyncio
+async def test_get_or_create_group_settings_new():
+    # Arrange
+    mock_session = AsyncMock()
+    mock_session.get.return_value = None  # Simulate group not existing
+
+    mock_event = MagicMock(spec=GroupMessageEvent)
+    mock_event.group_id = 12345
+
+    # Act
+    settings_generator = get_or_create_group_settings(mock_session, mock_event)
+    group_settings = await anext(settings_generator)
+
+    # Assert
+    mock_session.get.assert_called_once_with(GroupSettings, "12345")
+    assert group_settings.group_id == "12345"
+    assert not group_settings.enable
+
+    # Test the finally block by trying to exhaust the generator
+    with pytest.raises(StopAsyncIteration):
+        await anext(settings_generator)
+
+    mock_session.add.assert_called_once_with(group_settings)
+    mock_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_or_create_group_settings_existing():
+    # Arrange
+    existing_settings = GroupSettings(group_id="54321", enable=True)
+    mock_session = AsyncMock()
+    mock_session.get.return_value = existing_settings
+
+    mock_event = MagicMock(spec=GroupMessageEvent)
+    mock_event.group_id = 54321
+
+    # Act
+    settings_generator = get_or_create_group_settings(mock_session, mock_event)
+    group_settings = await anext(settings_generator)
+
+    # Assert
+    mock_session.get.assert_called_once_with(GroupSettings, "54321")
+    assert group_settings is existing_settings
+    assert group_settings.enable
+
+    # Test the finally block
+    with pytest.raises(StopAsyncIteration):
+        await anext(settings_generator)
+
+    mock_session.add.assert_called_once_with(existing_settings)
+    mock_session.commit.assert_called_once()
