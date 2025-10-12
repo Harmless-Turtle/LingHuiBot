@@ -19,6 +19,11 @@ async def setup_birthday_scheduler():
         "cron",
         hour=9,
         minute=10,
+        id="birthday:init",
+        misfire_grace_time=120,
+        coalesce=True,
+        max_instances=1,
+        replace_existing=True,
     )
 
 
@@ -26,7 +31,6 @@ async def _init_birthday_jobs():
     since = date.today() - timedelta(days=6)
     today = date.today()
 
-    # 将CTE定义转换为子查询
     subquery = (
         select(
             UserGroupUsage.user_id,
