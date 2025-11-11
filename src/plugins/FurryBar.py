@@ -21,7 +21,7 @@ from nonebot.matcher import Matcher
 from nonebot import logger
 from nonebot import get_driver
 
-FurryBar = on_message(rule=to_me(),priority=60, block=True)
+FurryBar = on_message(rule=to_me(),priority=99, block=True)
 change_config = on_command("更改用户信息",aliases={"创建用户信息","定义个人信息"},block=False)
 Reset_FurryBar = on_command(
     "Reset", aliases={"重置对话", "重置模型"})

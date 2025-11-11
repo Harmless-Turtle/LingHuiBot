@@ -81,12 +81,12 @@ Upload_Clear = on_command("清空上传数据", aliases={"清除上传"}, permis
 # login_account = on_command("登录Fur",permission=SUPERUSER)
 
 # FurryFusion 兽聚汇总服务
-# FurryFusion_List = on_command(
-#     "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
-# FurryFusion_Check = on_command("兽聚查询", block=True)
-# FurryFusion_countdown = on_command("兽聚倒计时", block=True)
-# FurryFusion_Quick_Information = on_command("兽聚快讯#", block=True)
-# FurryFusion_Information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
+FurryFusion_List = on_command(
+     "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
+FurryFusion_Check = on_command("兽聚查询", block=True)
+FurryFusion_countdown = on_command("兽聚倒计时", block=True)
+FurryFusion_Quick_Information = on_command("兽聚快讯#", block=True)
+FurryFusion_Information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
 
 
 @RanFurry.handle()

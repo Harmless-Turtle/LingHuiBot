@@ -8,7 +8,7 @@ from nonebot.params import CommandArg
 from nonebot.plugin import on_command
 from nonebot_plugin_htmlrender import md_to_pic
 
-menu = on_command("菜单", aliases={"凌辉菜单"}, priority=100, block=True)
+menu = on_command("菜单", aliases={"凌辉菜单"}, priority=98, block=True)
 main_menu = on_command("菜单01", aliases={"基本菜单"}, priority=99, block=True)
 furry_menu = on_command("菜单02", aliases={"Furry菜单", "furry菜单"}, priority=99, block=True)
 marry_menu = on_command("菜单03", aliases={"结婚菜单"}, priority=99, block=True)

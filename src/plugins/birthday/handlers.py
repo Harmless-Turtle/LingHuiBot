@@ -23,7 +23,7 @@ toggle_birthday_feature = on_command("生日祝贺", priority=5, block=True)
 set_birthday = on_command("我的生日是", priority=5, block=True)
 delete_birthday = on_command("删除我的生日", priority=5, block=True)
 birthday_greeting_responder = on_message(rule=startswith("生日快乐", False), priority=5, block=True)
-track_user_group_usage = on_message(is_type(GroupMessageEvent), priority=5, block=False)
+track_user_group_usage = on_message(is_type(GroupMessageEvent), priority=100, block=False)
 
 
 @set_birthday.handle()
