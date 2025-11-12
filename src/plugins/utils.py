@@ -299,7 +299,7 @@ async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str
 
     draw = ImageDraw.Draw(img_resized)
     font_path = Path.cwd() / 'data' / 'SourceHanSansSC-VF.ttf'
-    font = ImageFont.truetype(font_path, size=95)
+    font = ImageFont.truetype(str(font_path), size=95)
 
     text_color = (255, 255, 255)
     draw.text((10, 50), text, font=font, fill=text_color)

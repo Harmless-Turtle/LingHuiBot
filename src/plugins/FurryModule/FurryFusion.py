@@ -21,6 +21,13 @@ from PIL import Image, ImageFont
 
 from src.plugins.utils import get_config_item
 
+# 定义Data存放路径并作为全局变量使用
+opendata = Path.cwd()
+Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
+Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
+Pic_URL = opendata / 'data' / 'temp.jpg'
+allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+
 # FurryFusion 兽聚汇总服务
 FurryFusion_List = on_command(
     "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
@@ -28,6 +35,8 @@ FurryFusion_Check = on_command("兽聚查询", block=True)
 FurryFusion_countdown = on_command("兽聚倒计时", block=True)
 FurryFusion_Quick_Information = on_command("兽聚快讯#", block=True)
 FurryFusion_Information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
+
+timeout = None
 
 @FurryFusion_List.handle()
 @utils.handle_errors
