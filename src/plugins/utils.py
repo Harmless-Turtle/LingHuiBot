@@ -17,7 +17,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
-FONT_PATH = Path() / 'data' / 'font' / 'MiSans-Demibold.ttf'
+FONT_PATH = Path() / 'data' / 'MiSans-Demibold.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'Furry_System' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
@@ -59,7 +59,9 @@ def handle_errors(func):
                 filestream.write(error_msg)
 
             # 按时间戳生成并保存报错图片到 logs/error_****.png
-            error_image = generate_text_image(error_msg, FONT_PATH)
+            font = ImageFont.truetype(str(FONT_PATH), 28)
+            error_image = generate_text_image(error_msg.splitlines(), font)
+            # error_image = generate_text_image(error_msg, FONT_PATH)
             error_image.save(ERROR_DIR / f"error_{times('%Y%m%d%H%M%S')}.png", format="PNG")
 
             # 如果事件是消息类型，则尝试回复用户报错图片和消息
@@ -112,7 +114,7 @@ def generate_text_image(lines, font):
     padding = 20  # 增加边距
     line_height = 0
     max_width = 0
-
+    
     # 预先计算所有文本的尺寸
     for line in lines:
         # 使用 get bbox 获取文本边界框
@@ -294,6 +296,7 @@ async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str
         (0, 0),
         alpha
     )
+    img_resized = img_resized.convert("RGB")
     output_dir = Path.cwd() / 'data' / 'Furry_System' / "processed_images"
     os.makedirs(output_dir, exist_ok=True)
 
