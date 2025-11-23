@@ -14,7 +14,7 @@ from .FurryBar import (
 )
 from .Furry import (
     RanFurry,
-    PicFurry，
+    PicFurry,
     UploadFurry，
     Batch_Upload,
     Batch_Set,
@@ -63,3 +63,4 @@ __all__ = [
     Check_Upload_Decide,
     Upload_Clear
 ]
+
