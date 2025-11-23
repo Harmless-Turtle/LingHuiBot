@@ -32,7 +32,21 @@ api_base = "https://cloud.foxtail.cn/api"
 opendata = Path.cwd()
 Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
 Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
+
+# 读取配置项，优先环境变量
+# 统一前缀 FURRY_
 token = get_config_item('furry_token', default="未获取到数据", required=True, desc="Foxtail API Token")
+account = get_config_item('furry_user', default="未获取到数据", required=True, desc="Foxtail 账号")
+password = get_config_item('furry_password', default="未获取到数据", required=True, desc="Foxtail 密码")
+
+if all([token != "未获取到数据", account != "未获取到数据", password != "未获取到数据"]):
+    logger.success("✅已成功加载Furry模块的相关配置！")
+else:
+    logger.warning("请注意，当前功能受限制！")
+    logger.warning("您没有填写token/account/password，这将导致“投图”功能不可用！")
+    logger.info(f"获取到的信息：\ntoken：{token}\naccount：{account}\npassword：{password}\napi_base：{api_base}")
+    logger.warning(
+        "请确保.env.dev文件中具有如下内容：\nFURRY_TOKEN=您的token\nFURRY_USER=您的账号\nFURRY_PASSWORD=您的密码")
 
 UploadFurry = on_command(
     "一键上传", aliases={"投图", "管理员上传"}, priority=10, block=True)  # 上传图片
