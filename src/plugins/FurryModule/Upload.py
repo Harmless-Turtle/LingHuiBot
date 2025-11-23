@@ -21,6 +21,7 @@ from PIL import Image, ImageFont
 
 from src.plugins.utils import get_config_item
 
+opendata = Path.cwd()
 Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
 Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
 
