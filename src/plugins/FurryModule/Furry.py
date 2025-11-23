@@ -156,74 +156,6 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
             await matcher.finish(MessageSegment.reply(
                 event.message_id) + f"这只兽兽叫“{name}”~\n{suggest}图片码为：{id}\n" + MessageSegment.image(url))
 
-
-@UploadFurry.handle()
-@utils.handle_errors
-async def upload_furry_image(matcher: Matcher, event: MessageEvent, bot: Bot, group: GroupMessageEvent,
-                             args: Message = CommandArg()):
-    data = str(args).split("#")
-    if not os.path.exists(Data_Path):
-        os.makedirs(Data_Path)
-    if len(data) != 5:
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + "错误：请按照#名字#类型#留言#图片的格式重新上传\n（类型：数字0为设定，1为毛图，2为插画")
-    else:
-        name = data[1]
-        type = data[2]
-        suggest = data[3]
-        pic = data[4]
-        # 对传入参数进行判定
-        if name == "":
-            await matcher.finish(MessageSegment.reply(
-                event.message_id) + "错误：您似乎并没有填写名字，请按照#名字#类型#留言#图片的格式重新上传\n（类型：数字0为设定，1为毛图，2为插画")
-        elif type == "":
-            await matcher.finish(MessageSegment.reply(
-                event.message_id) + "错误：您似乎并没有填写类型，请按照#名字#类型#留言#图片的格式重新上传\n（类型：数字0为设定，1为毛图，2为插画")
-        elif pic == "":
-            await matcher.finish(MessageSegment.reply(
-                event.message_id) + "错误：您似乎并没有发送图片，请按照#名字#类型#留言#图片的格式重新上传")
-        if not type.isdigit():
-            await matcher.finish(
-                MessageSegment.reply(event.message_id) + "遇到问题：类型并非纯数字（0为设定，1为毛图，2为插画")
-        msggroup = event.get_message()
-        url = msggroup["image"]
-        upload_account_number = event.user_id
-        group_number = group.group_id
-        up_load_list = []
-        Time = int(time.time())
-        with open(f"{Data_Path}/{Time}.jpg", 'wb') as f:
-            async with httpx.AsyncClient(http2=True, timeout=timeout) as client:
-                Data = await client.get(list(url)[-1].data["url"])
-                f.write(Data.content)
-        file_size = os.stat(f"{Data_Path}/{Time}.jpg")
-        if file_size.st_size >= 20000000:
-            os.remove(f"{Data_Path}/{Time}.jpg")
-            await matcher.finish(MessageSegment.reply(event.message_id) + "上传失败：文件过大！（大于20MB）")
-        data = {
-            "name": f"{name}",
-            "type": f"{type}",
-            "power": 1,
-            "suggest": f"{suggest}",
-            "model": 1,
-            "token": f"{token}",
-            "token_user": f"{account}",
-            "token_key": f"{password}",
-            "time": f"{Time}",
-            "Picturl_URL": f"{Data_Path}/{Time}.jpg",
-            "Upload_account": f"{upload_account_number}",
-            'Group_id': f"{group_number}"
-        }
-        if os.path.exists(f'{Data_Path}/Upload_Data.json'):
-            up_load_list = utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'r')
-
-        up_load_list.append(data)
-        utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'w', up_load_list)
-        count = len(up_load_list)
-        await bot.call_api("send_private_msg", message=f"有人投图，请审核\n当前共有{count}张图片待审核",
-                           user_id='1097740481', time_noend=True)
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"您的投图请求已提交给凌辉Bot管理员并进入等待审核状态。")
-
 @FurryList.handle()
 @utils.handle_errors
 async def Furry_List(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
@@ -571,5 +503,6 @@ async def UC_Function(matcher: Matcher):
     with open(Temp_Path, 'w', encoding='utf-8') as f:
         f.write("[]")
     await matcher.finish("操作已完成。")
+
 
 
