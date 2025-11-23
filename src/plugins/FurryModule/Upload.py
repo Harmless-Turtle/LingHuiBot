@@ -32,6 +32,7 @@ api_base = "https://cloud.foxtail.cn/api"
 opendata = Path.cwd()
 Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
 Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
+token = get_config_item('furry_token', default="未获取到数据", required=True, desc="Foxtail API Token")
 
 UploadFurry = on_command(
     "一键上传", aliases={"投图", "管理员上传"}, priority=10, block=True)  # 上传图片
