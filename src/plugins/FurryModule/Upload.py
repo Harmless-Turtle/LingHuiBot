@@ -21,6 +21,14 @@ from PIL import Image, ImageFont
 
 from src.plugins.utils import get_config_item
 
+
+# 定义全局变量
+login_cookie = {}
+timeout = None
+count = 0
+set_count = 0
+api_base = "https://cloud.foxtail.cn/api"
+
 opendata = Path.cwd()
 Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
 Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
