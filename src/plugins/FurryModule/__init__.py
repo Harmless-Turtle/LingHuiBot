@@ -69,8 +69,8 @@ __all__ = [
     Clear,
     latest,
     RanFurry,
-    PicFurry，
-    UploadFurry，
+    PicFurry,
+    UploadFurry,
     Batch_Upload,
     Batch_Set,
     Debugger_Upload,
@@ -82,5 +82,6 @@ __all__ = [
     Check_Upload_Decide,
     Upload_Clear
 ]
+
 
 
