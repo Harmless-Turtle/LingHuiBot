@@ -467,31 +467,6 @@ async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Me
                            message=f"{text}\n上载图片：" + MessageSegment.image(f"{Pic_URL}"), time_noend=True)
         os.remove(f"{Pic_URL}")
 
-
-@Debugger_Upload.handle()
-async def Debugger(matcher: Matcher, event: MessageEvent):
-    await matcher.send("调试器运行中...")
-    Data = utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'r')
-    Dir_List = []
-    for root, dirs, files in os.walk(f'{Data_Path}'):
-        Dir_List.append(f'root={root}, dirs={dirs}, files={files}')
-    await asyncio.sleep(1.5)
-    Text = f"""调试器返回:
-文件【{Data_Path}/Upload_Data.json】中所包含的信息如下：
-{Data}
-文件【{Data_Path}/Upload_Data.json】中信息的Type值为：{type(Data)}
-路径【{Data_Path}】中包含的所有文件及其子目录：
-{Dir_List}
-
-它可以告诉您Furry_System的上传功能所使用的文件是否存在错误。但它无法告诉你为什么以及在哪里可能存在潜在的错误。
-在大多数情况下，文件名和文件中包含的内容都没有也不应存在任何错误，如果函数仍然无法运行。请联系管理员检查代码以排除可能存在的隐性问题。
-调试器已经将这一段文本作为critical级日志输出于后台终端。
-感谢您使用调试器。
-"""
-    logger.critical(Text)
-    await matcher.finish(MessageSegment.reply(event.message_id) + Text)
-
-
 @Upload_Clear.handle()
 async def UC_Function(matcher: Matcher):
     Temp_Path = Data_Path / "Upload_Data.json"
@@ -503,6 +478,3 @@ async def UC_Function(matcher: Matcher):
     with open(Temp_Path, 'w', encoding='utf-8') as f:
         f.write("[]")
     await matcher.finish("操作已完成。")
-
-
-
