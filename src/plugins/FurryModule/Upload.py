@@ -21,6 +21,9 @@ from PIL import Image, ImageFont
 
 from src.plugins.utils import get_config_item
 
+Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
+Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
+
 UploadFurry = on_command(
     "一键上传", aliases={"投图", "管理员上传"}, priority=10, block=True)  # 上传图片
 Batch_Upload = on_command("批量投图", aliases={"批量上传"}, block=True)  # 批量投图图片
