@@ -75,5 +75,6 @@ async def get_menu_pic(md_path: Path, pic_path: Path = None, width: int = 900) -
 
     image_bytes = await md_to_pic(md_path=str(md_path), width=width)
     with Image.open(io.BytesIO(image_bytes)) as img:
+        pic_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(pic_path)
     return image_bytes
