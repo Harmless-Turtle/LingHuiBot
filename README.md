@@ -31,10 +31,10 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 <h2><em>凌辉Bot可以做什么?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
 
-|系统名称|系统介绍|
-|---|---|
-|<a href="./Markdown/Main_System.md">主要系统</a>|基本的QRobot功能|
-|<a href="./Markdown/Furry_System.md">furry系统</a>|furry功能|
+| 系统名称                                             | 系统介绍        |
+|--------------------------------------------------|-------------|
+| <a href="./Markdown/Main_System.md">主要系统</a>     | 基本的QRobot功能 |
+| <a href="./Markdown/Furry_System.md">furry系统</a> | furry功能     |
 
 <h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
@@ -61,33 +61,17 @@ SWAP：<code>≥2GB</code><br>
 
 若您的设备性能已满足如上最低条件，请开始部署您的软件部分：<br>
 Windows操作系统安装教程：<br>
-安装<code>Python 3.9+</code>，<code>Python 3.10.11是已被验证的版本号</code><br>
-安装链接：<a href="https://www.python.org/">Python</a>，请根据您的操作系统来安装对应版本的<code>Python</code><br>
+1，安装 <a href="https://pipx.pypa.io/stable/">pipx</a> 并用 pipx 安装 nb-cli ：<code>pipx install nb-cli</code>
 
-> 在安装时，请选择<code>Customize installation</code>，并确保<code>pip</code>被勾选。
+2，为该项目创建对应版本<code>>=3.9,<=3.13</code>的 <a href="https://www.python.org/">Python</a> 虚拟环境，<code>Python 3.10.11</code>是已被验证的版本号
 
-安装完毕后，打开终端并键入命令：<code>pip install nb-cli</code>
+3，安装适配器和驱动器，运行<code>nb adapter install nonebot2/adapter-onebot</code>和<code>nb driver install nonebot2/driver-napcat</code>
 
-> 如果您不希望更改您现有的开发环境，建议您新建dotEnv或Anaconda等虚拟环境后再输入命令
+4，安装相关的项目依赖，运行<code>pip install .</code>
 
-运行结束后，在终端中键入命令：<code>cd /d <您clone本仓库的文件夹路径或虚拟环境路径></code>并使用<code>.\activate</code>以进入虚拟环境
+5，部署数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
 
-> 需先进行<code>pip install nb-cli</code>命令以安装NoneBot2，详情请见[NoneBot](https://nonebot.dev/)
-
-随后运行下面的这些命令，确保商店插件被正常执行：<br>
-<code>nb plugin install "nonebot_plugin_apscheduler" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_htmlrender" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_localstore" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_picstatus" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_multincm" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_wordle" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_datastore" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_mc_server_status" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_picmcstat" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_plugin_sentry" -i https://pypi.tuna.tsinghua.edu.cn/simple<br>
-nb plugin install "nonebot_bison" -i https://pypi.tuna.tsinghua.edu.cn/simple</code>
-
-尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+6，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
 
 > [INFO] sentry_sdk | Uvicorn running on http://127.0.0.1:9090 (Press CTRL+C to quit)
 
