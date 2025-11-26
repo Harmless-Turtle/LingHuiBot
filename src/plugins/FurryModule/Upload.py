@@ -123,15 +123,15 @@ async def upload_furry_image(matcher: Matcher, event: MessageEvent, bot: Bot, gr
 
 # 定义获取批量投图图片列表函数
 async def get_batch_pic_list(user_qq, bot):
-    pic_url = utils.handle_json(Path(opendata) / "data/Furry_System/Upload/Batch" / user_qq / "Upload.json", 'r')
-    list = []
+    pic_url = utils.handle_json(Path(opendata) / "data/Furry_System/Upload/Batch" / str(user_qq) / "Upload.json", 'r')
+    pic_list = []
     logger.debug(f'debug message:{type(pic_url)}')
     for i in range(0, len(pic_url)):
         image = pic_url[i]
         text = f"这是第{i + 1}张图片，通过命令“定义”来定义开始该图片的信息。"
         data = await utils.batch_get(text, image, user_qq, "凌辉Bot")
-        list.append(data)
-    return list
+        pic_list.append(data)
+    return pic_list
 
 
 @Batch_Upload.got("Upload",
@@ -180,8 +180,8 @@ async def get_upload_mode(matcher: Matcher, event: MessageEvent, bot: Bot):
                 await matcher.finish(MessageSegment.reply(event.message_id) + "已退出批量投图。")
     utils.handle_json(Path(temp_path) / "Upload.json", 'w', url_list)
 
-    list = await get_batch_pic_list(event.user_id, Bot)
-    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=list, time_noend=True)
+    forward_msg_list = await get_batch_pic_list(event.user_id, Bot)
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=forward_msg_list, time_noend=True)
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"生成图片链接列表已完成，但图片对应信息尚未设置\n请通过命令“定义”来定义对应图片的信息。")
 
