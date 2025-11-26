@@ -63,15 +63,13 @@ SWAP：<code>≥2GB</code><br>
 Windows操作系统安装教程：<br>
 1，安装 <a href="https://pipx.pypa.io/stable/">pipx</a> 并用 pipx 安装 nb-cli ：<code>pipx install nb-cli</code>
 
-2，为该项目创建对应版本<code>>=3.9,<=3.13</code>的 <a href="https://www.python.org/">Python</a> 虚拟环境，<code>Python 3.10.11</code>是已被验证的版本号
+2，为该项目创建对应版本<code>>=3.9,<=3.13.5</code>的 <a href="https://www.python.org/">Python</a> 虚拟环境，<code>Python 3.10.11</code>是已被验证的版本号
 
-3，安装适配器和驱动器，运行<code>nb adapter install nonebot2/adapter-onebot</code>和<code>nb driver install nonebot2/driver-napcat</code>
+3，安装项目的相关依赖，运行<code>pip install .</code>
 
-4，安装相关的项目依赖，运行<code>pip install .</code>
+4，初始化项目数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
 
-5，部署数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
-
-6，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+5，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
 
 > [INFO] sentry_sdk | Uvicorn running on http://127.0.0.1:9090 (Press CTRL+C to quit)
 
