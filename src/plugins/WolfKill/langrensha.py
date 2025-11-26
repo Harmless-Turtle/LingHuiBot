@@ -21,7 +21,7 @@ try:
     min_players = config.min_players_lrs
     max_players = config.max_players_lrs
 except:
-    logger.error("读取配置失败！将使用默认配置！")
+    logger.warning("读取配置失败！将使用默认配置！")
     logger.info(f"默认最小玩家数: {min_players}, 最大玩家数: {max_players}")
     logger.warning("请在配置文件中设置min_players_lrs和max_players_lrs！")
 
