@@ -59,7 +59,11 @@ def handle_errors(func):
                 filestream.write(error_msg)
 
             # 按时间戳生成并保存报错图片到 logs/error_****.png
-            font = ImageFont.truetype(str(FONT_PATH), 28)
+            if FONT_PATH.exists():
+                font = ImageFont.truetype(str(FONT_PATH), 28)
+            else:
+                logger.warning(f"字体文件不存在: {FONT_PATH}，使用默认字体")
+                font = ImageFont.load_default()
             error_image = generate_text_image(error_msg.splitlines(), font)
             # error_image = generate_text_image(error_msg, FONT_PATH)
             error_image.save(ERROR_DIR / f"error_{times('%Y%m%d%H%M%S')}.png", format="PNG")
