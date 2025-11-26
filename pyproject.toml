@@ -16,12 +16,14 @@ dependencies = [
     "nonebot-plugin-picmcstat>=0.8.0",
     "nonebot-plugin-htmlrender>=0.6.8",
     "nonebot-plugin-localstore>=0.7.4",
+    "nonebot-plugin-userinfo>=0.2.6",
+    "nonebot-bison>=0.9.13",
     "uvicorn<=0.35.0",
     "pandas>=2.3.3",
     "pyahocorasick>=2.2.0",
     "zhconv>=1.4.3",
     "emoji>=2.15.0",
-    "pillow>=11.3.0",
+    "pillow<11.1",
     "nonebot2>=2.4.4"
 ]
 

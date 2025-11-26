@@ -33,8 +33,7 @@ try:
     Talk_key = config.furry_aikey
     logger.success("✅已成功加载FurryBar的相关配置！")
 except:
-    logger.error("请在配置文件中设置furry_token！")
-    logger.error("拒绝加载FurryBar.py！")
+    logger.warning("请在配置文件中设置furry_token！")
 
 opendata = Path.cwd()
 Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"
