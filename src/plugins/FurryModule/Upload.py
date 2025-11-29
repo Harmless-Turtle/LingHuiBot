@@ -236,7 +236,7 @@ async def Receive_Batch(matcher: Matcher, bot: Bot, event: MessageEvent):
         "token": f"{token}",
         "token_user": f"{account}",
         "token_key": f"{password}",
-        "time": int(time.time),
+        "time": int(time.time()),
         "Picturl_URL": f"{List[Pic_id]}",
         "Upload_account": f"{Upload_account_Number}",
         'Group_id': f"{Group_Number}"
