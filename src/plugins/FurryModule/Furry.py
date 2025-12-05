@@ -43,8 +43,6 @@ RanFurry = on_command(
 PicFurry = on_command("指定", aliases={"指定#"}, priority=10, block=True)  # 指定兽图
 FurryList = on_command(
     "查列表", aliases={"查列表#", "查兽兽"}, priority=10, block=True)  # 获取列表
-Modify_Furry = on_command(
-    "修改图片", priority=99, block=True, permission=SUPERUSER)  # 修改图片信息
 Furry_status = on_command(
     "兽图状态", aliases={"兽图状态#"}, priority=10, block=True)  # 兽图状态
 Service_Status = on_command(
@@ -196,68 +194,6 @@ async def Furry_List(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mess
         image.save(Pic_URL)
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"共获取到了{ListLength}条消息：" + MessageSegment.image(Pic_URL))
-
-
-@Modify_Furry.handle()
-@utils.handle_errors
-async def Modify_Furry_Function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
-    try:
-        message = str(args)
-        After_message = message.split("#")
-        Modify_id = int(After_message[1])
-        pic_Normal = After_message[2]
-        Class = After_message[3]
-        data = {
-            "picture": f"{Modify_id}",
-            "type": "1",
-            "model": "1",
-            "token": f"{token}",
-            "token_user": f"{account}",
-            "token_key": f"{password}"
-        }
-        if Class == "名字":
-            pic_Normal = str(pic_Normal)
-            data_Name_type = {"name": f"{pic_Normal}", "type": "0"}
-            data.update(data_Name_type)
-        elif Class == "留言":
-            pic_Normal = str(pic_Normal)
-            data_suggest_type = {"suggest": f"{pic_Normal}", "type": "3"}
-            data.update(data_suggest_type)
-        elif Class == "类型":
-            pic_Normal = int(pic_Normal)
-            data_class_type = {"form": f"{pic_Normal}", "type": "2"}
-            data.update(data_class_type)
-        else:
-            msggroup = event.get_message()
-            url = msggroup["image"]
-            pic_url = list(url)[-1].data["url"]
-            logger.info(pic_url)
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                image_url = await client.get(pic_url)
-                image_url = image_url.content
-            files = {'file': (f'Modify.png', image_url, 'image/png')}
-            data_type = {"type": "1"}
-            data.update(data_type)
-    except:
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + f"在获取数据时遇到问题，请按照“修改图片#id#名字/留言/类型>#修改类型/图片”的格式重新调用命令。\n修改类型接受的参数有：名字/留言/类型")
-    if "https://" in Class:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            a = await client.post(f"{api_base}/function/modify", data=data, files=files)
-            if a.status_code != 200:
-                await matcher.finish(
-                    MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{a.status_code}")
-            a = a.json()
-    else:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            a = await client.post(
-                f"{api_base}/function/modify", data=data)
-            if a.status_code != 200:
-                await matcher.finish(
-                    MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{a.status_code}")
-            a = a.json()
-    Code, Msg = a['code'], a['msg']
-    await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{Msg}[Code:{Code}]")
 
 
 @Furry_status.handle()

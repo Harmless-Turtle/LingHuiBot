@@ -16,7 +16,6 @@ from .Furry import (
     RanFurry,
     PicFurry,
     FurryList,
-    Modify_Furry,
     Furry_status,
     Service_Status,
     Check_Upload,
@@ -28,7 +27,8 @@ from .Upload import (
     UploadFurry,
     Batch_Upload,
     Batch_Set,
-    Debugger_Upload
+    Debugger_Upload,
+    Modify_Furry,
 )
 
 __plugin_name__ = "Furry Module福瑞模块插件"

@@ -51,6 +51,8 @@ UploadFurry = on_command(
 Batch_Upload = on_command("批量投图", aliases={"批量上传"}, block=True)  # 批量投图图片
 Batch_Set = on_command("定义#", aliases={"定义"}, priority=10, block=True)
 Debugger_Upload = on_command("调试", aliases={"上传调试", "上图调试"}, priority=1, permission=SUPERUSER)
+Modify_Furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)  # 修改图片信息
+
 
 @UploadFurry.handle()
 @utils.handle_errors
@@ -121,14 +123,16 @@ async def upload_furry_image(matcher: Matcher, event: MessageEvent, bot: Bot, gr
 
 # 定义获取批量投图图片列表函数
 async def get_batch_pic_list(user_qq, bot):
-    pic_url = utils.handle_json(Path(opendata) / "data/Furry_System/Upload/Batch" / str(user_qq) / "Upload.json", 'r')
+    pic_url = utils.handle_json(Path(opendata) / "data" / "Furry_System" / "Upload" / "Batch" / str(user_qq) / "Upload.json", 'r')
     pic_list = []
-    logger.debug(f'debug message:{type(pic_url)}')
+    logger.debug(f'debug message:{pic_url}')
+    logger.debug(f'picture count:{len(pic_list)}')
     for i in range(0, len(pic_url)):
         image = pic_url[i]
         text = f"这是第{i + 1}张图片，通过命令“定义”来定义开始该图片的信息。"
         data = await utils.batch_get(text, image, user_qq, "凌辉Bot")
         pic_list.append(data)
+    logger.debug(f'Return:{pic_list}')
     return pic_list
 
 
@@ -243,7 +247,7 @@ async def Receive_Batch(matcher: Matcher, bot: Bot, event: MessageEvent):
     }
     logger.info(data)
     del List[Pic_id]
-    if len(List) + 1 != 0:
+    if len(List) != 0:
         Upload_Data = utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'r')
         Upload_Data.append(data)
         utils.handle_json(Path(Temp_Path), 'w', List)
@@ -254,4 +258,65 @@ async def Receive_Batch(matcher: Matcher, bot: Bot, event: MessageEvent):
         await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
         await Batch_Set.reject(MessageSegment.reply(event.message_id) + "写入文件完成，请根据列表继续修改图片信息")
     else:
-        await matcher.finish("定义图片列表已为空，这意味着你已经定义完了全部的图片\n事件处理结束。")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "唔...您似乎已经成功为全部的图片提供了信息\n您全部的图片均已提交给凌辉Bot管理员进行审核，请您耐心等待~")
+
+@Modify_Furry.handle()
+@utils.handle_errors
+async def Modify_Furry_Function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+    try:
+        message = str(args)
+        After_message = message.split("#")
+        Modify_id = int(After_message[1])
+        pic_Normal = After_message[2]
+        Class = After_message[3]
+        data = {
+            "picture": f"{Modify_id}",
+            "type": "1",
+            "model": "1",
+            "token": f"{token}",
+            "token_user": f"{account}",
+            "token_key": f"{password}"
+        }
+        if Class == "名字":
+            pic_Normal = str(pic_Normal)
+            data_Name_type = {"name": f"{pic_Normal}", "type": "0"}
+            data.update(data_Name_type)
+        elif Class == "留言":
+            pic_Normal = str(pic_Normal)
+            data_suggest_type = {"suggest": f"{pic_Normal}", "type": "3"}
+            data.update(data_suggest_type)
+        elif Class == "类型":
+            pic_Normal = int(pic_Normal)
+            data_class_type = {"form": f"{pic_Normal}", "type": "2"}
+            data.update(data_class_type)
+        else:
+            msggroup = event.get_message()
+            url = msggroup["image"]
+            pic_url = list(url)[-1].data["url"]
+            logger.info(pic_url)
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                image_url = await client.get(pic_url)
+                image_url = image_url.content
+            files = {'file': (f'Modify.png', image_url, 'image/png')}
+            data_type = {"type": "1"}
+            data.update(data_type)
+    except:
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + f"在获取数据时遇到问题，请按照“修改图片#id#名字/留言/类型>#修改类型/图片”的格式重新调用命令。\n修改类型接受的参数有：名字/留言/类型")
+    if "https://" in Class:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            a = await client.post(f"{api_base}/function/modify", data=data, files=files)
+            if a.status_code != 200:
+                await matcher.finish(
+                    MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{a.status_code}")
+            a = a.json()
+    else:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            a = await client.post(
+                f"{api_base}/function/modify", data=data)
+            if a.status_code != 200:
+                await matcher.finish(
+                    MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{a.status_code}")
+            a = a.json()
+    Code, Msg = a['code'], a['msg']
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{Msg}[Code:{Code}]")
