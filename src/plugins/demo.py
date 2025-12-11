@@ -1,6 +1,10 @@
 import datetime
 import httpx
-from nonebot import on_command
+from nonebot import (
+    on_command,
+    get_driver,
+    logger
+)
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 from nonebot.params import CommandArg
 import os
@@ -8,9 +12,17 @@ from PIL import Image, ImageDraw, ImageFont
 from nonebot.matcher import Matcher
 
 # ========= 特殊聚会列表 =========
-SPECIAL_EVENTS = [
-    "得闲兽聚"
-]
+config = get_driver().config
+try:
+    SPECIAL_EVENTS = config.SPECIAL_EVENTS
+except:
+    SPECIAL_EVENTS = [
+        "得闲兽聚",
+        "hifurry",
+        "furrygooo"
+    ]
+    logger.error(f"未获取到自定义特殊兽聚列表，将使用内置兽聚列表，列表内容：\n{SPECIAL_EVENTS}")
+
 
 # ========= 插件指令 =========
 schedule_cmd = on_command("demo", priority=5)
@@ -231,7 +243,7 @@ def render_schedule_image(groups: dict):
             # 更新上一个节点为当前月份节点（用于下一次连接）
             prev_node_y = month_center_y
 
-        y_offset += 20
+        y_offset += 1
 
     return img
 # ========= 主逻辑 =========
