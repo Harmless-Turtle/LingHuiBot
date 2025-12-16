@@ -14,15 +14,16 @@ from nonebot.matcher import Matcher
 # ========= 特殊聚会列表 =========
 config = get_driver().config
 try:
-    SPECIAL_EVENTS = config.SPECIAL_EVENTS
+    SPECIAL_EVENTS = config.furry_special_events
+    logger.success(f"成功加载到自定义特殊兽聚列表！列表内容：\n{SPECIAL_EVENTS}")
 except:
     SPECIAL_EVENTS = [
         "得闲兽聚",
         "hifurry",
         "furrygooo"
     ]
-    logger.error(f"未获取到自定义特殊兽聚列表，将使用内置兽聚列表，列表内容：\n{SPECIAL_EVENTS}")
-
+    logger.warning(f"未获取到自定义特殊兽聚列表，将使用内置兽聚列表，列表内容：\n{SPECIAL_EVENTS}")
+    logger.warning("如果需要自定义特殊兽聚列表，请在dotEnv文件中新建“FURRYFUSION_SPECIAL_EVENTS”列表。")
 
 # ========= 插件指令 =========
 schedule_cmd = on_command("demo", priority=5)
@@ -37,17 +38,22 @@ async def get_event_list():
         async with httpx.AsyncClient(timeout=None) as client:
             resp = await client.get("https://api.furryfusion.net/service/activity")
             resp.raise_for_status()
-            response = resp.json()
-    except httpx.HTTPError:
-        return False
-    return response.get("data", [
-        {
-            "title": "请求失败！",
-            "location": f"{resp.status_code} {resp.reason_phrase}",
-            "time_start": "1900-01-01",
-            "time_end": "9999-01-01"
-        }
-    ])
+            return resp.json().get("data",[])
+    except Exception as e:
+        return [
+            {
+                "title": "请求失败！",
+                "address": "遇到了意料外的问题。",
+                "time_start": "1900.01.01",
+                "time_end": "9999.01.01"
+            },
+            {
+                "title":"错误内容",
+                "address":f"{e}",
+                "time_start":"1900.01.01",
+                "time_end":"9999.01.01"
+            }
+        ]
 
 # ========= 工具函数：生成倒计时 =========
 def calc_days_remaining(start_date: str):
@@ -124,7 +130,7 @@ def render_schedule_image(groups: dict):
         y_offset += 20  # 年份间距
 
     # 创建最终尺寸的图片
-    img = Image.new("RGB", (width, y_offset + 100), (22, 22, 28))
+    img = Image.new("RGB", (width, y_offset), (22, 22, 28))
     draw = ImageDraw.Draw(img)
 
     # 绘制内容 — 带时间树（年份左实心圆，月份左空心圆，直线连接）
@@ -243,9 +249,11 @@ def render_schedule_image(groups: dict):
             # 更新上一个节点为当前月份节点（用于下一次连接）
             prev_node_y = month_center_y
 
-        y_offset += 1
+        y_offset += 20
 
     return img
+
+
 # ========= 主逻辑 =========
 @schedule_cmd.handle()
 async def handle_schedule(matcher:Matcher,arg: Message = CommandArg()):
