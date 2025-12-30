@@ -1,12 +1,9 @@
-# 标准库
-import asyncio, os, shutil, time, httpx, math
-
+# 导入所需的库和模块
+import os, time, httpx
 from src.plugins import utils
-# 第三方库
 from types import SimpleNamespace
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
-    GroupMessageEvent,
     MessageSegment,
     MessageEvent,
     Message,
@@ -17,16 +14,21 @@ from nonebot.plugin import on_command
 from nonebot.permission import SUPERUSER
 from nonebot.params import CommandArg
 from pathlib import Path
-from PIL import Image, ImageFont
+from .tools import (
+    render_schedule_image,
+    group_by_year_month,
+    get_event_list
+)
 
-from src.plugins.utils import get_config_item
 
 # 定义Data存放路径并作为全局变量使用
 opendata = Path.cwd()
+timeout = None
 Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
 Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
 Pic_URL = opendata / 'data' / 'temp.jpg'
 allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+
 
 # FurryFusion 兽聚汇总服务
 FurryFusion_List = on_command(
@@ -36,95 +38,21 @@ FurryFusion_countdown = on_command("兽聚倒计时", block=True)
 FurryFusion_Quick_Information = on_command("兽聚快讯#", block=True)
 FurryFusion_Information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
 
-timeout = None
+
 
 @FurryFusion_List.handle()
-@utils.handle_errors
-async def furry_meetup_list(matcher: Matcher, event: MessageEvent, bot: Bot):
-    a = httpx.get(
-        "https://api.furryfusion.net/service/activity", timeout=timeout).json()
-    meetup_info = a['data']
-    state_name_list = ['活动已结束', "活动正在预告中", "售票中", "活动正在举行", "活动已取消"]
-    furry_fusion_results = []
-    user_qq = event.user_id
-    stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
-    nickname = stranger_info.get('nickname', '昵称获取失败')
-    try:
-        img = f"{allin_pic_prerequisite_path}/image_1.png"
-        file_stat = os.stat(img)
-        if int(time.time()) - file_stat.st_mtime >= 86400:
-            await bot.send(event, MessageSegment.reply(
-                event.message_id) + "图库似乎已过期，本次操作将重新同步数据，所以将需要一些时间，请耐心等待。")
-    except:
-        await bot.send(event, MessageSegment.reply(
-            event.message_id) + "图库似乎还没有生成，本次操作将重新同步数据，所以将需要一些时间，请耐心等待。")
-    furry_fusion_results.append(await utils.batch_get(
-        "通过命令“兽聚快讯#<这里输入要查询的兽聚信息条数，仅需要数字即可。>”可以获取指定项目的详细信息", None,
-        event.self_id, nickname))
-    for i in range(0, len(meetup_info)):
-        title = meetup_info[i]['title']  # 兽聚主体名称
-        name = meetup_info[i]['name']  # 当次兽聚的主题名称
-        state = state_name_list[meetup_info[i]['state']]  # 获取展会动态
-        address = meetup_info[i]['address']  # 当次兽聚的举办地址
-        time_day = meetup_info[i]['time_day']
-        time_start = meetup_info[i]['time_start']
-        time_end = meetup_info[i]['time_end']
-        image = meetup_info[i]['image']
-        text = f"第{i + 1}条兽聚信息：\n展会举办者：{title}\n兽聚主题：{name}\n当前展会状态：{state}\n举办地点：{address}\n举办时间：共{time_day}天\n【{time_start}~{time_end}】"
-        img = f"{allin_pic_prerequisite_path}/image_{i + 1}.png"
-        try:
-            file_stat = os.stat(img)
-        except:
-            file_stat = SimpleNamespace(st_mtime=0)
-        if int(time.time()) - file_stat.st_mtime >= 86400:
-            logger.warning(f"文件 image_{i + 1}.png 似乎已过期或未生成，重新生成中。")
-            img = await utils.furry_fusion_picture_handle(image, i + 1, text)
-            logger.info(f"第{i + 1}条兽聚信息已被处理。")
-        make_text = await utils.batch_get(text, img, user_qq, nickname)
+async def FurryfusionListFunction(matcher:Matcher,arg: Message = CommandArg()):
+    events = await get_event_list()
+    if events is False:
+        await matcher.finish("无法获取活动列表，请稍后再试。")
+    groups = group_by_year_month(events)
+    img = render_schedule_image(groups)
 
-        furry_fusion_results.append(make_text)
-    # 合并图片
-    furryfusion_allin_pic_path = [f"{allin_pic_prerequisite_path}/image_{i}.png" for i in
-                                  range(1, len(os.listdir(allin_pic_prerequisite_path)))]
-    columns = 1  # 设置列数
-    background_color = (255, 255, 255)  # 设置背景颜色为白色
+    # 保存临时文件
+    file_path = os.path.join(os.getcwd(), "schedule.png")
+    img.save(file_path)
 
-    IMG_WIDTH, IMG_HEIGHT = 350, 130
-
-    # 计算行列数
-    image_count = len(furryfusion_allin_pic_path)
-    rows = math.ceil(image_count / columns)
-
-    # 创建空白画布 (RGBA模式支持透明背景)
-    canvas = Image.new(
-        mode='RGB',
-        size=(columns * IMG_WIDTH, rows * IMG_HEIGHT),
-        color=background_color
-    )
-
-    # 遍历并粘贴图片
-    for index, img_path in enumerate(furryfusion_allin_pic_path):
-        # 计算当前图片位置
-        row = index // columns
-        col = index % columns
-
-        # 打开图片并确保为RGB模式
-        with Image.open(img_path) as img:
-            img = img.convert('RGB')
-            if img.size != (IMG_WIDTH, IMG_HEIGHT):
-                img = img.resize((IMG_WIDTH, IMG_HEIGHT), Image.LANCZOS)
-
-            # 计算粘贴坐标
-            x = col * IMG_WIDTH
-            y = row * IMG_HEIGHT
-            canvas.paste(img, (x, y))
-
-    # 保存结果
-    canvas.save(f"{allin_pic_prerequisite_path}/allin.jpg")
-    logger.success(f"拼接完成! 生成图片: {allin_pic_prerequisite_path}/allin.jpg")
-    logger.info(f"布局: {columns}列 x {rows}行 | 总分辨率: {canvas.size[0]}x{canvas.size[1]}")
-    await matcher.finish(MessageSegment.reply(event.message_id) + "输出完毕~" + MessageSegment.image(
-        f"{allin_pic_prerequisite_path}/allin.jpg"))
+    await matcher.finish(MessageSegment.image(f"file:///{file_path}"))
 
 
 @FurryFusion_Check.handle()
