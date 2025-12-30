@@ -24,7 +24,7 @@ from nonebot.permission import SUPERUSER
 import json,time,requests,re,datetime,httpx
 import random as rd
 from pathlib import Path
-from nonebot import logger, on_request,on_notice
+from nonebot import logger, on_request,on_notice,get_driver
 from types import SimpleNamespace
 from datetime import datetime as dt
 
@@ -36,6 +36,14 @@ AWord_Path = path / "AWord.json"
 Sign_in_Path = path / "Sign_in" / "Sign_in.json"
 Sign_in_Pic_True = path / "Sign_in" / "Background_True.png"
 Sign_in_Pic_False = path / "Sign_in" / "Background_False.jpg"
+
+# 获取机器人的名字
+config = get_driver().config
+try:
+    nickname = config.nickname
+    logger.info("加载完成")
+except:
+    logger.warning("未加载到NICKNAME配置，请前往dotEnv文件新建该配置项，否则部分功能可能不可用")
 
 async def check_bt(event: GroupMessageEvent):
     s = re.match(r'我是(.+)控', str(event.original_message))
@@ -79,7 +87,7 @@ async def add_group_switch(event:GroupRequestEvent):
 
 
 #基础功能
-Sign_in = on_command("签到",aliases={"凌辉好久不见"},priority=2,block=True)
+Sign_in = on_command("签到",aliases={"好久不见"},priority=2,block=True)
 Poke_Check = on_notice(rule=to_me()&is_type(PokeNotifyEvent), priority=3,block=False)
 Tarot = on_command("塔罗牌",priority=4,block=True)
 AWord = on_command("一言",priority=4,block=True)
@@ -241,10 +249,13 @@ async def AWord_Function(matcher:Matcher,event=MessageEvent,args:Message = Comma
 @Sign_in.handle()
 @utils.handle_errors
 async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMessageEvent,args:Message=CommandArg()):
-    if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
+    if args.extract_plain_text():
+        await matcher.finish()    # 若消息后面存在文本则不响应
+    full = str(event.original_message).strip()
+    if any(name not in full for name in nickname):
+        await matcher.finish()
     # 打开文件并写入Sign_Dict字典
     Sign_Dict = utils.handle_json(Sign_in_Path, 'r')
-
     # 获取触发人QQ号和群聊号
     User,Group = event.user_id,GroupEvent.group_id
     # 获取触发时间
@@ -309,8 +320,7 @@ async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMe
             Text = "确实好久不见了诶~抱抱~\n"
             pic = Sign_in_Pic_True
         # 输出
-        maomao = rd.randint(5,10)
-        await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic)+f"{Text}签到成功。本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位~\n[DEBUG]{maomao}\n——————\n“{Result}”")
+        await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(pic)+f"{Text}签到成功。本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位~\n——————\n“{Result}”")
     # 输出
     await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}签到成功。您本月在本群中已签到{User_Count}次，今天在本群中排名第{Group_Count}位。\n——————\n“{Result}”")
 
