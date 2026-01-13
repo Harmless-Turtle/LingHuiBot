@@ -61,32 +61,11 @@ SWAP：<code>≥2GB</code><br>
 
 若您的设备性能已满足如上最低条件，请开始部署您的软件部分：<br>
 Windows操作系统安装教程：<br>
-1，安装 <a href="https://pipx.pypa.io/stable/">pipx</a> 并用 pipx 安装 nb-cli ：<code>pipx install nb-cli</code>
+1，安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境<code>uv sync</code>
 
-2，为该项目创建对应版本<code>>=3.9,<=3.13.5</code>的 <a href="https://www.python.org/">Python</a> 虚拟环境，<code>Python 3.10.11</code>是已被验证的版本号
+3，初始化项目数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
 
-3，安装项目的驱动器，适配器及其他商店插件依赖。依次运行：<br>
-<code>nb adapter install nonebot-adapter-onebot</code><br>
-<code>nb driver install nonebot2[fastapi]</code><br>
-<code>nb plugin install nonebot-plugin-orm</code><br>
-<code>nb plugin install nonebot-plugin-apscheduler</code><br>
-<code>nb plugin install nonebot-plugin-picstatus</code><br>
-<code>nb plugin install nonebot-plugin-picmcstat</code><br>
-<code>nb plugin install nonebot-plugin-multincm</code><br>
-<code>nb plugin install nonebot-plugin-datastore</code><br>
-<code>nb plugin install nonebot-plugin-htmlrender</code><br>
-<code>nb plugin install nonebot-plugin-localstore</code><br>
-<code>nb plugin install nonebot-bison</code><br>
-<code>nb plugin install nonebot_plugin_userinfo</code><br>
-
-4，安装项目的包依赖。依次运行：<br>
-<code>pip install pandas</code><br>
-<code>pip install pyahocorasick</code><br>
-<code>pip install zhconv</code><br>
-
-5，初始化项目数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
-
-6，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+4，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
 
 > [INFO] sentry_sdk | Uvicorn running on http://127.0.0.1:9090 (Press CTRL+C to quit)
 
