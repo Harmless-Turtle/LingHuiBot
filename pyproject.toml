@@ -43,3 +43,20 @@ nonebot-plugin-htmlrender = ["nonebot_plugin_htmlrender"]
 [tool.nonebot.adapters]
 "@local" = []
 nonebot-adapter-onebot = [{name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11"}]
+
+[tool.pyright]
+"typeCheckingMode"= "basic"
+"reportArgumentType"= "none"
+"reportOptionalSubscript"= "none"
+"reportCallIssue"= "none"
+"reportOptionalMemberAccess"= "none"
+"reportAttributeAccessIssue"= "none"
+"reportAssignmentType"= "none"
+"reportReturnType"= "none"
+"reportGeneralTypeIssues"= "none"
+"reportInvalidTypeVarUse"= "none"
+"reportInvalidTypeArguments"= "none"
+"reportOptionalCall"= "none"
+"reportUnboundVariable"="none"
+"reportRedeclaration"="none"
+"reportOperatorIssue"="none"
