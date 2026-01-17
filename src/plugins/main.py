@@ -87,32 +87,32 @@ async def add_group_switch(event:GroupRequestEvent):
 
 
 #基础功能
-Sign_in = on_command("签到",aliases={"好久不见"},priority=2,block=True)
-Poke_Check = on_notice(rule=to_me()&is_type(PokeNotifyEvent), priority=3,block=False)
-Tarot = on_command("塔罗牌",priority=4,block=True)
-AWord = on_command("一言",priority=4,block=True)
+sign_in = on_command("签到",aliases={"好久不见"},priority=2,block=True)
+poke_check = on_notice(rule=to_me()&is_type(PokeNotifyEvent), priority=3,block=False)
+tarot = on_command("塔罗牌",priority=4,block=True)
+aword = on_command("一言",priority=4,block=True)
 btfrk = on_command("我是",rule=check_bt)
-Like = on_command("点赞",aliases={"赞我"},block=True)
-Eat_What = on_command("今天吃什么")
+like = on_command("点赞",aliases={"赞我"},block=True)
+eat_what = on_command("今天吃什么")
 
 # 入群检查
 add_group = on_request(rule=add_group_switch)
 switch_add_group = on_command("入群检测",permission=SUPERUSER,block=True)
 
 #入群欢迎系统
-Change_Welcome = on_command("入群欢迎",permission=SUPERUSER,block=True)
-Change_Welcome_Text = on_command("修改欢迎",aliases={"欢迎文本","修改入群欢迎"},permission=SUPERUSER,block=True)
+change_welcome = on_command("入群欢迎",permission=SUPERUSER,block=True)
+change_welcome_text = on_command("修改欢迎",aliases={"欢迎文本","修改入群欢迎"},permission=SUPERUSER,block=True)
 
 # 是否提示退群
-Exit_Change = on_command("退群提示",aliases={"退群提醒","退群通知","退群检测"},block = True)
+exit_change = on_command("退群提示",aliases={"退群提醒","退群通知","退群检测"},block = True)
 
 # 定义全局变量
-Poke_Count = 0
-Time_Count = time.time()
-AT_Count = 0
+poke_count = 0
+time_count = time.time()
+AT_count = 0
 AT_Time = time.time()
 
-@Poke_Check.handle()
+@poke_check.handle()
 @utils.handle_errors
 async def PC_Function(matcher:Matcher,event: PokeNotifyEvent):
     global Poke_Count, Time_Count, Send
@@ -135,7 +135,7 @@ async def PC_Function(matcher:Matcher,event: PokeNotifyEvent):
         Choise_Text = Text_List[rd.randint(0, len(Text_List)-1)]
         await matcher.finish(f"{Choise_Text}")
 
-@Tarot.handle()
+@tarot.handle()
 @utils.handle_errors
 async def Tarot_Function(matcher:Matcher,event: MessageEvent):
     get = requests.get("https://oiapi.net/API/Tarot").json()
@@ -180,7 +180,7 @@ async def SelfJoinGroupWelcome_Function(matcher:Matcher,event=GroupIncreaseNotic
     else:
         pass
 
-@Change_Welcome.handle()
+@change_welcome.handle()
 @utils.handle_errors
 async def Change_Welcome_Function(matcher:Matcher,event:GroupMessageEvent,Recivce:MessageEvent):
     Dict = utils.handle_json(Welcome_Path, 'r')
@@ -213,7 +213,7 @@ async def Change_Welcome_Function(matcher:Matcher,event:GroupMessageEvent,Recivc
     utils.handle_json(Welcome_Path, 'w', Dict)
     await matcher.finish(MessageSegment.reply(event.message_id)+"操作成功完成。")
 
-@Change_Welcome_Text.handle()
+@change_welcome_text.handle()
 @utils.handle_errors
 async def CWT_Function(matcher:Matcher,event:MessageEvent,args:Message = CommandArg()):
     args = str(args)
@@ -236,7 +236,7 @@ async def CWT_Function(matcher:Matcher,event:MessageEvent,args:Message = Command
     utils.handle_json(Welcome_Path, 'w', Dict)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"{Text}{Text_1}")        
 
-@AWord.handle()
+@aword.handle()
 @utils.handle_errors
 async def AWord_Function(matcher:Matcher,event=MessageEvent,args:Message = CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
@@ -246,7 +246,7 @@ async def AWord_Function(matcher:Matcher,event=MessageEvent,args:Message = Comma
     await matcher.finish(MessageSegment.reply(event.message_id)+f"“{Result}”")
 
 #签到触发器与实现
-@Sign_in.handle()
+@sign_in.handle()
 @utils.handle_errors
 async def Sign_in_Function(matcher:Matcher,event:MessageEvent,GroupEvent:GroupMessageEvent,args:Message=CommandArg()):
     if args.extract_plain_text():
@@ -348,7 +348,7 @@ async def wc_btfrk(bot:Bot,matcher:Matcher,event:MessageEvent):
     ])
     await bot.send(event, message)
 
-@Exit_Change.handle()
+@exit_change.handle()
 @utils.handle_errors
 async def Change_Exit_Function(matcher:Matcher,event:MessageEvent,args:Message=CommandArg()):
     args = str(args)
@@ -524,7 +524,7 @@ async def CF_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message=Co
     except ActionFailed:
         await matcher.finish(MessageSegment.reply(event.message_id)+"未找到对应的flag，请检查flag是否正确。")
 
-@Like.handle()
+@like.handle()
 async def Like_Function(bot:Bot,matcher:Matcher,event:MessageEvent,args:Message=CommandArg()):
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
     try:
@@ -537,7 +537,7 @@ async def Like_Function(bot:Bot,matcher:Matcher,event:MessageEvent,args:Message=
     except ActionFailed:
         await matcher.finish(MessageSegment.reply(event.message_id)+"凌辉今天已经给你点过赞了啦qwq...不能再点了哦~")
 
-@Eat_What.handle()
+@eat_what.handle()
 async def Eat_Function(matcher:Matcher,event:MessageEvent,bot:Bot,args:Message = CommandArg()):
     if str(args) != "":
         List = await bot.get_group_member_list(group_id=event.group_id)

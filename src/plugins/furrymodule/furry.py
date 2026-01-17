@@ -38,9 +38,9 @@ allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_im
 # 定义事件响应器
 
 # Foxtail-Furry 兽云祭服务
-RanFurry = on_command(
+FurryRan = on_command(
     "来只兽兽", aliases={"来只毛", "来只", "来只兽"}, priority=10, block=True)  # 随机兽图
-PicFurry = on_command("指定", aliases={"指定#"}, priority=10, block=True)  # 指定兽图
+FurryPic = on_command("指定", aliases={"指定#"}, priority=10, block=True)  # 指定兽图
 FurryList = on_command(
     "查列表", aliases={"查列表#", "查兽兽"}, priority=10, block=True)  # 获取列表
 Furry_status = on_command(
@@ -58,7 +58,7 @@ Check_Upload_Decide = on_command(
 Upload_Clear = on_command("清空上传数据", aliases={"清除上传"}, permission=SUPERUSER)
 # login_account = on_command("登录Fur",permission=SUPERUSER)
 
-@RanFurry.handle()
+@FurryRan.handle()
 @utils.handle_errors
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
@@ -108,7 +108,7 @@ async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
 
 # 使用PicFurry响应器的handle装饰器装饰函数PicFur_handle_function
 
-@PicFurry.handle()
+@FurryPic.handle()
 @utils.handle_errors
 async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     sid = str(args)
@@ -228,8 +228,8 @@ async def Service_Furry_Status(matcher: Matcher, event: MessageEvent):
     if code != "40000":
         await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{msg}[Code={code}]")
     else:
-        time, examine, power, atlas, total, page = a['time']['count'], a['examine']['count'], a[
-            'power']['count'], a['atlas']['count'], a['total']['count'], a['page']['count']
+        time, examine, power, atlas, total = a['time']['count'], a['examine']['count'], a[
+            'power']['count'], a['atlas']['count'], a['total']['count']
         await matcher.finish(MessageSegment.reply(event.message_id) + f"""平台返回：
 ==========FurBot==========
 运行时长：{time}天
