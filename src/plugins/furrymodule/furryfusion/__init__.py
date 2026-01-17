@@ -1,1 +1,1 @@
-from .FurryFusion import *
+from .furryfusion import *

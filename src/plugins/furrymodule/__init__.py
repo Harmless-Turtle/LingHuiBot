@@ -1,18 +1,18 @@
-from .FurryFusion.FurryFusion import (
+from .furryfusion.furryfusion import (
     FurryFusion_List,
     FurryFusion_Check,
     FurryFusion_countdown,
     FurryFusion_Quick_Information,
     FurryFusion_Information
 )
-from .FurryBar import (
+from .furrybar import (
     FurryBar,
     change_config,
     Reset_FurryBar,
     Clear,
     latest
 )
-from .Furry import (
+from .furry import (
     RanFurry,
     PicFurry,
     FurryList,
@@ -23,7 +23,7 @@ from .Furry import (
     Upload_Clear
 )
 
-from .Upload import (
+from .upload import (
     UploadFurry,
     Batch_Upload,
     Batch_Set,
