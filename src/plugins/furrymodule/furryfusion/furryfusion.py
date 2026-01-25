@@ -41,7 +41,7 @@ furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, b
 
 
 @furryfusion_list.handle()
-async def FurryfusionListFunction(matcher:Matcher,arg: Message = CommandArg()):
+async def furryfusion_list_function(matcher:Matcher):
     events = await get_event_list()
     if events is False:
         await matcher.finish("无法获取活动列表，请稍后再试。")
@@ -57,7 +57,7 @@ async def FurryfusionListFunction(matcher:Matcher,arg: Message = CommandArg()):
 
 @furryfusion_check.handle()
 @utils.handle_errors
-async def FurryFusion_Check_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+async def furryfusion_check_function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     message = str(args)
     if "省" in message and "市" in message:
         await matcher.send("不应带有省+市字样，将取市作为查找依据。")
@@ -110,7 +110,7 @@ async def FurryFusion_Check_Function(matcher: Matcher, event: MessageEvent, bot:
 
 @furryfusion_countdown.handle()
 @utils.handle_errors
-async def FurryFusion_countdown_Function(matcher: Matcher, event: MessageEvent, bot: Bot):
+async def furryfusion_countdown_function(matcher: Matcher, event: MessageEvent, bot: Bot):
     data = httpx.get(
         "https://api.furryfusion.net/service/countdown", timeout=timeout).json()
     code = data['code']
@@ -144,7 +144,7 @@ async def FurryFusion_countdown_Function(matcher: Matcher, event: MessageEvent, 
 
 @furryfusion_quick_information.handle()
 @utils.handle_errors
-async def FurryFusion_Quick_Information_Function(matcher: Matcher, event: MessageEvent, bot: Bot,
+async def furryfusion_quick_information_function(matcher: Matcher, event: MessageEvent, bot: Bot,
                                                  args: Message = CommandArg()):
     args = int(str(args))
     Get = httpx.get(

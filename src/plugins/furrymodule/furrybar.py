@@ -41,7 +41,7 @@ Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"
 
 @furrybar.handle()
 @utils.handle_errors
-async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Reply:GroupMessageEvent):
+async def furrybar_function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Reply:GroupMessageEvent):
     # await matcher.finish(MessageSegment.reply(event.message_id)+"该功能正在维护，暂停提供服务")
     logger.info("FB")
     content = str(event.get_message())
@@ -117,7 +117,7 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
 
 
 @reset_furrybar.handle()
-async def Reset_Function(matcher:Matcher,event: MessageEvent):
+async def reset_function(matcher:Matcher,event: MessageEvent):
     User = event.user_id
     Main_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}.json"
     Normal_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}_Normal.json"
@@ -125,7 +125,7 @@ async def Reset_Function(matcher:Matcher,event: MessageEvent):
     await matcher.finish(MessageSegment.reply(event.message_id)+"已重置聊天记录。")
 
 @change_config.handle()
-async def change_config_Function(event:MessageEvent,args:Message = CommandArg()):
+async def change_config_function(event:MessageEvent,args:Message = CommandArg()):
     args = str(args)
     args_List = args.split(" ")
     logger.info(args)
@@ -154,7 +154,7 @@ async def change_config_Function(event:MessageEvent,args:Message = CommandArg())
     await change_config.finish(MessageSegment.reply(event.message_id)+f"已记录个人设定，内容如下：\nUser：你知道我是谁吗\nAssistant：{Temp}\n注：如需改动立即生效，请发送“重置模型”命令")
     
 @clear.handle()
-async def Clear_Function(matcher:Matcher,event:MessageEvent):
+async def clear_function(matcher:Matcher,event:MessageEvent):
     User = event.user_id
     Main_Path_Temp = opendata / f"data/Furry_System/FurryBar/{User}"
     if os.path.exists(Main_Path_Temp):
@@ -164,7 +164,7 @@ async def Clear_Function(matcher:Matcher,event:MessageEvent):
         await matcher.finish("清除失败：未找到个人信息。")
 
 @latest.handle()
-async def Latest_Talk(matcher:Matcher,event:MessageEvent):
+async def latest_talk(matcher:Matcher,event:MessageEvent):
     User = event.user_id
     Path = f"{opendata}/data/Furry_System/FurryBar/{User}/{User}.json"
     if not os.path.exists(Path):

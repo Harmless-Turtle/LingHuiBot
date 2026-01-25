@@ -13,9 +13,9 @@ from .furrybar import (
     latest
 )
 from .furry import (
-    furryrandom,
-    furrypicture,
-    furrylist,
+    furry_random,
+    furry_picture,
+    furry_list,
     furry_status,
     service_status,
     check_upload,
@@ -24,11 +24,11 @@ from .furry import (
 )
 
 from .upload import (
-    UploadFurry,
-    Batch_Upload,
-    Batch_Set,
-    Debugger_Upload,
-    Modify_Furry,
+    upload_furry,
+    batch_upload,
+    batch_set,
+    debugger_upload,
+    modify_furry,
 )
 
 __plugin_name__ = "Furry Module福瑞模块插件"
@@ -71,14 +71,14 @@ __all__ = [
     reset_furrybar,
     clear,
     latest,
-    furryrandom,
-    furrypicture,
-    UploadFurry,
-    Batch_Upload,
-    Batch_Set,
-    Debugger_Upload,
-    furrylist,
-    Modify_Furry,
+    furry_random,
+    furry_picture,
+    upload_furry,
+    batch_upload,
+    batch_set,
+    debugger_upload,
+    furry_list,
+    modify_furry,
     furry_status,
     service_status,
     check_upload,
