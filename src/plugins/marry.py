@@ -192,7 +192,7 @@ async def MP_Function(matcher:Matcher,event:MessageEvent,bot:Bot):
     if Data.get(str(Self_QQ), {}).get(group_id, {}).get("Request",0) != 0:
         Request = Data[str(Self_QQ)][group_id]['Request']
         stranger_info = await bot.get_stranger_info(user_id=Request)
-        Request_Text = [f"向{stranger_info}求婚中",f"被{stranger_info}求婚中"]
+        Request_Text = [f"向{stranger_info["nick"]}求婚中",f"被{stranger_info["nick"]}求婚中"]
         Requset_mode = Data[str(Self_QQ)][group_id]['Request_Mode']
         await matcher.finish(MessageSegment.reply(event.message_id)+f"你似乎正在{Request_Text[Requset_mode]}呢owo")
     # 获取或创建用户数据字典

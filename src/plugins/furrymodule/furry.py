@@ -30,35 +30,35 @@ api_base = "https://cloud.foxtail.cn/api"
 
 # 定义Data存放路径并作为全局变量使用
 opendata = Path.cwd()
-Data_Path = opendata / 'data' / 'Furry_System' / 'Upload'
-Font_Path = opendata / 'data' / 'MiSans-Demibold.ttf'
-Pic_URL = opendata / 'data' / 'temp.jpg'
+data_path = opendata / 'data' / 'Furry_System' / 'Upload'
+font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
+pic_URL = opendata / 'data' / 'temp.jpg'
 allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
 
 # 定义事件响应器
 
 # Foxtail-Furry 兽云祭服务
-FurryRan = on_command(
+furryrandom = on_command(
     "来只兽兽", aliases={"来只毛", "来只", "来只兽"}, priority=10, block=True)  # 随机兽图
-FurryPic = on_command("指定", aliases={"指定#"}, priority=10, block=True)  # 指定兽图
-FurryList = on_command(
+furrypicture = on_command("指定", aliases={"指定#"}, priority=10, block=True)  # 指定兽图
+furrylist = on_command(
     "查列表", aliases={"查列表#", "查兽兽"}, priority=10, block=True)  # 获取列表
-Furry_status = on_command(
+furry_status = on_command(
     "兽图状态", aliases={"兽图状态#"}, priority=10, block=True)  # 兽图状态
-Service_Status = on_command(
+service_status = on_command(
     "服务器状态", aliases={"兽云祭信息", "兽云祭状态", "服务状态"}, priority=10, block=True)  # 获取服务器信息
 # See_Furry = on_command("鉴毛")
 # 投图审核系统->仅NoneBot SUPERUSER组可用
-Check_Upload = on_command(
+check_upload = on_command(
     "待审核列表", aliases={"审核列表", "上传列表"}, priority=100, block=True, permission=SUPERUSER)  # 获取审核列表
-Check_Upload_Decide = on_command(
+check_upload_decide = on_command(
     "同意上传#", aliases={"同意上载#", "拒绝上传#", "拒绝上载#"}, priority=99, block=True,
     permission=SUPERUSER)  # 决定是否上传
 # Batch_Check = on_command("批量审核",aliases={"批量上传"},priority=98,block=True,permission=SUPERUSER)
-Upload_Clear = on_command("清空上传数据", aliases={"清除上传"}, permission=SUPERUSER)
+upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permission=SUPERUSER)
 # login_account = on_command("登录Fur",permission=SUPERUSER)
 
-@FurryRan.handle()
+@furryrandom.handle()
 @utils.handle_errors
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
@@ -108,7 +108,7 @@ async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
 
 # 使用PicFurry响应器的handle装饰器装饰函数PicFur_handle_function
 
-@FurryPic.handle()
+@furrypicture.handle()
 @utils.handle_errors
 async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     sid = str(args)
@@ -139,9 +139,9 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
             await matcher.finish(MessageSegment.reply(
                 event.message_id) + f"这只兽兽叫“{name}”~\n{suggest}图片码为：{id}\n" + MessageSegment.image(url))
 
-@FurryList.handle()
+@furrylist.handle()
 @utils.handle_errors
-async def Furry_List(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     name = str(args)
     Orignal_data = httpx.get(
         f"{api_base}/function/pulllist?type=&name={name}", timeout=timeout)
@@ -185,20 +185,20 @@ async def Furry_List(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mess
 
         # 优化后的图片生成部分
         try:
-            font = ImageFont.truetype(Font_Path, size=30)
+            font = ImageFont.truetype(font_path, size=30)
         except:
             font = ImageFont.load_default()
 
         text_lines = [line for line in text.split('\n') if line.strip() != '']
         image = utils.generate_text_image(text_lines, font)
-        image.save(Pic_URL)
+        image.save(pic_URL)
         await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"共获取到了{ListLength}条消息：" + MessageSegment.image(Pic_URL))
+            MessageSegment.reply(event.message_id) + f"共获取到了{ListLength}条消息：" + MessageSegment.image(pic_URL))
 
 
-@Furry_status.handle()
+@furry_status.handle()
 @utils.handle_errors
-async def Furry_Status_Function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     Get = httpx.get(
         f"{api_base}/function/pictures?picture={args}&model=1", timeout=timeout)
@@ -219,7 +219,7 @@ async def Furry_Status_Function(matcher: Matcher, event: MessageEvent, args: Mes
 =======LingHuiBot=======""")
 
 
-@Service_Status.handle()
+@service_status.handle()
 @utils.handle_errors
 async def Service_Furry_Status(matcher: Matcher, event: MessageEvent):
     a = httpx.get(
@@ -268,11 +268,11 @@ async def Service_Furry_Status(matcher: Matcher, event: MessageEvent):
 #             await matcher.finish(f"在运行中遇到未知错误。\n错误已添加至错误日志中，请联系管理员进行检查或提供帮助。")
 
 
-@Check_Upload.handle()
+@check_upload.handle()
 @utils.handle_errors
 async def CU_Function(matcher: Matcher, event: MessageEvent, bot: Bot):
     Data_List, List = [], []
-    Data_List = utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'r')
+    Data_List = utils.handle_json(Path(data_path) / "Upload_Data.json", 'r')
     if Data_List == []:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前投图待审核列表是空的")
     Len = len(Data_List)
@@ -301,7 +301,7 @@ async def CU_Function(matcher: Matcher, event: MessageEvent, bot: Bot):
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
 
-@Check_Upload_Decide.handle()
+@check_upload_decide.handle()
 @utils.handle_errors
 async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     await matcher.send("将通过凌辉Bot内置账户进行处理")
@@ -310,7 +310,7 @@ async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Me
     args = args.split("#")
     Temp_args = args
     args = int(args[0])
-    List = utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'r')
+    List = utils.handle_json(Path(data_path) / "Upload_Data.json", 'r')
     logger.info(List)
     logger.info(Temp_args)
     if args > len(List):
@@ -319,7 +319,7 @@ async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Me
     if List == []:
         await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：似乎没有待审核的图片。")
     Data_Normal = List[args - 1]
-    Pic_URL = Data_Normal['Picturl_URL']
+    pic_URL = Data_Normal['Picturl_URL']
     Time_Wait = Data_Normal['time']
     Time = time.localtime(int(Time_Wait))
     Name = Data_Normal['name']
@@ -334,7 +334,7 @@ async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Me
     del Data_Normal['Picturl_URL'], Data_Normal['Group_id'], Data_Normal['Upload_account'], Data_Normal['time']
     if "拒绝" in str(Data_Message):
         del List[args - 1]
-        utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'w', List)
+        utils.handle_json(Path(data_path) / "Upload_Data.json", 'w', List)
 
         Data_Message = str(Data_Message)
         if Data_Message.count("#") != 2:
@@ -349,12 +349,12 @@ async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Me
 图片名字：{Name}
 图片类型：{TypeValue}
 图片留言：{Suggest}
-图片内容：""" + MessageSegment.image(f"{Pic_URL}"), time_noend=True)
-        os.remove(f"{Pic_URL}")
+图片内容：""" + MessageSegment.image(f"{pic_URL}"), time_noend=True)
+        os.remove(f"{pic_URL}")
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"拒绝上载的操作已完成\n传入拒绝理由参数：{Caution}")
 
-    with open(f"{Pic_URL}", 'rb') as f:
+    with open(f"{pic_URL}", 'rb') as f:
         async with httpx.AsyncClient(timeout=timeout) as client:
             a = await client.post(f"{api_base}/function/upload", data=Data_Normal,
                                   files={'file': ('Upload.png', f, 'image/png')})
@@ -379,19 +379,19 @@ async def CUD_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Me
 您的数字id：{id}
 您的图片码：{picture}"""
         del List[args - 1]
-        utils.handle_json(Path(Data_Path) / "Upload_Data.json", 'w', List)
+        utils.handle_json(Path(data_path) / "Upload_Data.json", 'w', List)
         if event.group_id != Group_id:
             await bot.call_api("send_group_msg", group_id=Group_id, message=f"""凌辉Bot管理员已经同意了来自{account}的投图请求，请等待兽云祭管理员进行审核
-上载图片：""" + MessageSegment.image(f"{Pic_URL}") + f"""数字id：{id}
+上载图片：""" + MessageSegment.image(f"{pic_URL}") + f"""数字id：{id}
 【上传时间戳：{time.strftime("%Y-%m-%d %H:%M:%S", Time)}】""", time_noend=True)
         await bot.call_api("send_group_msg", group_id=event.group_id,
-                           message=f"{text}\n上载图片：" + MessageSegment.image(f"{Pic_URL}"), time_noend=True)
-        os.remove(f"{Pic_URL}")
+                           message=f"{text}\n上载图片：" + MessageSegment.image(f"{pic_URL}"), time_noend=True)
+        os.remove(f"{pic_URL}")
 
-@Upload_Clear.handle()
+@upload_clear.handle()
 async def UC_Function(matcher: Matcher):
-    Temp_Path = Data_Path / "Upload_Data.json"
-    Dir_Path = Data_Path / "Batch"
+    Temp_Path = data_path / "Upload_Data.json"
+    Dir_Path = data_path / "Batch"
     if os.path.exists(Temp_Path):
         os.remove(Temp_Path)
     if os.path.exists(Dir_Path):

@@ -46,15 +46,15 @@ else:
     logger.warning("请注意，当前功能受限制！")
     logger.warning("您没有填写token/account/password，这将导致“投图”功能不可用！")
 
-UploadFurry = on_command(
+uploadfurry = on_command(
     "一键上传", aliases={"投图", "管理员上传"}, priority=10, block=True)  # 上传图片
-Batch_Upload = on_command("批量投图", aliases={"批量上传"}, block=True)  # 批量投图图片
-Batch_Set = on_command("定义#", aliases={"定义"}, priority=10, block=True)
-Debugger_Upload = on_command("调试", aliases={"上传调试", "上图调试"}, priority=1, permission=SUPERUSER)
-Modify_Furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)  # 修改图片信息
+batch_upload = on_command("批量投图", aliases={"批量上传"}, block=True)  # 批量投图图片
+batch_set = on_command("定义#", aliases={"定义"}, priority=10, block=True)
+debugger_upload = on_command("调试", aliases={"上传调试", "上图调试"}, priority=1, permission=SUPERUSER)
+modify_furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)  # 修改图片信息
 
 
-@UploadFurry.handle()
+@uploadfurry.handle()
 @utils.handle_errors
 async def upload_furry_image(matcher: Matcher, event: MessageEvent, bot: Bot, group: GroupMessageEvent,
                              args: Message = CommandArg()):
@@ -136,7 +136,7 @@ async def get_batch_pic_list(user_qq, bot):
     return pic_list
 
 
-@Batch_Upload.got("Upload",
+@batch_upload.got("Upload",
                   prompt="请一次性发送您要上传的图片。\n当您在发送上传图片时，请在聊天框键入一个空格以将所有图片包含进1个Message中。")
 @utils.handle_errors
 async def get_upload_mode(matcher: Matcher, event: MessageEvent, bot: Bot):
@@ -188,7 +188,7 @@ async def get_upload_mode(matcher: Matcher, event: MessageEvent, bot: Bot):
         event.message_id) + f"生成图片链接列表已完成，但图片对应信息尚未设置\n请通过命令“定义”来定义对应图片的信息。")
 
 
-@Batch_Set.got("Set_Message", prompt="请定义图片信息（定义实例：定义#1#名字#类别#留言）\n结束定义可发送“取消”或“退出”")
+@batch_set.got("Set_Message", prompt="请定义图片信息（定义实例：定义#1#名字#类别#留言）\n结束定义可发送“取消”或“退出”")
 @utils.handle_errors
 async def Receive_Batch(matcher: Matcher, bot: Bot, event: MessageEvent):
     global Set_Count
@@ -256,11 +256,11 @@ async def Receive_Batch(matcher: Matcher, bot: Bot, event: MessageEvent):
 
         logger.info(List)
         await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
-        await Batch_Set.reject(MessageSegment.reply(event.message_id) + "写入文件完成，请根据列表继续修改图片信息")
+        await batch_set.reject(MessageSegment.reply(event.message_id) + "写入文件完成，请根据列表继续修改图片信息")
     else:
         await matcher.finish(MessageSegment.reply(event.message_id) + "唔...您似乎已经成功为全部的图片提供了信息\n您全部的图片均已提交给凌辉Bot管理员进行审核，请您耐心等待~")
 
-@Modify_Furry.handle()
+@modify_furry.handle()
 @utils.handle_errors
 async def Modify_Furry_Function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     try:

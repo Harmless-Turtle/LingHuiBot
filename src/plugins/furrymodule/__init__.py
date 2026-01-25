@@ -1,26 +1,26 @@
 from .furryfusion.furryfusion import (
-    FurryFusion_List,
-    FurryFusion_Check,
-    FurryFusion_countdown,
-    FurryFusion_Quick_Information,
-    FurryFusion_Information
+    furryfusion_list,
+    furryfusion_check,
+    furryfusion_countdown,
+    furryfusion_quick_information,
+    furryfusion_information
 )
 from .furrybar import (
-    FurryBar,
+    furrybar,
     change_config,
-    Reset_FurryBar,
-    Clear,
+    reset_furrybar,
+    clear,
     latest
 )
 from .furry import (
-    RanFurry,
-    PicFurry,
-    FurryList,
-    Furry_status,
-    Service_Status,
-    Check_Upload,
-    Check_Upload_Decide,
-    Upload_Clear
+    furryrandom,
+    furrypicture,
+    furrylist,
+    furry_status,
+    service_status,
+    check_upload,
+    check_upload_decide,
+    upload_clear
 )
 
 from .upload import (
@@ -61,29 +61,29 @@ FurryBar功能：
 
 # 导出处理器以便NoneBot自动加载
 __all__ = [
-    FurryFusion_List,
-    FurryFusion_Check,
-    FurryFusion_countdown,
-    FurryFusion_Quick_Information,
-    FurryFusion_Information,
-    FurryBar,
+    furryfusion_list,
+    furryfusion_check,
+    furryfusion_countdown,
+    furryfusion_quick_information,
+    furryfusion_information,
+    furrybar,
     change_config,
-    Reset_FurryBar,
-    Clear,
+    reset_furrybar,
+    clear,
     latest,
-    RanFurry,
-    PicFurry,
+    furryrandom,
+    furrypicture,
     UploadFurry,
     Batch_Upload,
     Batch_Set,
     Debugger_Upload,
-    FurryList,
+    furrylist,
     Modify_Furry,
-    Furry_status,
-    Service_Status,
-    Check_Upload,
-    Check_Upload_Decide,
-    Upload_Clear
+    furry_status,
+    service_status,
+    check_upload,
+    check_upload_decide,
+    upload_clear
 ]
 
 

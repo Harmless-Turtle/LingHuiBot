@@ -21,11 +21,11 @@ from nonebot.matcher import Matcher
 from nonebot import logger
 from nonebot import get_driver
 
-FurryBar = on_message(rule=to_me(),priority=99, block=True)
+furrybar = on_message(rule=to_me(),priority=99, block=True)
 change_config = on_command("更改用户信息",aliases={"创建用户信息","定义个人信息"},block=False)
-Reset_FurryBar = on_command(
+reset_furrybar = on_command(
     "Reset", aliases={"重置对话", "重置模型"})
-Clear = on_command("删除信息",aliases={"重置fb","清空数据"})
+clear = on_command("删除信息",aliases={"重置fb","清空数据"})
 latest = on_command("上次对话",aliases={"上次聊天","最后对话","最后记录"})
 
 config = get_driver().config
@@ -39,13 +39,13 @@ opendata = Path.cwd()
 Normal_Path = opendata / "data"/"Furry_System"/"FurryBar"/"FurryBar_Normal.json"
 # Model_Path = opendata / "data/Furry_System/FurryBar/model.json"
 
-@FurryBar.handle()
+@furrybar.handle()
 @utils.handle_errors
 async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Reply:GroupMessageEvent):
-    # await FurryBar.finish(MessageSegment.reply(event.message_id)+"该功能正在维护，暂停提供服务")
+    # await matcher.finish(MessageSegment.reply(event.message_id)+"该功能正在维护，暂停提供服务")
     logger.info("FB")
     content = str(event.get_message())
-    if content == "" or "reply" in str(Reply.get_event_description()) or str(event.user_id) == "2854196310" or "[CQ:at,qq=3806419216]" not in str(event.original_message) or "单词" in content: await FurryBar.finish()
+    if content == "" or "reply" in str(Reply.get_event_description()) or str(event.user_id) == "2854196310" or "[CQ:at,qq=3806419216]" not in str(event.original_message) or "单词" in content: await matcher.finish()
     User = event.user_id
     Main_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}.json"
     Normal_Dict_Temp = opendata / f"data/Furry_System/FurryBar/{User}/{User}_Normal.json"
@@ -68,13 +68,13 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
     model = model['model']
     simplified_text = zhconv.convert(content, 'zh-hans')
     if emoji.emoji_count(content) != 0:
-        await FurryBar.finish(MessageSegment.reply(event.message_id)+"请求被驳回：检测到emoji表情。")
+        await matcher.finish(MessageSegment.reply(event.message_id)+"请求被驳回：检测到emoji表情。")
     Text_Dict = {
         "role": "user",
         "content": f"{simplified_text}"
     }
     if len(content) > 100:
-        await FurryBar.finish(MessageSegment.reply(event.message_id)+"请求被驳回：超出请求字数上限（100字符）。")
+        await matcher.finish(MessageSegment.reply(event.message_id)+"请求被驳回：超出请求字数上限（100字符）。")
     List.append(Text_Dict)
     model="deepseek-reasoner"
     payload = {
@@ -91,17 +91,17 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
         response = await client.post(url,headers=headers,json=payload)
         if response.status_code != 200:
             logger.error(f"{response.text}")
-            await FurryBar.finish(MessageSegment.reply(event.message_id)+f"请求失败\n服务器返回:{response['error']['message']}[{response.status_code}]")
+            await matcher.finish(MessageSegment.reply(event.message_id)+f"请求失败\n服务器返回:{response['error']['message']}[{response.status_code}]")
         if response == "":
-            await FurryBar.finish(MessageSegment.reply(event.message_id)+"模型返回了空值，这可能是因为key失效或不稳定，请稍后再试。")
+            await matcher.finish(MessageSegment.reply(event.message_id)+"模型返回了空值，这可能是因为key失效或不稳定，请稍后再试。")
         Json = response.json()
         if Json.get("error") != None:
             Error_Text = Json['error']['message']
             if "模型繁忙" in str(Error_Text):
-                await FurryBar.finish(MessageSegment.reply(event.message_id)+"遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。")
+                await matcher.finish(MessageSegment.reply(event.message_id)+"遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。")
             Normal_Data = utils.handle_json(Normal_Path, 'r', None)
             utils.handle_json(Main_Path, 'w', Normal_Data)
-            await FurryBar.finish(MessageSegment.reply(event.message_id)+f"""遇到问题：{Error_Text}\n凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题""")
+            await matcher.finish(MessageSegment.reply(event.message_id)+f"""遇到问题：{Error_Text}\n凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题""")
         logger.info(Json)
         Text = Json['choices'][0]['message']['content']
         logger.info("Debug:模型回复，内容是"+Text)
@@ -113,16 +113,16 @@ async def FB_Function(matcher:Matcher,bot:Bot,msg: UniMsg,event: MessageEvent,Re
         List.append(Assistant_Dict)
         utils.handle_json(Main_Path, 'w', List)
         logger.success("Debug:处理完成，最终输出："+Text)
-        await FurryBar.finish(MessageSegment.reply(event.message_id)+Text)
+        await matcher.finish(MessageSegment.reply(event.message_id)+Text)
 
 
-@Reset_FurryBar.handle()
-async def Reset_Function(event: MessageEvent):
+@reset_furrybar.handle()
+async def Reset_Function(matcher:Matcher,event: MessageEvent):
     User = event.user_id
     Main_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}.json"
     Normal_Path = opendata / f"data/Furry_System/FurryBar/{User}/{User}_Normal.json"
     utils.handle_json(Main_Path, 'w', utils.handle_json(Normal_Path, 'r'))
-    await Reset_FurryBar.finish(MessageSegment.reply(event.message_id)+"已重置聊天记录。")
+    await matcher.finish(MessageSegment.reply(event.message_id)+"已重置聊天记录。")
 
 @change_config.handle()
 async def change_config_Function(event:MessageEvent,args:Message = CommandArg()):
@@ -153,15 +153,15 @@ async def change_config_Function(event:MessageEvent,args:Message = CommandArg())
     Temp = Temp_Dict_2['content']
     await change_config.finish(MessageSegment.reply(event.message_id)+f"已记录个人设定，内容如下：\nUser：你知道我是谁吗\nAssistant：{Temp}\n注：如需改动立即生效，请发送“重置模型”命令")
     
-@Clear.handle()
-async def Clear_Function(event:MessageEvent):
+@clear.handle()
+async def Clear_Function(matcher:Matcher,event:MessageEvent):
     User = event.user_id
     Main_Path_Temp = opendata / f"data/Furry_System/FurryBar/{User}"
     if os.path.exists(Main_Path_Temp):
         shutil.rmtree(Main_Path_Temp)
-        await Clear.finish(f"已经清空了{User}的FurryBar数据。")
+        await matcher.finish(f"已经清空了{User}的FurryBar数据。")
     else:
-        await Clear.finish("清除失败：未找到个人信息。")
+        await matcher.finish("清除失败：未找到个人信息。")
 
 @latest.handle()
 async def Latest_Talk(matcher:Matcher,event:MessageEvent):

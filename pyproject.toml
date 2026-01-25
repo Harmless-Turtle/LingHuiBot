@@ -60,3 +60,6 @@ nonebot-adapter-onebot = [{name = "OneBot V11", module_name = "nonebot.adapters.
 "reportUnboundVariable"="none"
 "reportRedeclaration"="none"
 "reportOperatorIssue"="none"
+"reportUnsupportedDunderAll"="none"
+"reportIndexIssue"="none"
+"reportOptionalIterable"="none"

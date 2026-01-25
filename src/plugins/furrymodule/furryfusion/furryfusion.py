@@ -31,16 +31,16 @@ allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_im
 
 
 # FurryFusion 兽聚汇总服务
-FurryFusion_List = on_command(
+furryfusion_list = on_command(
     "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
-FurryFusion_Check = on_command("兽聚查询", block=True)
-FurryFusion_countdown = on_command("兽聚倒计时", block=True)
-FurryFusion_Quick_Information = on_command("兽聚快讯#", block=True)
-FurryFusion_Information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
+furryfusion_check = on_command("兽聚查询", block=True)
+furryfusion_countdown = on_command("兽聚倒计时", block=True)
+furryfusion_quick_information = on_command("兽聚快讯#", block=True)
+furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
 
 
 
-@FurryFusion_List.handle()
+@furryfusion_list.handle()
 async def FurryfusionListFunction(matcher:Matcher,arg: Message = CommandArg()):
     events = await get_event_list()
     if events is False:
@@ -55,7 +55,7 @@ async def FurryfusionListFunction(matcher:Matcher,arg: Message = CommandArg()):
     await matcher.finish(MessageSegment.image(f"file:///{file_path}"))
 
 
-@FurryFusion_Check.handle()
+@furryfusion_check.handle()
 @utils.handle_errors
 async def FurryFusion_Check_Function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     message = str(args)
@@ -108,7 +108,7 @@ async def FurryFusion_Check_Function(matcher: Matcher, event: MessageEvent, bot:
         await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
 
-@FurryFusion_countdown.handle()
+@furryfusion_countdown.handle()
 @utils.handle_errors
 async def FurryFusion_countdown_Function(matcher: Matcher, event: MessageEvent, bot: Bot):
     data = httpx.get(
@@ -142,7 +142,7 @@ async def FurryFusion_countdown_Function(matcher: Matcher, event: MessageEvent, 
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
 
-@FurryFusion_Quick_Information.handle()
+@furryfusion_quick_information.handle()
 @utils.handle_errors
 async def FurryFusion_Quick_Information_Function(matcher: Matcher, event: MessageEvent, bot: Bot,
                                                  args: Message = CommandArg()):
@@ -183,7 +183,7 @@ async def FurryFusion_Quick_Information_Function(matcher: Matcher, event: Messag
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=List, time_noend=True)
 
 
-@FurryFusion_Information.handle()
+@furryfusion_information.handle()
 @utils.handle_errors
 async def FurryFusion_Information_Function(matcher: Matcher, event: MessageEvent, bot: Bot,
                                            args: Message = CommandArg()):
