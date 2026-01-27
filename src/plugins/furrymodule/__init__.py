@@ -1,4 +1,4 @@
-from .FurryFusion.furryfusion import (
+from .furryfusion.furryfusion import (
     furryfusion_list,
     furryfusion_check,
     furryfusion_countdown,
