@@ -1,5 +1,8 @@
 # 标准库
-import os, shutil, time, httpx
+import os
+import shutil
+import time
+import httpx
 
 from src.plugins import utils
 # 第三方库
@@ -16,6 +19,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.params import CommandArg
 from pathlib import Path
 from PIL import ImageFont
+from src.plugins.utils import get_API_httpx
 
 # from src.plugins.utils import get_config_item
 
@@ -61,12 +65,12 @@ upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permis
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     if args == "":
-        data = httpx.get(f"{API_BASE_URL}/function/random")  # 发起Get请求获取一张随机毛图
+        data = await get_API_httpx("function/random", service_text="furry")
     else:
         try:
-            data = httpx.get(f"{API_BASE_URL}/function/pictures?picture={int(args)}&model=1", timeout=timeout, verify=False)
+            data = await get_API_httpx("function/pictures?picture={int(args)}&model=1", service="furry")
         except ValueError:
-            data = httpx.get(f"{API_BASE_URL}/function/random?name={args}", timeout=timeout)
+            data = await get_API_httpx(f"function/random?name={args}", service="furry")
     if data.status_code != 200:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"凌辉似乎没有获取到要下载的图片qwq...[HTTP {data.status_code}]")
@@ -87,8 +91,7 @@ async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
     data = data['picture']  # 获取data中的picture变量，即图片详细信息
     picture = data['picture']  # 获取data字段中的picture变量，即图片唯一识别码
     # 发起POST请求以获取数据，将数据传入给download变量，转为Json格式
-    download = httpx.post(
-        f"{API_BASE_URL}/function/pictures?picture={picture}&model=", timeout=timeout)
+    download = await get_API_httpx(f"function/pictures?picture={picture}&model=", service="furry", request_mode="post")
     if download.status_code != 200:
         await matcher.finish(MessageSegment.reply(
             event.message_id) + f"凌辉似乎没有获取到要下载的图片qwq...\n[HTTP {download.status_code}]")
@@ -115,7 +118,7 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
             event.message_id) + f"凌辉似乎没有获取到要查找的图片qwq...麻烦你再看看有没有正确使用呢owo")
     else:
         # 发起Get请求获取一张指定sid的毛图
-        data = httpx.get(f"{API_BASE_URL}/function/pictures?picture={sid}&model=1", timeout=timeout)
+        data = await get_API_httpx(f"function/pictures?picture={sid}&model=1", service="furry", request_mode="get")
         if data.status_code != 200:
             await matcher.finish(
                 MessageSegment.reply(event.message_id) + f"凌辉好像没有获取到图片信息捏qwq...[HTTP {data.status_code}]")
@@ -141,8 +144,7 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
 @utils.handle_errors
 async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     name = str(args)
-    orignal_data = httpx.get(
-        f"{API_BASE_URL}/function/pulllist?type=&name={name}", timeout=timeout)
+    orignal_data = await get_API_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
     if orignal_data.status_code != 200:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{orignal_data.status_code}")
@@ -198,8 +200,7 @@ async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mess
 @utils.handle_errors
 async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
-    get_resp = httpx.get(
-        f"{API_BASE_URL}/function/pictures?picture={args}&model=1", timeout=timeout)
+    get_resp = await get_API_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
     if get_resp.status_code != 200:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{get_resp.status_code}")
@@ -219,14 +220,13 @@ async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Mes
 @service_status.handle()
 @utils.handle_errors
 async def Service_Furry_Status(matcher: Matcher, event: MessageEvent):
-    a = httpx.get(
-        f"{API_BASE_URL}/information/feedback", timeout=timeout).json()
-    code, msg = a['code'], a['msg']
+    response = await get_API_httpx("information/feedback", service="furry", request_mode="get")
+    code, msg = response['code'], response['msg']
     if code != "40000":
         await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{msg}[code={code}]")
     else:
-        time, examine, power, atlas, total = a['time']['count'], a['examine']['count'], a[
-            'power']['count'], a['atlas']['count'], a['total']['count']
+        time, examine, power, atlas, total = response['time']['count'], response['examine']['count'], response[
+            'power']['count'], response['atlas']['count'], response['total']['count']
         await matcher.finish(MessageSegment.reply(event.message_id) + f"""平台返回：
 ==========FurBot==========
 运行时长：{time}天

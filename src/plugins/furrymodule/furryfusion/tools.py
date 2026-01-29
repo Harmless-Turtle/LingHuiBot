@@ -7,7 +7,7 @@ import os
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 import httpx
-from src.plugins.utils import get_config_item
+from src.plugins.utils import get_config_item,get_API_httpx
 from pathlib import Path
 
 # 导入特殊兽聚列表
@@ -20,10 +20,8 @@ async def get_event_list():
     访问FurryFusion活动API，获取活动列表
     """
     try:
-        async with httpx.AsyncClient(timeout=None) as client:
-            resp = await client.get("https://api.furryfusion.net/service/activity")
-            resp.raise_for_status()
-            return resp.json().get("data",[])
+        resp = await get_API_httpx("service/activity")
+        return resp.get("data", [])
     except Exception as e:
         return [
             {

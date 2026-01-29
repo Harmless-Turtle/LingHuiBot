@@ -17,6 +17,8 @@ from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
+from src.plugins.menu import service_menu_func
+
 FONT_PATH = Path() / 'data' / 'MiSans-Demibold.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'Furry_System' / 'bg.png'
 ERROR_DIR = Path() / "logs"
@@ -331,3 +333,30 @@ def get_config_item(key: str, default=None, required=False, desc=None):
     if required:
         logger.warning(f"[Furry模块] 缺少必要配置项: {key} ，{desc or ''}")
     return default
+
+
+# ========= 工具函数：异步请求 API =========
+async def get_API_httpx(endpoint: str, params: dict = None, service: str = "None",request_mode: str = "get") -> dict:
+    """
+    统一的异步 API 请求工具。
+
+    参数:
+        endpoint (str): API 路径（如 'service/screen'）。
+        params (dict | None): 查询参数字典，可选，默认为 None。
+        service (str): 服务名称，用于区分不同api的请求。
+        request_mode (str): 请求方式，'get' 或 'post'，默认为 'get'。
+    返回:
+        dict: 成功时返回解析后的 JSON 数据；发生错误时抛出 Exception。
+    """
+    if service == "furryfusion":
+        url = f"https://api.furryfusion.net/{endpoint}"
+    elif service == "furry":
+        url = f"https://cloud.foxtail.cn/api/{endpoint}"
+    async with httpx.AsyncClient() as client:
+        if request_mode == "post":
+            response = await client.post(url, params=params, timeout=10.0)
+        else:
+            response = await client.get(url, params=params, timeout=10.0)
+        # 如果状态码不是 2xx，抛出异常
+        response.raise_for_status()
+        return response.json()
