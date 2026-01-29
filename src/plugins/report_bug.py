@@ -1,10 +1,9 @@
 import time
-import re
 from collections import deque
 from typing import Any, Dict, List, Optional
 
-from nonebot import get_driver, on_command
-from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message,MessageSegment
+from nonebot import  on_command
+from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message, MessageSegment
 from nonebot.adapters import Bot as BaseBot
 from nonebot.matcher import Matcher
 from nonebot.message import run_postprocessor
@@ -13,16 +12,16 @@ from nonebot.message import run_postprocessor
 EXCLUDE_COMMANDS = {"bug反馈", "报告bug"}
 MAX_HISTORY = 30  # 适当增加历史容量以应对高频交互
 
-def strip_emoji(text: str) -> str:
-    emoji_pattern = re.compile(r"[\U00010000-\U0010FFFF]", flags=re.UNICODE)
-    return emoji_pattern.sub(r'', text)
+
+RATE_LIMIT_WINDOW = 60
+RATE_LIMIT_MAX_COUNT = 3
+feedback_records: Dict[int, List[float]] = {} # 用于存储用户触发时间的字典
 
 recent_messages: Dict[str, deque] = {}
 
 def _add_to_history(group_id: str, entry: dict):
     if group_id not in recent_messages:
         recent_messages[group_id] = deque(maxlen=MAX_HISTORY)
-    entry["content"] = strip_emoji(entry["content"])
     recent_messages[group_id].append(entry)
 
 # --- 1. 记录指令触发 (用户侧) ---
@@ -67,10 +66,32 @@ bug_report = on_command("bug反馈", aliases={"报告bug"}, priority=5, block=Tr
 
 @bug_report.handle()
 async def report_bug(bot: Bot, event: MessageEvent):
+    # ==================== 新增逻辑：频率检测开始 ====================
+    current_user_id = event.user_id
+    now = time.time()
+
+    # 初始化该用户的记录列表
+    if current_user_id not in feedback_records:
+        feedback_records[current_user_id] = []
+
+    # 过滤掉时间窗口（5秒）之前的记录，只保留最近5秒内的
+    feedback_records[current_user_id] = [
+        t for t in feedback_records[current_user_id] 
+        if now - t < RATE_LIMIT_WINDOW
+    ]
+
+    # 检查剩余记录数量是否达到上限
+    if len(feedback_records[current_user_id]) >= RATE_LIMIT_MAX_COUNT:
+        # 超过限制，直接静默结束，忽略此请求
+        await bug_report.finish()
+    
+    # 记录本次请求时间
+    feedback_records[current_user_id].append(now)
+    # ==================== 新增逻辑：频率检测结束 ====================
+
     group_id = f"group_{event.group_id}" if isinstance(event, GroupMessageEvent) else f"private_{event.user_id}"
     history: List[dict] = list(recent_messages.get(group_id, []))
     
-    current_user_id = event.user_id
     user_cmd: Optional[dict] = None
     bot_resp: Optional[dict] = None
     user_idx = -1
@@ -78,13 +99,13 @@ async def report_bug(bot: Bot, event: MessageEvent):
     # 1. 逆序查找该用户最后一次发送的非反馈指令
     for i in range(len(history) - 1, -1, -1):
         item = history[i]
-        # 确保不抓到刚才发送的“bug反馈”本身（由于 postprocessor 还没运行，这里通常抓不到当前的反馈，但逻辑严谨起见）
+        # 确保不抓到刚才发送的“bug反馈”本身
         if item["role"] == "user" and item["user_id"] == current_user_id:
             if not any(cmd in item["content"] for cmd in EXCLUDE_COMMANDS):
                 user_cmd = item
                 user_idx = i
                 break
-
+    count = RATE_LIMIT_MAX_COUNT-len(feedback_records[current_user_id])
     if user_cmd:
         # 2. 寻找与该指令时间最接近的 Bot 响应
         # 即使响应在指令前或后发生，只要时间差在 5 秒内就视为关联
@@ -101,7 +122,7 @@ async def report_bug(bot: Bot, event: MessageEvent):
         occur_time = time.strftime('%H:%M:%S', time.localtime(user_cmd['time']))
         report_header = (
             f"Bug反馈\n"
-            f"时间戳: {int(time.time())})\n"
+            f"时间戳: {int(time.time())}\n"
             f"反馈用户: {user_cmd['user_id']}\n"
             f"反馈群聊: {user_cmd['group_id']}\n"
             f"发生时间: {occur_time}\n"
@@ -116,6 +137,6 @@ async def report_bug(bot: Bot, event: MessageEvent):
 
         await bot.send(event, "已静默抓取用户日志，正在上传至服务器以及发送给管理员...")
         await bot.send_msg(user_id=1097740481, message=final_report)
-        await bug_report.finish(MessageSegment.reply(event.message_id)+"感谢你的反馈，已将该问题反馈给管理员。")
+        await bug_report.finish(MessageSegment.reply(event.message_id)+f"感谢你的反馈，已将该问题反馈给管理员。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。")
     else:
-        await bot.send(event, "无法定位你刚才发送的指令，请确保你刚刚执行过其他功能。")
+        await bot.send(event, f"无法定位你刚才发送的指令，请确保你刚刚执行过其他功能。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。")
