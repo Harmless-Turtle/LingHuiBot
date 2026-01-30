@@ -52,7 +52,7 @@ QQ：1097740481<br>
 
 ---
 
-CPU：<code>Intel(R) Xeon(R) CPU E5-2680 v4 2.34GHz</code><br>
+CPU：<code>Intel(R) Xeon(R) CPU E5-2680 v4 2.34GHz(4 Core)</code><br>
 GPU：<code>可选的</code><br>
 RAM：<code>≥8GB</code><br>
 SWAP：<code>≥2GB</code><br>
@@ -61,15 +61,22 @@ SWAP：<code>≥2GB</code><br>
 
 若您的设备性能已满足如上最低条件，请开始部署您的软件部分：<br>
 Windows操作系统安装教程：<br>
-1，安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境<code>uv sync</code>
+> 注意！以下安装教程建立在你已经部署完毕NapCatQQ或任意反向WebSocket端，且配置好协议对应端口。如果您没有配置好协议端，在此处是无法连接的<br>
 
-3，初始化项目数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
+1. 安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境<code>uv sync</code>
 
-4，尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+2. 初始化项目数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
 
-> [INFO] sentry_sdk | Uvicorn running on http://127.0.0.1:9090 (Press CTRL+C to quit)
+3. 配置环境变量或者将<code>PLAYWRIGHT_BROWSERS_PATH=<这里输入你希望安装插件的路径></code>输入进你的dotEnv文件中，这将配置playwright的安装路径
+
+4. 运行命令<code>playwright install chromium</code>，安装playwright
+
+5. 尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+
+> 01-31 01:24:18 [INFO] nonebot | OneBot V11 | Bot <此处应该是你Bot的QQ号> connected
 
 若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws://localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
 
 Linux操作系统安装流程：<br>
+
 <s>既然都用Linux了，安装流程就不必教了，和Windows操作系统安装流程差不太多，换个命令而已</s>
