@@ -20,7 +20,7 @@ async def get_event_list():
     访问FurryFusion活动API，获取活动列表
     """
     try:
-        resp = await get_API_httpx("service/activity",service="furryfusion")
+        resp = await get_API_httpx("service/activity")
         return resp.get("data", [])
     except Exception as e:
         return [

@@ -352,11 +352,13 @@ async def get_API_httpx(endpoint: str, params: dict = None, service: str = "None
         url = f"https://api.furryfusion.net/{endpoint}"
     elif service == "furry":
         url = f"https://cloud.foxtail.cn/api/{endpoint}"
+    else:
+        raise ValueError("未填写服务url，工具运行失败。")
     async with httpx.AsyncClient() as client:
         if request_mode == "post":
-            response = await client.post(url, params=params, timeout=10.0)
+            response = await client.post(url, timeout=10.0)
         else:
-            response = await client.get(url, params=params, timeout=10.0)
+            response = await client.get(url, timeout=10.0)
         # 如果状态码不是 2xx，抛出异常
         response.raise_for_status()
         return response.json()

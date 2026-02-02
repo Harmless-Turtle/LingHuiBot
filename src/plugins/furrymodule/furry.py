@@ -65,16 +65,12 @@ upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permis
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     if args == "":
-        data = await get_API_httpx("function/random", service_text="furry")
+        data = await get_API_httpx("function/random", service="furry")
     else:
         try:
-            data = await get_API_httpx("function/pictures?picture={int(args)}&model=1", service="furry")
+            data = await get_API_httpx(f"function/pictures?picture={int(args)}&model=1", service="furry")
         except ValueError:
             data = await get_API_httpx(f"function/random?name={args}", service="furry")
-    if data.status_code != 200:
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"凌辉似乎没有获取到要下载的图片qwq...[HTTP {data.status_code}]")
-    data = data.json()  # 将获取到的request请求转为Json格式
     code = data["code"]  # 获取数据中的code变量，即状态码
     msg = data["msg"]  # 获取数据中的msg变量，即信息
     if code == "20600":
@@ -92,10 +88,6 @@ async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
     picture = data['picture']  # 获取data字段中的picture变量，即图片唯一识别码
     # 发起POST请求以获取数据，将数据传入给download变量，转为Json格式
     download = await get_API_httpx(f"function/pictures?picture={picture}&model=", service="furry", request_mode="post")
-    if download.status_code != 200:
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + f"凌辉似乎没有获取到要下载的图片qwq...\n[HTTP {download.status_code}]")
-    download = download.json()
     name = download['name']  # 获取download字段中的name变量，即该兽兽的名字
     pic_id = download['id']  # 获取download字段中的id变量，即该图片的数字id
     url = download['url']  # 获取download字段中的url变量，即该图片的临时URL
@@ -119,10 +111,6 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
     else:
         # 发起Get请求获取一张指定sid的毛图
         data = await get_API_httpx(f"function/pictures?picture={sid}&model=1", service="furry", request_mode="get")
-        if data.status_code != 200:
-            await matcher.finish(
-                MessageSegment.reply(event.message_id) + f"凌辉好像没有获取到图片信息捏qwq...[HTTP {data.status_code}]")
-        data = data.json()  # 将获取到的request请求转为Json格式
         code = data["code"]  # 获取数据中的code变量，即状态码
         msg = data["msg"]  # 获取数据中的msg变量，即信息
         if code != "20600":  # 如果状态码不为20600（即获取失败）----->↓
@@ -145,10 +133,6 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
 async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     name = str(args)
     orignal_data = await get_API_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
-    if orignal_data.status_code != 200:
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{orignal_data.status_code}")
-    orignal_data = orignal_data.json()
     msg = orignal_data['msg']
     code = orignal_data['code']
     data = orignal_data['open']
@@ -201,10 +185,6 @@ async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mess
 async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     get_resp = await get_API_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
-    if get_resp.status_code != 200:
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{get_resp.status_code}")
-    get_resp = get_resp.json()
     examine_Number, type_number = get_resp['examine'], get_resp['power']
     examine_name_list, type_name_list = [
         "待审核", "已通过审核", "已被审核拒绝"], ['设定', '毛图', '插画']
