@@ -285,9 +285,7 @@ async def marry_time_check_func(matcher:Matcher,event:MessageEvent,bot:Bot,args:
     if args.extract_plain_text():await matcher.finish()    # 若消息后面存在文本则不响应
     Data = utils.handle_json(marry_json_path, 'r')
     Self_QQ,group_id = str(event.user_id),str(event.group_id)
-    if not Data.get(Self_QQ,False) or not Data[Self_QQ].get(group_id,False):
-        await matcher.finish(MessageSegment.reply(event.message_id)+"你似乎还没有对象吧xwx")
-    if Data[Self_QQ][group_id].get("cp_qq", 114514) == 114514:
+    if not (Data.get(Self_QQ,False) and Data[Self_QQ].get(group_id,False)) or Data[Self_QQ].get(group_id,{}).get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id)+"你似乎还没有对象吧xwx")
     user_id = Data[Self_QQ][group_id]['cp_qq']
     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
