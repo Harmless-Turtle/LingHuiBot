@@ -1,3 +1,50 @@
+import os
+import httpx
+import zipfile
+import shutil
+import tempfile
+
+
+from nonebot import logger
+from pathlib import Path
+
+logger.info(f"初始化furrymodule插件")
+
+
+opendata = Path.cwd()
+data_path = opendata / 'data' / 'Furry_System' / 'Upload'
+font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
+allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+
+for d in (data_path, allin_pic_prerequisite_path):
+    if not os.access(d, os.W_OK):
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            raise RuntimeError(f"目录 {d} 创建失败！错误信息：{e}")
+        logger.success(f"目录创建成功: {d}")
+
+# 必须存在的资源文件
+if not font_path.is_file():
+    logger.warning(f"没有找到字体文件，尝试下载字体文件到: {font_path}")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_dir = Path(tmp_dir)
+        zip_path = tmp_dir / "font.zip"
+        extract_dir = tmp_dir / "extract"
+        with httpx.Client(timeout=None, follow_redirects=True) as client:
+            resp = client.get("https://hyperos.mi.com/font-download/MiSans.zip")
+            resp.raise_for_status()
+            zip_path.write_bytes(resp.content)
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(extract_dir)
+        font_files = list(extract_dir.rglob("MiSans-Demibold.ttf"))
+        try:
+            shutil.copy2(font_files[0], font_path)
+        except Exception as e:
+            raise RuntimeError(f"字体文件复制失败！错误信息：{e}")
+
+logger.success(f"目录检查完毕，所有必要目录均存在且可写。")
+
 from .furryfusion.furryfusion import (
     furryfusion_list,
     furryfusion_check,
