@@ -63,3 +63,7 @@ nonebot-adapter-onebot = [{name = "OneBot V11", module_name = "nonebot.adapters.
 "reportUnsupportedDunderAll"="none"
 "reportIndexIssue"="none"
 "reportOptionalIterable"="none"
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
