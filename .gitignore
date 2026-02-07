@@ -131,3 +131,4 @@ menu_config/
 *.ttf
 *.png
 /migrations/
+/cache/
