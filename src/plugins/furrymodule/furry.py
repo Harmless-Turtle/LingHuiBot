@@ -18,7 +18,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command
 
 from src.plugins import utils
-from src.plugins.utils import get_api_httpx
+from src.plugins.utils import get_api_httpx,ensure_files_exist
 
 # 定义全局变量
 login_cookie = {}
@@ -33,6 +33,18 @@ data_path = opendata / 'data' / 'Furry_System' / 'Upload'
 font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
 temp_image_path = opendata / 'data' / 'temp.jpg'
 allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+
+# 校验文件
+ensure_files_exist(
+    file_path=[
+        data_path,
+        font_path,
+        temp_image_path,
+        allin_pic_prerequisite_path
+    ],
+    description="furrymodule"
+)
+
 
 # 定义事件响应器
 

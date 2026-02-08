@@ -1,8 +1,8 @@
-import io
 import json
 import os
 import time
 import traceback
+import asyncio
 from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
@@ -67,7 +67,7 @@ def handle_errors(func):
             matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
 
             if isinstance(event, MessageEvent) and matcher:
-                buffer_image = io.BytesIO()
+                buffer_image = BytesIO()
                 error_image.save(buffer_image, format="PNG")
                 buffer_image.seek(0)
                 error_response = create_error_reply(error, event, buffer_image)
@@ -342,3 +342,90 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         # 如果状态码不是 2xx，抛出异常
         response.raise_for_status()
         return response.json()
+
+
+from pathlib import Path
+import os
+
+
+from pathlib import Path
+import httpx
+
+
+async def _ensure_files_exist_async(
+    file_path: list[Path],
+    description: str,
+    normal_process: str = "{}",
+) -> None:
+    for path in file_path:
+        try:
+            # 1. 确保父目录存在
+            parent = path.parent
+            if not parent.exists():
+                logger.warning(
+                    f"[{description}]: 父目录不存在，自动创建 -> {parent}"
+                )
+                parent.mkdir(parents=True, exist_ok=True)
+
+            # 2. 文件已存在，跳过
+            if path.exists():
+                continue
+
+            logger.warning(
+                f"[{description}]: 文件不存在，初始化 -> {path}"
+            )
+
+            # 3. URL 初始化（图片 / 静态资源）
+            if normal_process.startswith(("http://", "https://")):
+                async with httpx.AsyncClient(
+                    timeout=10,
+                    follow_redirects=True,
+                ) as client:
+                    resp = await client.get(normal_process)
+                    resp.raise_for_status()
+                    path.write_bytes(resp.content)
+
+            # 4. 内容初始化（JSON）
+            else:
+                path.write_text(normal_process, encoding="utf-8")
+
+        except Exception as e:
+            raise RuntimeError(
+                f"[{description}]: 文件初始化失败 -> {path}"
+            ) from e
+    logger.info(f"[{description}]: 文件检查完成")
+
+
+def ensure_files_exist(
+    file_path: list[Path],
+    description: str,
+    normal_process: str = "{}",
+) -> None:
+    """
+    智能文件初始化入口：
+    - 自动处理 sync / async 场景
+    - 自动创建父目录
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        # 已在事件循环中（NoneBot / FastAPI）
+        loop.create_task(
+            _ensure_files_exist_async(
+                file_path,
+                description,
+                normal_process,
+            )
+        )
+    else:
+        # 普通同步环境
+        asyncio.run(
+            _ensure_files_exist_async(
+                file_path,
+                description,
+                normal_process,
+            )
+        )
