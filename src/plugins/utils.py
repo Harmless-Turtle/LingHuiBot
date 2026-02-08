@@ -346,46 +346,69 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         return response.json()
 
 
-def validate_file_path(file_path: list, description: str) -> None:
+from pathlib import Path
+import os
+
+
+def validate_file_path(file_path: list[Path], description: str) -> None:
     """
     验证文件路径是否存在且可访问，如果不存在则尝试创建目录。
+
     Args:
-        file_path (List[Path]): 需要验证的文件路径列表。
-        description (str): 文件的描述信息，用于日志输出。
+        file_path (list[Path]): 需要验证的文件路径列表。
+        description (str): 文件或模块的描述信息，用于日志输出。
+
     Raises:
-        RuntimeError: 当目录创建失败或文件不可访问时抛出异常。
+        RuntimeError: 当目录创建失败、文件不可访问或权限不足时抛出异常。
     """
+    for path in file_path:
+        try:
+            path = Path(path)
+            if path.suffix == "":
+                if not path.exists():
+                    logger.info(f"[{description}]: 目录不存在，尝试创建 -> {path}")
+                    path.mkdir(parents=True, exist_ok=True)
 
-    # opendata = Path.cwd()
-    # data_path = opendata / 'data' / 'Furry_System' / 'Upload'
-    # font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
-    # allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+                if not path.is_dir():
+                    raise RuntimeError(f"{description}: 路径不是目录 -> {path}")
 
-    for d in file_path:
-        if not os.access(d, os.W_OK):
-            try:
-                d.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                raise RuntimeError(f"目录 {d} 创建失败！错误信息：{e}")
-            logger.success(f"目录创建成功: {d}")
+                if not os.access(path, os.R_OK | os.W_OK):
+                    raise RuntimeError(f"{description}: 目录不可读或不可写 -> {path}")
+            else:
+                parent = path.parent
 
-    # # 必须存在的资源文件
-    # if not font_path.is_file():
-    #     logger.warning(f"没有找到字体文件，尝试下载字体文件到: {font_path}")
-    #     with tempfile.TemporaryDirectory() as tmp_dir:
-    #         tmp_dir = Path(tmp_dir)
-    #         zip_path = tmp_dir / "font.zip"
-    #         extract_dir = tmp_dir / "extract"
-    #         with httpx.Client(timeout=None, follow_redirects=True) as client:
-    #             resp = client.get("https://hyperos.mi.com/font-download/MiSans.zip")
-    #             resp.raise_for_status()
-    #             zip_path.write_bytes(resp.content)
-    #         with zipfile.ZipFile(zip_path, "r") as zf:
-    #             zf.extractall(extract_dir)
-    #         font_files = list(extract_dir.rglob("MiSans-Demibold.ttf"))
-    #         try:
-    #             shutil.copy2(font_files[0], font_path)
-    #         except Exception as e:
-    #             raise RuntimeError(f"字体文件复制失败！错误信息：{e}")
+                if not parent.exists():
+                    logger.info(f"[{description}]: 文件 {path.name} 父目录不存在，尝试创建 -> {parent}")
+                    parent.mkdir(parents=True, exist_ok=True)
 
-    logger.success(f"目录检查完毕，所有必要目录均存在且可写。")
+                if not parent.is_dir():
+                    raise RuntimeError(f"[{description}]: 父路径不是目录 -> {parent}")
+
+                # 文件不存在，尝试创建（不破坏已有逻辑）
+                else:
+                    try:
+                        with open(path, "a", encoding="utf-8"):
+                            pass
+                    except OSError as e:
+                        raise RuntimeError(
+                            f"[{description}]: 无法创建文件 -> {path}"
+                        ) from e
+
+        except Exception as e:
+            if isinstance(e, RuntimeError):
+                raise
+            raise RuntimeError(
+                f"[{description}]: 路径校验失败 -> {path}"
+            ) from e
+    logger.success(f"[{description}]: 文件路径校验成功")
+
+
+validate_file_path(
+    file_path=[
+        Path.cwd() / "data" / "Furry_System" / "processed_images",
+        Path.cwd() / "data" / "MiSans-Demibold.ttf",
+        Path.cwd() / "logs" / "error.log",
+        Path.cwd() / 'data' / 'Furry_System' / 'Upload'
+    ],
+    description="furrymodule"
+)
