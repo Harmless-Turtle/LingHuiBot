@@ -276,7 +276,7 @@ async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str
     overlay_image = Image.open(FURRY_FUSION_BG_PATH).convert("RGBA")
     _, _, _, alpha = overlay_image.split()
     target_size = (1920, 1080)  # 设置目标尺寸
-    img_resized = img.resize(target_size, Image.LANCZOS)
+    img_resized = img.resize(target_size, Image.Resampling.LANCZOS)
     img_resized.paste(
         overlay_image,
         (0, 0),
@@ -343,15 +343,6 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         response.raise_for_status()
         return response.json()
 
-
-from pathlib import Path
-import os
-
-
-from pathlib import Path
-import httpx
-
-
 async def _ensure_files_exist_async(
     file_path: list[Path],
     description: str,
@@ -376,7 +367,7 @@ async def _ensure_files_exist_async(
             )
 
             # 3. URL 初始化（图片 / 静态资源）
-            if normal_process.startswith(("http://", "https://")):
+            if normal_process.startswith("https://"):
                 async with httpx.AsyncClient(
                     timeout=10,
                     follow_redirects=True,

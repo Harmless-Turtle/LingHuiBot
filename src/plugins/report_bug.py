@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional
 from nonebot import  on_command
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message, MessageSegment
 from nonebot.adapters import Bot as BaseBot
-from nonebot.matcher import Matcher
 from nonebot.message import run_postprocessor
 
 # --- 配置 ---
@@ -26,7 +25,7 @@ def _add_to_history(group_id: str, entry: dict):
 
 # --- 1. 记录指令触发 (用户侧) ---
 @run_postprocessor
-async def record_actual_commands(matcher: Matcher, event: MessageEvent):
+async def record_actual_commands(event: MessageEvent):
     raw_msg = str(event.message)
     if any(cmd in raw_msg for cmd in EXCLUDE_COMMANDS):
         return
@@ -42,7 +41,7 @@ async def record_actual_commands(matcher: Matcher, event: MessageEvent):
 
 # --- 2. 记录 Bot 发送 (Bot 侧) ---
 @BaseBot.on_called_api
-async def handle_api_result(bot: BaseBot, exception: Exception | None, api: str, data: Dict[str, Any], result: Any):
+async def handle_api_result(bot: BaseBot, exception: Exception | None, api: str, data: Dict[str, Any]):
     if api in ["send_msg", "send_group_msg", "send_private_msg"] and exception is None:
         raw_output = data.get("message")
         content = str(Message(raw_output)) if raw_output else ""
@@ -92,9 +91,8 @@ async def report_bug(bot: Bot, event: MessageEvent):
     group_id = f"group_{event.group_id}" if isinstance(event, GroupMessageEvent) else f"private_{event.user_id}"
     history: List[dict] = list(recent_messages.get(group_id, []))
     
-    user_cmd: Optional[dict] = None
+    user_cmd: Optional[dict,None] = None
     bot_resp: Optional[dict] = None
-    user_idx = -1
 
     # 1. 逆序查找该用户最后一次发送的非反馈指令
     for i in range(len(history) - 1, -1, -1):
@@ -103,7 +101,6 @@ async def report_bug(bot: Bot, event: MessageEvent):
         if item["role"] == "user" and item["user_id"] == current_user_id:
             if not any(cmd in item["content"] for cmd in EXCLUDE_COMMANDS):
                 user_cmd = item
-                user_idx = i
                 break
     count = RATE_LIMIT_MAX_COUNT-len(feedback_records[current_user_id])
     if user_cmd:
