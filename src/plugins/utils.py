@@ -1,8 +1,10 @@
-import io
 import json
 import os
 import time
 import traceback
+import tempfile
+import zipfile
+import shutil
 from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
@@ -67,7 +69,7 @@ def handle_errors(func):
             matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
 
             if isinstance(event, MessageEvent) and matcher:
-                buffer_image = io.BytesIO()
+                buffer_image = BytesIO()
                 error_image.save(buffer_image, format="PNG")
                 buffer_image.seek(0)
                 error_response = create_error_reply(error, event, buffer_image)
@@ -342,3 +344,48 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         # 如果状态码不是 2xx，抛出异常
         response.raise_for_status()
         return response.json()
+
+
+def validate_file_path(file_path: list, description: str) -> None:
+    """
+    验证文件路径是否存在且可访问，如果不存在则尝试创建目录。
+    Args:
+        file_path (List[Path]): 需要验证的文件路径列表。
+        description (str): 文件的描述信息，用于日志输出。
+    Raises:
+        RuntimeError: 当目录创建失败或文件不可访问时抛出异常。
+    """
+
+    # opendata = Path.cwd()
+    # data_path = opendata / 'data' / 'Furry_System' / 'Upload'
+    # font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
+    # allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+
+    for d in file_path:
+        if not os.access(d, os.W_OK):
+            try:
+                d.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                raise RuntimeError(f"目录 {d} 创建失败！错误信息：{e}")
+            logger.success(f"目录创建成功: {d}")
+
+    # # 必须存在的资源文件
+    # if not font_path.is_file():
+    #     logger.warning(f"没有找到字体文件，尝试下载字体文件到: {font_path}")
+    #     with tempfile.TemporaryDirectory() as tmp_dir:
+    #         tmp_dir = Path(tmp_dir)
+    #         zip_path = tmp_dir / "font.zip"
+    #         extract_dir = tmp_dir / "extract"
+    #         with httpx.Client(timeout=None, follow_redirects=True) as client:
+    #             resp = client.get("https://hyperos.mi.com/font-download/MiSans.zip")
+    #             resp.raise_for_status()
+    #             zip_path.write_bytes(resp.content)
+    #         with zipfile.ZipFile(zip_path, "r") as zf:
+    #             zf.extractall(extract_dir)
+    #         font_files = list(extract_dir.rglob("MiSans-Demibold.ttf"))
+    #         try:
+    #             shutil.copy2(font_files[0], font_path)
+    #         except Exception as e:
+    #             raise RuntimeError(f"字体文件复制失败！错误信息：{e}")
+
+    logger.success(f"目录检查完毕，所有必要目录均存在且可写。")
