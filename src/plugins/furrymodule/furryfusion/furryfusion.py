@@ -19,7 +19,7 @@ from .tools import (
     group_by_year_month,
     get_event_list,
 ) 
-from src.plugins.utils import get_API_httpx
+from src.plugins.utils import get_api_httpx
 
 
 # 定义Data存放路径并作为全局变量使用
@@ -71,7 +71,7 @@ async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: 
         message = message.split("市")
         message = message[0]
     logger.info(message)
-    response = await get_API_httpx(f"service/screen?content={message}&mode=address", service="furryfusion", request_mode="get")
+    response = await get_api_httpx(f"service/screen?content={message}&mode=address", service="furryfusion", request_mode="get")
     city_list = response['data']['history']['province']
     final_list = []
     logger.info(message)
@@ -108,7 +108,7 @@ async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: 
 @furryfusion_countdown.handle()
 @utils.handle_errors
 async def furryfusion_countdown_handler(matcher: Matcher, event: MessageEvent, bot: Bot):
-    data = await get_API_httpx("service/countdown", service="furryfusion", request_mode="get")
+    data = await get_api_httpx("service/countdown", service="furryfusion", request_mode="get")
     data = data['data']
     state_text_list = ['活动结束', '预告中', '售票中', '活动中', '活动取消']
     final_list = []
@@ -141,7 +141,7 @@ async def furryfusion_countdown_handler(matcher: Matcher, event: MessageEvent, b
 async def furryfusion_quick_information_handler(matcher: Matcher, event: MessageEvent, bot: Bot,
                                                  args: Message = CommandArg()):
     args = int(str(args))
-    response = await get_API_httpx("service/activity", service="furryfusion", request_mode="get")
+    response = await get_api_httpx("service/activity", service="furryfusion", request_mode="get")
     code = response['code']
     msg = response['rel']
     if code != "OK":
@@ -181,7 +181,7 @@ async def furryfusion_quick_information_handler(matcher: Matcher, event: Message
 async def furryfusion_information_handler(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     args = str(args)
     final_list = []
-    response = await get_API_httpx(f"service/details?title={args}", service="furryfusion", request_mode="get")
+    response = await get_api_httpx(f"service/details?title={args}", service="furryfusion", request_mode="get")
     code = response['code']
     if code != "OK" or args == "":
         await matcher.finish(

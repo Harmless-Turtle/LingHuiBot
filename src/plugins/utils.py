@@ -17,8 +17,6 @@ from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
-from src.plugins.menu import service_menu_func
-
 FONT_PATH = Path() / 'data' / 'MiSans-Demibold.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'Furry_System' / 'bg.png'
 ERROR_DIR = Path() / "logs"
@@ -61,13 +59,7 @@ def handle_errors(func):
                 filestream.write(error_msg)
 
             # 按时间戳生成并保存报错图片到 logs/error_****.png
-            if FONT_PATH.exists():
-                font = ImageFont.truetype(str(FONT_PATH), 28)
-            else:
-                logger.warning(f"字体文件不存在: {FONT_PATH}，使用默认字体")
-                font = ImageFont.load_default()
-            error_image = generate_text_image(error_msg.splitlines(), font)
-            # error_image = generate_text_image(error_msg, FONT_PATH)
+            error_image = generate_text_image(error_msg, FONT_PATH)
             error_image.save(ERROR_DIR / f"error_{times('%Y%m%d%H%M%S')}.png", format="PNG")
 
             # 如果事件是消息类型，则尝试回复用户报错图片和消息
@@ -324,7 +316,7 @@ def get_config_item(key: str, default=None, required=False, desc=None):
 
 
 # ========= 工具函数：异步请求 API =========
-async def get_API_httpx(endpoint: str, params: dict = None, service: str = "None",request_mode: str = "get") -> dict:
+async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str = "get") -> dict:
     """
     统一的异步 API 请求工具。
 

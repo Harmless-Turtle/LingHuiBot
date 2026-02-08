@@ -18,7 +18,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command
 
 from src.plugins import utils
-from src.plugins.utils import get_API_httpx
+from src.plugins.utils import get_api_httpx
 
 # 定义全局变量
 login_cookie = {}
@@ -64,12 +64,12 @@ upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permis
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     if args == "":
-        data = await get_API_httpx("function/random", service="furry")
+        data = await get_api_httpx("function/random", service="furry")
     else:
         try:
-            data = await get_API_httpx(f"function/pictures?picture={int(args)}&model=1", service="furry")
+            data = await get_api_httpx(f"function/pictures?picture={int(args)}&model=1", service="furry")
         except ValueError:
-            data = await get_API_httpx(f"function/random?name={args}", service="furry")
+            data = await get_api_httpx(f"function/random?name={args}", service="furry")
     code = data["code"]  # 获取数据中的code变量，即状态码
     msg = data["msg"]  # 获取数据中的msg变量，即信息
     if code == "20600":
@@ -86,7 +86,7 @@ async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
     data = data['picture']  # 获取data中的picture变量，即图片详细信息
     picture = data['picture']  # 获取data字段中的picture变量，即图片唯一识别码
     # 发起POST请求以获取数据，将数据传入给download变量，转为Json格式
-    download = await get_API_httpx(f"function/pictures?picture={picture}&model=", service="furry", request_mode="post")
+    download = await get_api_httpx(f"function/pictures?picture={picture}&model=", service="furry", request_mode="post")
     name = download['name']  # 获取download字段中的name变量，即该兽兽的名字
     pic_id = download['id']  # 获取download字段中的id变量，即该图片的数字id
     url = download['url']  # 获取download字段中的url变量，即该图片的临时URL
@@ -109,7 +109,7 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
             event.message_id) + f"凌辉似乎没有获取到要查找的图片qwq...麻烦你再看看有没有正确使用呢owo")
     else:
         # 发起Get请求获取一张指定sid的毛图
-        data = await get_API_httpx(f"function/pictures?picture={sid}&model=1", service="furry", request_mode="get")
+        data = await get_api_httpx(f"function/pictures?picture={sid}&model=1", service="furry", request_mode="get")
         code = data["code"]  # 获取数据中的code变量，即状态码
         msg = data["msg"]  # 获取数据中的msg变量，即信息
         if code != "20600":  # 如果状态码不为20600（即获取失败）----->↓
@@ -132,7 +132,7 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
 @utils.handle_errors
 async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     name = str(args)
-    original_data = await get_API_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
+    original_data = await get_api_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
     msg = original_data['msg']
     code = original_data['code']
     data = original_data['open']
@@ -185,7 +185,7 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
 @utils.handle_errors
 async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
-    get_resp = await get_API_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
+    get_resp = await get_api_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
     examine_number, type_number = get_resp['examine'], get_resp['power']
     examine_name_list, type_name_list = [
         "待审核", "已通过审核", "已被审核拒绝"], ['设定', '毛图', '插画']
@@ -202,7 +202,7 @@ async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Mes
 @service_status.handle()
 @utils.handle_errors
 async def service_furry_status(matcher: Matcher, event: MessageEvent):
-    response = await get_API_httpx("information/feedback", service="furry", request_mode="get")
+    response = await get_api_httpx("information/feedback", service="furry", request_mode="get")
     code, msg = response['code'], response['msg']
     if code != "40000":
         await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{msg}[code={code}]")
