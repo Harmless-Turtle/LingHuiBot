@@ -115,42 +115,30 @@ def create_error_reply(error: Exception, event: MessageEvent, buffer_image: Byte
 
 
 # 根据多行文本和字体生成一张自动排版的图片
-# TODO: 需要重构，有乱码问题，格式欠佳
-def generate_text_image(lines, font):
-    padding = 20  # 增加边距
-    line_height = 0
-    max_width = 0
-    
-    # 预先计算所有文本的尺寸
-    for line in lines:
-        # 使用 get bbox 获取文本边界框
-        bbox = font.getbbox(line)
-        # 计算实际宽度和高度
-        line_width = bbox[2] - bbox[0]
-        line_height = max(line_height, bbox[3] - bbox[1])
-        max_width = max(max_width, line_width)
+def generate_text_image(error_msg, font_path):
+    font = ImageFont.truetype(font_path, size=30) if font_path.exists() else ImageFont.load_default()
+    lines = error_msg.split('\n')
+    padding = 20
+    line_spacing = 5
 
-    # 添加边距
-    total_width = int(max_width) + 2 * padding
-    total_height = len(lines) * (line_height + 5) + 2 * padding
+    default_height = font.getbbox("A")[3] - font.getbbox("A")[1]
+    line_sizes = [font.getbbox(line) for line in lines]
+    line_widths = [bbox[2] - bbox[0] for bbox in line_sizes]
+    line_heights = [
+        (bbox[3] - bbox[1]) if line.strip() else default_height  # 有空行时用“A”的行高
+        for line, bbox in zip(lines, line_sizes)
+    ]
 
-    # 创建画布
-    image = Image.new("RGB", (total_width, total_height), (255, 255, 255))
+    width = int(max(line_widths) + padding * 2)
+    height = int(sum(line_heights) + line_spacing * (len(lines) - 1) + padding * 2)
+
+    image = Image.new("RGB", (width, height), (255, 255, 255))
     draw = ImageDraw.Draw(image)
 
-    # 绘制文字 - 居左显示
     y = padding
-    for line in lines:
-        # 获取文本尺寸
-        bbox = font.getbbox(line)
-        text_height = bbox[3] - bbox[1]
-
-        # 居左显示 - 固定从左侧padding位置开始
-        x = padding
-
-        # 绘制文本
-        draw.text((x, y), line, fill=(0, 0, 0), font=font)
-        y += line_height + 5  # 行间距
+    for i, line in enumerate(lines):
+        draw.text((padding, y), line, fill=(0, 0, 0), font=font)
+        y += line_heights[i] + line_spacing
 
     return image
 
