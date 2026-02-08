@@ -1,27 +1,24 @@
-# 标准库
 import os
 import shutil
 import time
-import httpx
+from pathlib import Path
 
-from src.plugins import utils
-# 第三方库
+import httpx
+from PIL import ImageFont
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     MessageSegment,
     MessageEvent,
     Message,
-    Bot,
+    Bot, GroupMessageEvent,
 )
 from nonebot.matcher import Matcher
-from nonebot.plugin import on_command
-from nonebot.permission import SUPERUSER
 from nonebot.params import CommandArg
-from pathlib import Path
-from PIL import ImageFont
-from src.plugins.utils import get_API_httpx
+from nonebot.permission import SUPERUSER
+from nonebot.plugin import on_command
 
-# from src.plugins.utils import get_config_item
+from src.plugins import utils
+from src.plugins.utils import get_API_httpx
 
 # 定义全局变量
 login_cookie = {}
@@ -58,6 +55,8 @@ check_upload_decide = on_command(
     permission=SUPERUSER)  # 决定是否上传
 # Batch_Check = on_command("批量审核",aliases={"批量上传"},priority=98,block=True,permission=SUPERUSER)
 upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permission=SUPERUSER)
+
+
 # login_account = on_command("登录Fur",permission=SUPERUSER)
 
 @furry_random.handle()
@@ -128,14 +127,15 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
             await matcher.finish(MessageSegment.reply(
                 event.message_id) + f"这只兽兽叫“{name}”~\n{suggest}图片码为：{pic_id}\n" + MessageSegment.image(url))
 
+
 @furry_list.handle()
 @utils.handle_errors
-async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     name = str(args)
-    orignal_data = await get_API_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
-    msg = orignal_data['msg']
-    code = orignal_data['code']
-    data = orignal_data['open']
+    original_data = await get_API_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
+    msg = original_data['msg']
+    code = original_data['code']
+    data = original_data['open']
     list_length = len(data)
     items = []
     if code != "20700":
@@ -170,14 +170,15 @@ async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mess
         # 优化后的图片生成部分
         try:
             font = ImageFont.truetype(font_path, size=30)
-        except:
+        except (OSError,ValueError):
             font = ImageFont.load_default()
 
         text_lines = [line for line in text.split('\n') if line.strip() != '']
         image = utils.generate_text_image(text_lines, font)
         image.save(temp_image_path)
         await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"共获取到了{list_length}条消息：" + MessageSegment.image(temp_image_path))
+            MessageSegment.reply(event.message_id) + f"共获取到了{list_length}条消息：" + MessageSegment.image(
+                temp_image_path))
 
 
 @furry_status.handle()
@@ -185,10 +186,11 @@ async def furry_list(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mess
 async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     get_resp = await get_API_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
-    examine_Number, type_number = get_resp['examine'], get_resp['power']
+    examine_number, type_number = get_resp['examine'], get_resp['power']
     examine_name_list, type_name_list = [
         "待审核", "已通过审核", "已被审核拒绝"], ['设定', '毛图', '插画']
-    name, pic_id, examine, pic_type = get_resp['name'], get_resp["id"], examine_name_list[examine_Number], type_name_list[type_number]
+    name, pic_id, examine, pic_type = get_resp['name'], get_resp["id"], examine_name_list[examine_number], \
+        type_name_list[type_number]
     await matcher.finish(MessageSegment.reply(event.message_id) + f"""=========FurBot=========
 您查询的id为{pic_id}的图片信息如下：
 图片名字：{name}
@@ -199,23 +201,24 @@ async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Mes
 
 @service_status.handle()
 @utils.handle_errors
-async def Service_Furry_Status(matcher: Matcher, event: MessageEvent):
+async def service_furry_status(matcher: Matcher, event: MessageEvent):
     response = await get_API_httpx("information/feedback", service="furry", request_mode="get")
     code, msg = response['code'], response['msg']
     if code != "40000":
         await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{msg}[code={code}]")
     else:
-        time, examine, power, atlas, total = response['time']['count'], response['examine']['count'], response[
+        running_time, examine, power, atlas, total = response['time']['count'], response['examine']['count'], response[
             'power']['count'], response['atlas']['count'], response['total']['count']
         await matcher.finish(MessageSegment.reply(event.message_id) + f"""平台返回：
 ==========FurBot==========
-运行时长：{time}天
+运行时长：{running_time}天
 待审核图片数：{examine}
 已公开图片数：{power}
 已有图片数：{atlas}
 总调用次数：{total}
 -->由兽云祭API提供服务支持
 ========Service Status========""")
+
 
 # @See_Furry.handle()
 # async def See_Furry_Function(matcher:Matcher,bot:Bot,event: MessageEvent,args:Message = CommandArg()):
@@ -247,28 +250,28 @@ async def Service_Furry_Status(matcher: Matcher, event: MessageEvent):
 
 @check_upload.handle()
 @utils.handle_errors
-async def check_upload_list(matcher: Matcher, event: MessageEvent, bot: Bot):
-    Data_List, items = [], []
-    Data_List = utils.handle_json(Path(data_path) / "Upload_Data.json", 'r')
-    if Data_List == []:
+async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
+    data_list, items = [], []
+    data_list = utils.handle_json(Path(data_path) / "Upload_Data.json", 'r')
+    if data_list == []:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前投图待审核列表是空的")
-    Len = len(Data_List)
-    type_Text = ['设定', '毛图', '插画']
-    for i in range(Len):
-        name = Data_List[i]['name']
-        pic_type = int(Data_List[i]['type'])
-        picture_url = Data_List[i]['Picturl_URL']
-        suggest = Data_List[i]['suggest']
+    data_len = len(data_list)
+    type_text = ['设定', '毛图', '插画']
+    for i in range(data_len):
+        name = data_list[i]['name']
+        pic_type = int(data_list[i]['type'])
+        picture_url = data_list[i]['Picturl_URL']
+        suggest = data_list[i]['suggest']
         if suggest == '':
             suggest = "未填写留言"
-        Upload_account = Data_List[i]['Upload_account']
-        group_id = Data_List[i]['group_id']
+        upload_account = data_list[i]['Upload_account']
+        group_id = data_list[i]['group_id']
         text = f"""第{i + 1}条：
-上传者：{Upload_account}
+上传者：{upload_account}
 上传群聊：{group_id}
 图片名称：{name}
 留言内容：{suggest}
-图片类型：{type_Text[pic_type]}"""
+图片类型：{type_text[pic_type]}"""
         user_qq = event.user_id
         stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
@@ -280,7 +283,7 @@ async def check_upload_list(matcher: Matcher, event: MessageEvent, bot: Bot):
 
 @check_upload_decide.handle()
 @utils.handle_errors
-async def check_upload_decision(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     await matcher.send("将通过凌辉Bot内置账户进行处理")
     data_message = event.get_message()
     args = str(args)
@@ -315,12 +318,12 @@ async def check_upload_decision(matcher: Matcher, event: MessageEvent, bot: Bot,
 
         data_message = str(data_message)
         if data_message.count("#") != 2:
-            Caution = "管理员没有填写"
+            caution = "管理员没有填写"
         else:
-            Caution = temp_args[1]
+            caution = temp_args[1]
         if event.group_id != group_id:
             await bot.call_api("send_group_msg", group_id=group_id, message=f"""凌辉Bot管理员已拒绝了来自{account}的投图请求
-拒绝理由：{Caution}
+拒绝理由：{caution}
 【上传时间戳：{time.strftime("%Y-%m-%d %H:%M:%S", upload_time)}】
 下面是打回图片的详细信息：
 图片名字：{name}
@@ -329,7 +332,7 @@ async def check_upload_decision(matcher: Matcher, event: MessageEvent, bot: Bot,
 图片内容：""" + MessageSegment.image(f"{pic_url}"), time_noend=True)
         os.remove(f"{pic_url}")
         await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"拒绝上载的操作已完成\n传入拒绝理由参数：{Caution}")
+            MessageSegment.reply(event.message_id) + f"拒绝上载的操作已完成\n传入拒绝理由参数：{caution}")
 
     with open(f"{pic_url}", 'rb') as f:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -365,6 +368,7 @@ async def check_upload_decision(matcher: Matcher, event: MessageEvent, bot: Bot,
                            message=f"{text}\n上载图片：" + MessageSegment.image(f"{pic_url}"), time_noend=True)
         os.remove(f"{pic_url}")
 
+
 @upload_clear.handle()
 async def clear_upload_data(matcher: Matcher):
     temp_path = data_path / "Upload_Data.json"
@@ -376,4 +380,3 @@ async def clear_upload_data(matcher: Matcher):
     with open(temp_path, 'w', encoding='utf-8') as f:
         f.write("[]")
     await matcher.finish("操作已完成。")
-
