@@ -2,9 +2,7 @@ import json
 import os
 import time
 import traceback
-import tempfile
-import zipfile
-import shutil
+import asyncio
 from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
@@ -350,65 +348,84 @@ from pathlib import Path
 import os
 
 
-def validate_file_path(file_path: list[Path], description: str) -> None:
-    """
-    验证文件路径是否存在且可访问，如果不存在则尝试创建目录。
+from pathlib import Path
+import httpx
 
-    Args:
-        file_path (list[Path]): 需要验证的文件路径列表。
-        description (str): 文件或模块的描述信息，用于日志输出。
 
-    Raises:
-        RuntimeError: 当目录创建失败、文件不可访问或权限不足时抛出异常。
-    """
+async def _ensure_files_exist_async(
+    file_path: list[Path],
+    description: str,
+    normal_process: str = "{}",
+) -> None:
     for path in file_path:
         try:
-            path = Path(path)
-            if path.suffix == "":
-                if not path.exists():
-                    logger.info(f"[{description}]: 目录不存在，尝试创建 -> {path}")
-                    path.mkdir(parents=True, exist_ok=True)
+            # 1. 确保父目录存在
+            parent = path.parent
+            if not parent.exists():
+                logger.warning(
+                    f"[{description}]: 父目录不存在，自动创建 -> {parent}"
+                )
+                parent.mkdir(parents=True, exist_ok=True)
 
-                if not path.is_dir():
-                    raise RuntimeError(f"{description}: 路径不是目录 -> {path}")
+            # 2. 文件已存在，跳过
+            if path.exists():
+                continue
 
-                if not os.access(path, os.R_OK | os.W_OK):
-                    raise RuntimeError(f"{description}: 目录不可读或不可写 -> {path}")
+            logger.warning(
+                f"[{description}]: 文件不存在，初始化 -> {path}"
+            )
+
+            # 3. URL 初始化（图片 / 静态资源）
+            if normal_process.startswith(("http://", "https://")):
+                async with httpx.AsyncClient(
+                    timeout=10,
+                    follow_redirects=True,
+                ) as client:
+                    resp = await client.get(normal_process)
+                    resp.raise_for_status()
+                    path.write_bytes(resp.content)
+
+            # 4. 内容初始化（JSON）
             else:
-                parent = path.parent
-
-                if not parent.exists():
-                    logger.info(f"[{description}]: 文件 {path.name} 父目录不存在，尝试创建 -> {parent}")
-                    parent.mkdir(parents=True, exist_ok=True)
-
-                if not parent.is_dir():
-                    raise RuntimeError(f"[{description}]: 父路径不是目录 -> {parent}")
-
-                # 文件不存在，尝试创建（不破坏已有逻辑）
-                else:
-                    try:
-                        with open(path, "a", encoding="utf-8"):
-                            pass
-                    except OSError as e:
-                        raise RuntimeError(
-                            f"[{description}]: 无法创建文件 -> {path}"
-                        ) from e
+                path.write_text(normal_process, encoding="utf-8")
 
         except Exception as e:
-            if isinstance(e, RuntimeError):
-                raise
             raise RuntimeError(
-                f"[{description}]: 路径校验失败 -> {path}"
+                f"[{description}]: 文件初始化失败 -> {path}"
             ) from e
-    logger.success(f"[{description}]: 文件路径校验成功")
+    logger.info(f"[{description}]: 文件检查完成")
 
 
-validate_file_path(
-    file_path=[
-        Path.cwd() / "data" / "Furry_System" / "processed_images",
-        Path.cwd() / "data" / "MiSans-Demibold.ttf",
-        Path.cwd() / "logs" / "error.log",
-        Path.cwd() / 'data' / 'Furry_System' / 'Upload'
-    ],
-    description="furrymodule"
-)
+def ensure_files_exist(
+    file_path: list[Path],
+    description: str,
+    normal_process: str = "{}",
+) -> None:
+    """
+    智能文件初始化入口：
+    - 自动处理 sync / async 场景
+    - 自动创建父目录
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        # 已在事件循环中（NoneBot / FastAPI）
+        loop.create_task(
+            _ensure_files_exist_async(
+                file_path,
+                description,
+                normal_process,
+            )
+        )
+    else:
+        # 普通同步环境
+        asyncio.run(
+            _ensure_files_exist_async(
+                file_path,
+                description,
+                normal_process,
+            )
+        )
