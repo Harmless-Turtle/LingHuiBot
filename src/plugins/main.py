@@ -28,7 +28,7 @@ from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
-from nonebot.plugin import on_command  # 导入事件响应器
+from nonebot.plugin import on_command,on_type
 from nonebot.rule import to_me, is_type, Rule
 
 from src.plugins import utils
@@ -108,9 +108,9 @@ async def chek_friend(event: PrivateMessageEvent):
 
 # 基础功能
 sign_in = on_command("签到", aliases={"好久不见"}, priority=2, block=True)
-poke_check = on_notice(rule=to_me() & is_type(PokeNotifyEvent), priority=3, block=False)
+poke_check = on_type(PokeNotifyEvent,to_me())
 tarot = on_command("塔罗牌", priority=4, block=True)
-aword = on_command("一言", priority=4, block=True)
+a_word = on_command("一言", priority=4, block=True)
 btfrk = on_command("我是", rule=check_bt)
 like = on_command("点赞", aliases={"赞我"}, block=True)
 eat_what = on_command("今天吃什么")
@@ -291,7 +291,7 @@ async def cwt_function(matcher: Matcher, event: GroupMessageEvent, args: Message
     await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}{text_1}")
 
 
-@aword.handle()
+@a_word.handle()
 @utils.handle_errors
 async def a_word_function(matcher: Matcher, event=MessageEvent, args: Message = CommandArg()):
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
