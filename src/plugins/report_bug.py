@@ -41,7 +41,7 @@ async def record_actual_commands(event: MessageEvent):
 
 # --- 2. 记录 Bot 发送 (Bot 侧) ---
 @BaseBot.on_called_api
-async def handle_api_result(bot: BaseBot, exception: Exception | None, api: str, data: Dict[str, Any]):
+async def handle_api_result(bot: BaseBot, exception: Exception | None, api: str, data: Dict[str, Any], result: Any):
     if api in ["send_msg", "send_group_msg", "send_private_msg"] and exception is None:
         raw_output = data.get("message")
         content = str(Message(raw_output)) if raw_output else ""
