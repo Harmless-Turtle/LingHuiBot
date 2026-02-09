@@ -245,11 +245,6 @@ nonebot-localstore = [
     { name = "nonebot-plugin-localstore" },
     { name = "nonebot2" },
 ]
-playwright = [
-    { name = "anyio" },
-    { name = "playwright" },
-    { name = "yarl" },
-]
 pydantic = [
     { name = "pydantic" },
 ]
@@ -448,7 +443,6 @@ dependencies = [
     { name = "nonebot-plugin-multincm" },
     { name = "nonebot-plugin-orm" },
     { name = "nonebot-plugin-picmcstat" },
-    { name = "nonebot-plugin-picstatus" },
     { name = "nonebot2", extra = ["fastapi"] },
     { name = "pandas" },
     { name = "psutil" },
@@ -468,7 +462,6 @@ requires-dist = [
     { name = "nonebot-plugin-multincm", specifier = ">=1.3.1.post1" },
     { name = "nonebot-plugin-orm", specifier = ">=0.8.2" },
     { name = "nonebot-plugin-picmcstat", specifier = ">=0.8.0" },
-    { name = "nonebot-plugin-picstatus", specifier = ">=2.2.2" },
     { name = "nonebot2", extras = ["fastapi"], specifier = ">=2.4.4" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "psutil", specifier = "==7.0.0" },
@@ -811,43 +804,6 @@ wheels = [
 ]
 
 [[package]]
-name = "nonebot-plugin-picstatus"
-version = "2.2.2"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-dependencies = [
-    { name = "anyio" },
-    { name = "cookit", extra = ["jinja", "loguru", "nonebot-localstore", "playwright", "pydantic"] },
-    { name = "httpx" },
-    { name = "jinja2" },
-    { name = "nonebot-plugin-alconna" },
-    { name = "nonebot-plugin-apscheduler" },
-    { name = "nonebot-plugin-htmlrender" },
-    { name = "nonebot-plugin-localstore" },
-    { name = "nonebot-plugin-uninfo" },
-    { name = "nonebot2" },
-    { name = "psutil" },
-    { name = "py-cpuinfo" },
-    { name = "yarl" },
-]
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/dd/62/2955ee32d89db1f1818c40184b8608f9dca2f4e1f1fb5c56abea419a7913/nonebot_plugin_picstatus-2.2.2.tar.gz", hash = "sha256:1f41d16ef959dcc3772e41a2f007e395f8be1c31bc73cc4bd4f5f6faac176f54", size = 245146, upload-time = "2025-10-30T18:37:15.415Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/ea/6f/bbb18a52cae1b34a8e2792a2725b44226c6f99ef435f4302b93f67f0d60d/nonebot_plugin_picstatus-2.2.2-py3-none-any.whl", hash = "sha256:19dbaa6e1e0b3e0b781074b6c081c20ee24ab5b158b82139bcc695cb13a710d3", size = 246808, upload-time = "2025-10-30T18:37:14.352Z" },
-]
-
-[[package]]
-name = "nonebot-plugin-uninfo"
-version = "0.10.1"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-dependencies = [
-    { name = "importlib-metadata" },
-    { name = "nonebot2" },
-]
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/16/94/369e10017c2ff134ce5b01f53b14a5c54a6c84ecf39f3d564a72251f2d6e/nonebot_plugin_uninfo-0.10.1.tar.gz", hash = "sha256:cdd6acbeb235d5617b5d5feb232160f5815fb5b5c74cff6d71cb5dfd415855ce", size = 41008, upload-time = "2025-11-25T14:45:19.783Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/fc/e3/70bb2cafa4cbfb28d06acf3172e095f10c36572e39edffbc3f82281b6fa6/nonebot_plugin_uninfo-0.10.1-py3-none-any.whl", hash = "sha256:3e5952af14e46cbf8e72920d995ac43aa491d9e9048285bd69901c5bd28dea9f", size = 65720, upload-time = "2025-11-25T14:45:18.069Z" },
-]
-
-[[package]]
 name = "nonebot-plugin-waiter"
 version = "0.8.1"
 source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
@@ -1104,15 +1060,6 @@ dependencies = [
 sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/46/77/767e6ac093cf1bc58af8756e83a7f0ada47fb05c07e246e91f600076e8b3/punycode-0.2.1.tar.gz", hash = "sha256:2619d4cc3d517f5b15f092d2e4108f37a44689514207f359ae6c5edf4fcc341d", size = 3892, upload-time = "2023-03-27T14:33:10.069Z" }
 wheels = [
     { url = "https://pypi.tuna.tsinghua.edu.cn/packages/ff/93/c541a0b9e6838963c8b7bc3a2540bbe988cf56fe8b011ff2e1b3f255d988/punycode-0.2.1-py3-none-any.whl", hash = "sha256:5c6c2c1fcfdcd50752fe4e68d402495d9ae2a71ac73915bc6af39cc7ccd99eb5", size = 4186, upload-time = "2023-03-27T14:33:08.297Z" },
-]
-
-[[package]]
-name = "py-cpuinfo"
-version = "9.0.0"
-source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
-sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/37/a8/d832f7293ebb21690860d2e01d8115e5ff6f2ae8bbdc953f0eb0fa4bd2c7/py-cpuinfo-9.0.0.tar.gz", hash = "sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690", size = 104716, upload-time = "2022-10-25T20:38:06.303Z" }
-wheels = [
-    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/e0/a9/023730ba63db1e494a271cb018dcd361bd2c917ba7004c3e49d5daf795a2/py_cpuinfo-9.0.0-py3-none-any.whl", hash = "sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5", size = 22335, upload-time = "2022-10-25T20:38:27.636Z" },
 ]
 
 [[package]]
