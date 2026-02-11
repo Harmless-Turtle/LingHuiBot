@@ -357,7 +357,10 @@ async def _ensure_files_exist_async(
                     f"[{description}]: 父目录不存在，自动创建 -> {parent}"
                 )
                 parent.mkdir(parents=True, exist_ok=True)
-
+            # 0.如果输入了路径，则创建文件夹
+            if not path.exists() and '.' not in str(path):
+                logger.warning(f"未找到目录，创建：{path}")
+                os.mkdir(path)
             # 2. 文件已存在，跳过
             if path.exists():
                 continue
@@ -365,7 +368,12 @@ async def _ensure_files_exist_async(
             logger.warning(
                 f"[{description}]: 文件不存在，初始化 -> {path}"
             )
-
+            if path.suffix.lower() in {".jpg", ".png"} and not normal_process.startswith("https://"):
+                logger.critical(
+                    f"严重错误预警：你正在试图初始化一张图片，并且您没有填写合法URL以下载。这会导致图片不可用。建议您手动替换该文件：\n\n{path}\n"
+                )
+            if ".ttf" in str(path):
+                logger.critical(f"注意：缺失必要字体文件，该字体文件暂不支持自动下载。\n\n请您打开链接：https://hyperos.mi.com/font-download/MiSans.zip 下载MiSANS字体包并将其拷贝到如下目录：\n\n{path}\n")
             # 3. URL 初始化（图片 / 静态资源）
             if normal_process.startswith("https://"):
                 async with httpx.AsyncClient(
@@ -393,9 +401,14 @@ def ensure_files_exist(
     normal_process: str = "{}",
 ) -> None:
     """
-    智能文件初始化入口：
-    - 自动处理 sync / async 场景
-    - 自动创建父目录
+    智能文件初始化入口
+    Args:
+        file_path (list[Path]):输入文件路径，注意：请勿输入文件夹路径，您输入的Path对象应始终保持为文件（即带后缀的格式）而非路径。
+    Returns:
+        None
+    Raises:
+        RuntimeError:当自动处理出错时，将抛出RuntimeError并阻止加载。
+
     """
     try:
         loop = asyncio.get_running_loop()

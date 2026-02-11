@@ -38,6 +38,7 @@ except:
 opendata = Path.cwd()
 Normal_Path = opendata / "data" / "Furry_System" / "FurryBar" / "FurryBar_Normal.json"
 
+utils.ensure_files_exist([Normal_Path],'furrybar模块')
 
 # Model_Path = opendata / "data/Furry_System/FurryBar/model.json"
 

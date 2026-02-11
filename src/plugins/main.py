@@ -34,13 +34,26 @@ from nonebot.rule import to_me, is_type, Rule
 from src.plugins import utils
 
 # 定义Data存放路径并作为全局变量使用
-path = Path.cwd() / 'data' / 'Main'
+path = Path.cwd() / 'data' / 'main'
 Poke_Path = path / "Poke_Text.json"
 Welcome_Path = path / "Welcome_System.json"
 AWord_Path = path / "AWord.json"
 Sign_in_Path = path / "Sign_in" / "Sign_in.json"
 Sign_in_Pic_True = path / "Sign_in" / "Background_True.png"
 Sign_in_Pic_False = path / "Sign_in" / "Background_False.jpg"
+
+# 校验文件
+utils.ensure_files_exist(
+    file_path=[
+        Poke_Path,
+        Welcome_Path,
+        AWord_Path,
+        Sign_in_Path,
+        Sign_in_Pic_True,
+        Sign_in_Pic_False,
+    ],
+    description="main"
+)
 
 # 获取机器人的名字
 config = get_driver().config

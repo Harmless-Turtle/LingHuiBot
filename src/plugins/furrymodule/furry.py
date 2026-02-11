@@ -7,10 +7,11 @@ import httpx
 from PIL import ImageFont
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
+    GroupMessageEvent,
     MessageSegment,
     MessageEvent,
     Message,
-    Bot, GroupMessageEvent,
+    Bot
 )
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -29,10 +30,10 @@ API_BASE_URL = "https://cloud.foxtail.cn/api"
 
 # 定义Data存放路径并作为全局变量使用
 opendata = Path.cwd()
-data_path = opendata / 'data' / 'Furry_System' / 'Upload'
+data_path = opendata / 'data' / 'furry_system' / 'Upload' / "111" / '222'
 font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
-temp_image_path = opendata / 'data' / 'temp.jpg'
-allin_pic_prerequisite_path = opendata / 'data' / 'Furry_System' / 'processed_images'
+temp_image_path = opendata / 'data' / 'furry_system' / 'temp.jpg'
+allin_pic_prerequisite_path = opendata / 'data' / 'furry_system' / 'processed_images'
 
 # 校验文件
 ensure_files_exist(
@@ -42,7 +43,7 @@ ensure_files_exist(
         temp_image_path,
         allin_pic_prerequisite_path
     ],
-    description="furrymodule"
+    description="furry_pic模块"
 )
 
 
@@ -272,7 +273,7 @@ async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     for i in range(data_len):
         name = data_list[i]['name']
         pic_type = int(data_list[i]['type'])
-        picture_url = data_list[i]['Picturl_URL']
+        picture_url = data_list[i]['Picture_URL']
         suggest = data_list[i]['suggest']
         if suggest == '':
             suggest = "未填写留言"
@@ -311,7 +312,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
     if items == []:
         await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：似乎没有待审核的图片。")
     data_normal = items[args - 1]
-    pic_url = data_normal['Picturl_URL']
+    pic_url = data_normal['Picture_URL']
     time_wait = data_normal['time']
     upload_time = time.localtime(int(time_wait))
     name = data_normal['name']
@@ -323,7 +324,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
     account = data_normal['Upload_account']
     if suggest == "":
         suggest = "未填写"
-    del data_normal['Picturl_URL'], data_normal['group_id'], data_normal['Upload_account'], data_normal['time']
+    del data_normal['Picture_URL'], data_normal['group_id'], data_normal['Upload_account'], data_normal['time']
     if "拒绝" in str(data_message):
         del items[args - 1]
         utils.handle_json(Path(data_path) / "Upload_Data.json", 'w', items)
