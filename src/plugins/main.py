@@ -21,11 +21,13 @@ from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     NoticeEvent,
     Message,
+    Event,
     Bot,
 )
 # 导入异常基类MatcherException，以限制try-except捕获正常finish函数抛出的异常
 from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
+from nonebot.message import event_preprocessor
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command,on_type
@@ -41,6 +43,20 @@ AWord_Path = path / "AWord.json"
 Sign_in_Path = path / "Sign_in" / "Sign_in.json"
 Sign_in_Pic_True = path / "Sign_in" / "Background_True.png"
 Sign_in_Pic_False = path / "Sign_in" / "Background_False.jpg"
+black_list_path = path / "black_list.json"
+# 校验文件
+utils.ensure_files_exist(
+    file_path=[
+        Poke_Path,
+        Welcome_Path,
+        AWord_Path,
+        Sign_in_Path,
+        Sign_in_Pic_True,
+        Sign_in_Pic_False,
+        black_list_path
+    ],
+    description="main"
+)
 
 # 获取机器人的名字
 config = get_driver().config
@@ -714,3 +730,14 @@ async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
         await matcher.finish(MessageSegment.reply(event.message_id) + "已经处理了此请求。")
     except ActionFailed:
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到对应的flag，请检查flag是否正确。")
+
+
+@event_preprocessor
+def black_processor(event:Event):
+    user_id = event.user_id
+    superusers = get_driver().config.superusers
+    if event.post_type=='notice':
+        return
+    if(uid := str(vars(event).get('user_id',None))) in superusers:
+        return
+    black_list = utils.handle_json(black_list_path, 'r')

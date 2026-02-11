@@ -365,6 +365,10 @@ async def _ensure_files_exist_async(
             logger.warning(
                 f"[{description}]: 文件不存在，初始化 -> {path}"
             )
+            if path.suffix.lower() in {".jpg", ".png"} and not normal_process.startswith("https://"):
+                logger.critical(
+                    f"严重错误预警：你正在试图初始化一张图片，并且您没有填写合法URL以下载。这会导致图片不可用。建议您手动替换该文件：\n\n{path}\n"
+                )
 
             # 3. URL 初始化（图片 / 静态资源）
             if normal_process.startswith("https://"):
@@ -393,9 +397,14 @@ def ensure_files_exist(
     normal_process: str = "{}",
 ) -> None:
     """
-    智能文件初始化入口：
-    - 自动处理 sync / async 场景
-    - 自动创建父目录
+    智能文件初始化入口
+    Args:
+        file_path (list[Path]):输入文件路径，注意：请勿输入文件夹路径，您输入的Path对象应始终保持为文件（即带后缀的格式）而非路径。
+    Returns:
+        None
+    Raises:
+        RuntimeError:当自动处理出错时，将抛出RuntimeError并阻止加载。
+
     """
     try:
         loop = asyncio.get_running_loop()
