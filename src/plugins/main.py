@@ -628,13 +628,6 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
 async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent):
     user = await bot.get_stranger_info(user_id=event.user_id)
     user = user["nick"]
-    data = utils.handle_json(path / "add_group_switch.json", 'r')
-    if data.get(str(event.group_id), False):
-        flag_list = data[str(event.group_id)]
-    else:
-        flag_list = [event.flag]
-    # Dict = {event.group_id:flag_list}
-    # utils.load_json(f'{path}/add_group_switch.json','w',Dict)
     comment = event.comment
     if comment == "":
         comment = "未填写入群理由"
