@@ -7,7 +7,7 @@ from nonebot.plugin import on_command
 from pathlib import Path
 
 from src.plugins import utils
-from tools import check_number
+from .tools import check_number
 
 path = Path.cwd() / 'data'
 blacklist_path = path / "blacklist" / "black_list.json"
