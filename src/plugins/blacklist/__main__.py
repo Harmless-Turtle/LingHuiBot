@@ -19,9 +19,8 @@ async def add_group(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     gid,text = check_number(str(event.group_id),'group')
     if raw_args:
         gid, text = check_number(raw_args,'group')
-        if gid[0] != "not is number":
-            pass
-        await matcher.finish(MessageSegment.reply(event.message_id)+"唔...请输入一个正确的数字才可以呢。")
+        if not gid:
+            await matcher.finish(MessageSegment.reply(event.message_id)+"唔...请输入一个正确的数字才可以呢。")
     data = utils.handle_json(blacklist_path,'r')
     if gid in data["group"]:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"唔...{text}已经在黑名单列表中了。")
@@ -37,7 +36,7 @@ async def del_group(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     gid, text = check_number(str(event.group_id),'group')
     if raw_args:
         gid, text = check_number(raw_args,'group')
-        if gid == "not is number":
+        if not gid == "not is number":
             await matcher.finish(MessageSegment.reply(event.message_id) + "唔...请输入一个正确的数字才可以呢。")
     data = utils.handle_json(blacklist_path,'r')
     if gid not in data["group"]:
@@ -56,7 +55,7 @@ async def _add_user(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
         await matcher.finish(MessageSegment.reply(event.message_id) + "唔...您不能拉黑自己，请检查参数是否正确输入了呢...")
     data = utils.handle_json(blacklist_path,'r')
     if uid in data["group"]:
-        await matcher.finish(MessageSegment.reply(event.message_id)+f"唔...用户{text}似乎本来就在黑名单中。")
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"唔...{text}似乎本来就在黑名单中。")
     data['user'].append(uid)
     utils.handle_json(blacklist_path,'w',data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"成功将{text}添加进黑名单。")
