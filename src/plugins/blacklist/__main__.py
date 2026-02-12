@@ -50,7 +50,7 @@ add_user_blacklist = on_command("添加用户黑名单",aliases={"加用户黑"}
 @add_user_blacklist.handle()
 async def _add_user(matcher: Matcher,event:GroupMessageEvent,args:Message = CommandArg()):
     raw_args = args.extract_plain_text().strip()
-    uid, text = check_number(str(event.group_id),'user')
+    uid, text = check_number(str(event.user_id),'user')
     if not raw_args:
         await matcher.finish(MessageSegment.reply(event.message_id) + "唔...您不能拉黑自己，请检查参数是否正确输入了呢...")
     data = utils.handle_json(blacklist_path,'r')
