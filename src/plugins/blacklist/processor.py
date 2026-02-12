@@ -2,7 +2,7 @@ from nonebot import get_driver
 from nonebot.exception import IgnoredException
 from nonebot.message import event_preprocessor
 from nonebot.adapters.onebot.v11 import (
-    Event,
+    MessageEvent,
 )
 from pathlib import Path
 from src.plugins import utils
@@ -14,7 +14,7 @@ black_list_path = path / "blacklist" / "black_list.json"
 utils.ensure_files_exist([black_list_path],"黑名单插件")
 
 @event_preprocessor
-def black_processor(event:Event):
+def black_processor(event:MessageEvent):
     user_id = event.user_id
     superusers = get_driver().config.superusers
     if event.post_type=='notice':
