@@ -12,7 +12,7 @@ from .tools import check_number
 path = Path.cwd() / 'data'
 blacklist_path = path / "blacklist" / "black_list.json"
 
-add_group_blacklist = on_command("添加群聊黑名单",aliases={"群加黑"},priority=10,permission=SUPERUSER)
+add_group_blacklist = on_command("添加群聊黑名单",aliases={"群加黑","拉黑群聊"},priority=10,permission=SUPERUSER)
 @add_group_blacklist.handle()
 async def add_group(matcher: Matcher,event:GroupMessageEvent,args:Message = CommandArg()):
     raw_args = args.extract_plain_text().strip()
@@ -29,7 +29,7 @@ async def add_group(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     await matcher.finish(MessageSegment.reply(event.message_id) + f"已成功将{text}添加进黑名单。")
 
 
-del_group_blacklist = on_command("删除群黑名单",aliases={"群删黑"},priority=10,permission=SUPERUSER)
+del_group_blacklist = on_command("删除群黑名单",aliases={"群删黑","移出群黑"},priority=10,permission=SUPERUSER)
 @del_group_blacklist.handle()
 async def del_group(matcher: Matcher,event:GroupMessageEvent,args:Message = CommandArg()):
     raw_args = args.extract_plain_text().strip()
@@ -41,12 +41,12 @@ async def del_group(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     data = utils.handle_json(blacklist_path,'r')
     if gid not in data["group"]:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"唔...{text}似乎本来就不在黑名单列表中。")
-    data['group'].pop(gid)
+    data['group'].remove(gid)
     utils.handle_json(blacklist_path,'w',data)
     await matcher.finish(MessageSegment.reply(event.message_id) + f"已成功将{text}从黑名单中删除。")
 
 
-add_user_blacklist = on_command("添加用户黑名单",aliases={"加用户黑"},priority=10,permission=SUPERUSER)
+add_user_blacklist = on_command("添加用户黑名单",aliases={"加用户黑","拉黑用户"},priority=10,permission=SUPERUSER)
 @add_user_blacklist.handle()
 async def _add_user(matcher: Matcher,event:GroupMessageEvent,args:Message = CommandArg()):
     raw_args = args.extract_plain_text().strip()
@@ -60,7 +60,7 @@ async def _add_user(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     utils.handle_json(blacklist_path,'w',data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"成功将{text}添加进黑名单。")
 
-del_user_blacklist = on_command("删除用户黑名单",aliases={"删用户黑"},priority=10,permission=SUPERUSER)
+del_user_blacklist = on_command("删除用户黑名单",aliases={"删用户黑","移出用户黑名单"},priority=10,permission=SUPERUSER)
 @del_user_blacklist.handle()
 async def _del_user(matcher: Matcher,event:GroupMessageEvent,args:Message = CommandArg()):
     raw_args = args.extract_plain_text().strip()
@@ -75,7 +75,7 @@ async def _del_user(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     utils.handle_json(blacklist_path,'w',data)
     await matcher.finish(MessageSegment.reply(event.message_id)+f"成功将{text}从黑名单中删除。")
 
-check_user_blacklist = on_command("查看用户黑名单",aliases={"查用户黑"},priority=10,permission=SUPERUSER)
+check_user_blacklist = on_command("查看用户黑名单",aliases={"查黑用户"},priority=10,permission=SUPERUSER)
 @check_user_blacklist.handle()
 async def _chek_user(bot:Bot,matcher: Matcher,event:GroupMessageEvent):
     data = utils.handle_json(blacklist_path,'r')
@@ -90,7 +90,7 @@ async def _chek_user(bot:Bot,matcher: Matcher,event:GroupMessageEvent):
 
 
 check_group_blacklist = on_command("查看群聊黑名单",aliases={"查群黑"},priority=10,permission=SUPERUSER)
-@check_user_blacklist.handle()
+@check_group_blacklist.handle()
 async def _chek_group(bot:Bot,matcher: Matcher,event:GroupMessageEvent):
     data = utils.handle_json(blacklist_path,'r')
     text = ""
