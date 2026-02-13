@@ -26,7 +26,7 @@ from src.plugins.utils import get_config_item
 # 定义全局常量
 API_BASE = "https://cloud.foxtail.cn/api"
 OPENDATA = Path.cwd()
-DATA_PATH = OPENDATA / "data" / "Furry_System" / "Upload"
+DATA_PATH = OPENDATA / "data" / "furry_system" / "upload"
 FONT_PATH = OPENDATA / "data" / "MiSans-Demibold.ttf"
 
 # 定义全局变量

@@ -30,7 +30,7 @@ API_BASE_URL = "https://cloud.foxtail.cn/api"
 
 # 定义Data存放路径并作为全局变量使用
 opendata = Path.cwd()
-data_path = opendata / 'data' / 'furry_system' / 'Upload' / "111" / '222'
+data_path = opendata / 'data' / 'furry_system' / 'upload'
 font_path = opendata / 'data' / 'MiSans-Demibold.ttf'
 temp_image_path = opendata / 'data' / 'furry_system' / 'temp.jpg'
 allin_pic_prerequisite_path = opendata / 'data' / 'furry_system' / 'processed_images'
