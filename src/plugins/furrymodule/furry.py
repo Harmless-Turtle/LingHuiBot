@@ -277,7 +277,7 @@ async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot
         suggest = data_list[i]['suggest']
         if suggest == '':
             suggest = "未填写留言"
-        upload_account = data_list[i]['Upload_account']
+        upload_account = data_list[i]['upload_account']
         group_id = data_list[i]['group_id']
         text = f"""第{i + 1}条：
 上传者：{upload_account}
@@ -321,10 +321,10 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
     type_value = type_list[pic_type]
     suggest = data_normal['suggest']
     group_id = int(data_normal['group_id'])
-    account = data_normal['Upload_account']
+    account = data_normal['upload_account']
     if suggest == "":
         suggest = "未填写"
-    del data_normal['picture_url'], data_normal['group_id'], data_normal['Upload_account'], data_normal['time']
+    del data_normal['picture_url'], data_normal['group_id'], data_normal['upload_account'], data_normal['time']
     if "拒绝" in str(data_message):
         del items[args - 1]
         utils.handle_json(Path(data_path) / "upload_data.json", 'w', items)
