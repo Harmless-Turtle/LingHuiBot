@@ -19,7 +19,7 @@ from nonebot.permission import SUPERUSER
 
 # 本地模块
 from src.plugins import utils
-from src.plugins.utils import get_config_item
+from src.plugins.utils import get_config_item,ensure_files_exist
 
 # ================= 配置与常量 =================
 
@@ -28,6 +28,14 @@ API_BASE = "https://cloud.foxtail.cn/api"
 OPENDATA = Path.cwd()
 DATA_PATH = OPENDATA / "data" / "furry_system" / "upload"
 FONT_PATH = OPENDATA / "data" / "MiSans-Demibold.ttf"
+json_path = DATA_PATH / "upload_data.json"
+batch_path = DATA_PATH / "batch"
+
+
+ensure_files_exist(
+    [DATA_PATH],
+    "furry_upload"
+)
 
 # 定义全局变量
 LOGIN_COOKIE = {}
@@ -133,7 +141,7 @@ async def upload_furry_image(
     }
 
     upload_list = []
-    json_path = DATA_PATH / "upload_data.json"
+
     
     if os.path.exists(json_path):
         upload_list = utils.handle_json(json_path, "r")
@@ -156,8 +164,8 @@ async def upload_furry_image(
 
 async def get_batch_pic_list(user_qq, bot):
     """辅助函数：获取批量图片列表"""
-    batch_path = DATA_PATH / "Batch" / str(user_qq) / "Upload.json"
-    pic_url = utils.handle_json(Path(batch_path), "r")
+    batch_data_path = batch_path / str(user_qq) / "upload.json"
+    pic_url = utils.handle_json(batch_data_path, "r")
     pic_list = []
     logger.debug(f"debug message:{pic_url}")
     logger.debug(f"picture count:{len(pic_list)}")
@@ -183,13 +191,12 @@ async def get_upload_mode(matcher: Matcher, event: MessageEvent, bot: Bot):
     msg_group = event.get_message()
     url = msg_group["image"]
     url_list = []
-    temp_path = DATA_PATH / "Batch" / str(event.user_id)
+    temp_path = batch_path / str(event.user_id)
     cycle_count = 0
     
     if not os.path.exists(temp_path):
         os.makedirs(temp_path)
-    
-    json_path = temp_path / "Upload.json"
+
     if os.path.exists(json_path):
         data = utils.handle_json(json_path, "r")
         cycle_count = len(data)
@@ -243,15 +250,15 @@ async def get_upload_mode(matcher: Matcher, event: MessageEvent, bot: Bot):
 @utils.handle_errors
 async def receive_batch(matcher: Matcher, bot: Bot, event: MessageEvent):
     # 注意：matcher state 管理 set_count 会更合适，此处保持局部变量逻辑可能导致死循环 reject
-    set_count = 0 
-    temp_path = DATA_PATH / "Batch" / str(event.user_id) / "Upload.json"
+    set_count = 0
+    temp_path = batch_path / str(event.user_id) / "upload.json"
     
     if not os.path.exists(temp_path):
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "遇到问题：未找到文件\n请检查是否已经批量投图图片。"
         )
         
-    items = utils.handle_json(Path(temp_path), "r")
+    items = utils.handle_json(temp_path, "r")
     message_text = str(event.get_message())
     
     if "取消" in message_text or "退出" in message_text:
@@ -310,14 +317,13 @@ async def receive_batch(matcher: Matcher, bot: Bot, event: MessageEvent):
     del items[pic_id]
     
     if len(items) != 0:
-        upload_data_path = DATA_PATH / "upload_data.json"
-        upload_data = utils.handle_json(upload_data_path, "r")
+        upload_data = utils.handle_json(json_path, "r")
         upload_data.append(data)
         
-        utils.handle_json(Path(temp_path), "w", items)
+        utils.handle_json(temp_path, "w", items)
         # 更新 forward message list
         new_items = await get_batch_pic_list(event.user_id, bot)
-        utils.handle_json(upload_data_path, "w", upload_data)
+        utils.handle_json(json_path, "w", upload_data)
 
         logger.info(new_items)
         await bot.call_api(

@@ -36,7 +36,7 @@ except:
     logger.warning("请在配置文件中设置furry_token！")
 
 opendata = Path.cwd()
-Normal_Path = opendata / "data" / "Furry_System" / "FurryBar" / "FurryBar_Normal.json"
+Normal_Path = opendata / "data" / "furry_system" / "FurryBar" / "FurryBar_Normal.json"
 
 utils.ensure_files_exist([Normal_Path],'furrybar模块')
 
