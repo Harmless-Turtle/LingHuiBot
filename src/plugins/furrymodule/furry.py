@@ -265,7 +265,7 @@ async def service_furry_status(matcher: Matcher, event: MessageEvent):
 @utils.handle_errors
 async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
     data_list, items = [], []
-    data_list = utils.handle_json(Path(data_path) / "Upload_Data.json", 'r')
+    data_list = utils.handle_json(Path(data_path) / "upload_data.json", 'r')
     if data_list == []:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前投图待审核列表是空的")
     data_len = len(data_list)
@@ -273,7 +273,7 @@ async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     for i in range(data_len):
         name = data_list[i]['name']
         pic_type = int(data_list[i]['type'])
-        picture_url = data_list[i]['Picture_URL']
+        picture_url = data_list[i]['picture_url']
         suggest = data_list[i]['suggest']
         if suggest == '':
             suggest = "未填写留言"
@@ -303,7 +303,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
     args = args.split("#")
     temp_args = args
     args = int(args[0])
-    items = utils.handle_json(Path(data_path) / "Upload_Data.json", 'r')
+    items = utils.handle_json(Path(data_path) / "upload_data.json", 'r')
     logger.info(items)
     logger.info(temp_args)
     if args > len(items):
@@ -312,7 +312,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
     if items == []:
         await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：似乎没有待审核的图片。")
     data_normal = items[args - 1]
-    pic_url = data_normal['Picture_URL']
+    pic_url = data_normal['picture_url']
     time_wait = data_normal['time']
     upload_time = time.localtime(int(time_wait))
     name = data_normal['name']
@@ -324,10 +324,10 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
     account = data_normal['Upload_account']
     if suggest == "":
         suggest = "未填写"
-    del data_normal['Picture_URL'], data_normal['group_id'], data_normal['Upload_account'], data_normal['time']
+    del data_normal['picture_url'], data_normal['group_id'], data_normal['Upload_account'], data_normal['time']
     if "拒绝" in str(data_message):
         del items[args - 1]
-        utils.handle_json(Path(data_path) / "Upload_Data.json", 'w', items)
+        utils.handle_json(Path(data_path) / "upload_data.json", 'w', items)
 
         data_message = str(data_message)
         if data_message.count("#") != 2:
@@ -372,7 +372,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
 您的数字id：{pic_id}
 您的图片码：{picture}"""
         del items[args - 1]
-        utils.handle_json(Path(data_path) / "Upload_Data.json", 'w', items)
+        utils.handle_json(Path(data_path) / "upload_data.json", 'w', items)
         if event.group_id != group_id:
             await bot.call_api("send_group_msg", group_id=group_id, message=f"""凌辉Bot管理员已经同意了来自{account}的投图请求，请等待兽云祭管理员进行审核
 上载图片：""" + MessageSegment.image(f"{pic_url}") + f"""数字id：{pic_id}
@@ -384,7 +384,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
 
 @upload_clear.handle()
 async def clear_upload_data(matcher: Matcher):
-    temp_path = data_path / "Upload_Data.json"
+    temp_path = data_path / "upload_data.json"
     dir_path = data_path / "Batch"
     if os.path.exists(temp_path):
         os.remove(temp_path)
