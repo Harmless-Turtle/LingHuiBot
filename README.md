@@ -22,7 +22,7 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
 ## 用户协议
 
-详见 [用户协议](./Markdown/User_Agreement.md)
+详见 [用户协议](markdown/user_agreement.md)
 
 
 <h2><em>凌辉Bot是什么?</em></h2>

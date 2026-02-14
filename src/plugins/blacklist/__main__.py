@@ -1,3 +1,4 @@
+from nonebot import get_driver
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment,Message,Bot
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -101,3 +102,12 @@ async def _chek_group(bot:Bot,matcher: Matcher,event:GroupMessageEvent):
         group_name = group_info.get("group_name","群名获取失败")
         text += f"{group_name}[{group_id}]\n"
     await matcher.finish(MessageSegment.reply(event.message_id)+f"下面是黑名单群聊：\n{text}")
+
+check_su = on_command("凌辉su",priority=10)
+@check_su.handle()
+async def _chek_su(bot:Bot,matcher: Matcher,event:GroupMessageEvent):
+    su_list = get_driver().config.superusers
+    if event.user_id in su_list:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"您已经是凌辉 Bot 的超级用户了。")
+    else:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"您不是凌辉 Bot 的超级用户。")

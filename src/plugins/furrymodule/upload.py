@@ -162,7 +162,7 @@ async def upload_furry_image(
     )
 
 
-async def get_batch_pic_list(user_qq, bot):
+async def get_batch_pic_list(user_qq):
     """辅助函数：获取批量图片列表"""
     batch_data_path = batch_path / str(user_qq) / "upload.json"
     pic_url = utils.handle_json(batch_data_path, "r")
@@ -235,7 +235,7 @@ async def get_upload_mode(matcher: Matcher, event: MessageEvent, bot: Bot):
     
     utils.handle_json(json_path, "w", url_list)
 
-    forward_msg_list = await get_batch_pic_list(event.user_id, bot)
+    forward_msg_list = await get_batch_pic_list(event.user_id)
     await bot.call_api(
         "send_group_forward_msg", group_id=event.group_id, message=forward_msg_list, time_noend=True
     )
@@ -322,7 +322,7 @@ async def receive_batch(matcher: Matcher, bot: Bot, event: MessageEvent):
         
         utils.handle_json(temp_path, "w", items)
         # 更新 forward message list
-        new_items = await get_batch_pic_list(event.user_id, bot)
+        new_items = await get_batch_pic_list(event.user_id)
         utils.handle_json(json_path, "w", upload_data)
 
         logger.info(new_items)
@@ -339,24 +339,21 @@ async def receive_batch(matcher: Matcher, bot: Bot, event: MessageEvent):
 @modify_furry.handle()
 @utils.handle_errors
 async def modify_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+    files = None
+    message = str(args)
+    after_message = message.split("#")
+    modify_id = int(after_message[1])
+    pic_value = after_message[2]
+    field_type = after_message[3]
+    data = {
+        "picture": f"{modify_id}",
+        "type": "1",
+        "model": "1",
+        "token": f"{TOKEN}",
+        "token_user": f"{ACCOUNT}",
+        "token_key": f"{PASSWORD}",
+    }
     try:
-        message = str(args)
-        after_message = message.split("#")
-        modify_id = int(after_message[1])
-        pic_value = after_message[2]
-        field_type = after_message[3]
-        
-        data = {
-            "picture": f"{modify_id}",
-            "type": "1",
-            "model": "1",
-            "token": f"{TOKEN}",
-            "token_user": f"{ACCOUNT}",
-            "token_key": f"{PASSWORD}",
-        }
-        
-        files = None  # 初始化 files
-
         if field_type == "名字":
             pic_value = str(pic_value)
             data.update({"name": f"{pic_value}", "type": "0"})
@@ -367,8 +364,8 @@ async def modify_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
             pic_value = int(pic_value)
             data.update({"form": f"{pic_value}", "type": "2"})
         else:
-            msggroup = event.get_message()
-            url = msggroup["image"]
+            group = event.get_message()
+            url = group["image"]
             pic_url = list(url)[-1].data["url"]
             logger.info(pic_url)
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:

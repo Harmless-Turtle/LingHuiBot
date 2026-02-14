@@ -35,22 +35,22 @@ from src.plugins import utils
 
 # 定义Data存放路径并作为全局变量使用
 path = Path.cwd() / 'data' / 'main'
-Poke_Path = path / "Poke_Text.json"
-Welcome_Path = path / "Welcome_System.json"
-AWord_Path = path / "AWord.json"
-Sign_in_Path = path / "Sign_in" / "Sign_in.json"
-Sign_in_Pic_True = path / "Sign_in" / "Background_True.png"
-Sign_in_Pic_False = path / "Sign_in" / "Background_False.jpg"
+poke_path = path / "Poke_Text.json"
+welcome_path = path / "Welcome_System.json"
+aword_path = path / "AWord.json"
+sign_in_path = path / "Sign_in" / "Sign_in.json"
+sign_in_pic_true = path / "Sign_in" / "Background_True.png"
+sign_in_pic_false = path / "Sign_in" / "Background_False.jpg"
 
 # 校验文件
 utils.ensure_files_exist(
     file_path=[
-        Poke_Path,
-        Welcome_Path,
-        AWord_Path,
-        Sign_in_Path,
-        Sign_in_Pic_True,
-        Sign_in_Pic_False,
+        poke_path,
+        welcome_path,
+        aword_path,
+        sign_in_path,
+        sign_in_pic_true,
+        sign_in_pic_false,
     ],
     description="main"
 )
@@ -73,7 +73,7 @@ async def check_bt(event: GroupMessageEvent):
 
 
 async def chek_add_welcome(event: GroupIncreaseNoticeEvent):
-    welcome_data = utils.handle_json(Welcome_Path, 'r')
+    welcome_data = utils.handle_json(welcome_path, 'r')
     group_id = event.group_id
     logger.info(f"检查群 {group_id} 的欢迎配置，当前数据：{welcome_data.get(group_id)}")
     if welcome_data.get(group_id, False):
@@ -154,33 +154,33 @@ handle_group = on_command("允许加群", aliases={"拒绝加群"}, block=True)
 Add_Welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_welcome), priority=1, block=True)
 
 # 定义全局变量
-Poke_Count = 0
-Time_Count = time.time()
-Send = True
-AT_count = 0
-AT_Time = time.time()
+poke_count = 0
+time_count = time.time()
+send = True
+at_count = 0
+at_time = time.time()
 
 
 @poke_check.handle()
 @utils.handle_errors
 async def pc_function(matcher: Matcher):
-    global Poke_Count, Time_Count, Send
-    if Poke_Count >= 3 and time.time() - Time_Count <= 120:
-        if time.time() - Time_Count >= 120:
-            Poke_Count = 0
+    global poke_count, time_count, send
+    if poke_count >= 3 and time.time() - time_count <= 120:
+        if time.time() - time_count >= 120:
+            poke_count = 0
             pc_function()
         else:
-            if Send:
-                Send = False
+            if send:
+                send = False
                 await matcher.finish("呜呜...不可以再捏了~（2分钟后可以继续捏~）")
             else:
                 pass
     else:
-        Send = True
-        text_list = utils.handle_json(Poke_Path, 'r')
+        send = True
+        text_list = utils.handle_json(poke_path, 'r')
 
-        Poke_Count += 1
-        Time_Count = time.time()
+        poke_count += 1
+        time_count = time.time()
         random_message = text_list[rd.randint(0, len(text_list) - 1)]
         await matcher.finish(f"{random_message}")
 
@@ -192,12 +192,12 @@ async def tarot_function(matcher: Matcher, event: MessageEvent):
     if get['code'] != 1:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"遇到错误：{get['message']}[{get['code']}]")
     data = get['data']
-    send = data[rd.randint(0, len(data) - 1)]
-    meaning = send['meaning']
-    name_cn = send['name_cn']
-    position = send['type']
-    position_meaning = send[f"{position}"]
-    pic_a_url = send['pic']
+    tarot_send = data[rd.randint(0, len(data) - 1)]
+    meaning = tarot_send['meaning']
+    name_cn = tarot_send['name_cn']
+    position = tarot_send['type']
+    position_meaning = tarot_send[f"{position}"]
+    pic_a_url = tarot_send['pic']
     await matcher.finish(
         MessageSegment.reply(event.message_id) + MessageSegment.image(pic_a_url) + f"""你抽到了{name_cn}
 这张牌的意思是：{meaning}，方位是{position}
@@ -208,7 +208,7 @@ async def tarot_function(matcher: Matcher, event: MessageEvent):
 @utils.handle_errors
 async def welcome(matcher: Matcher, event=GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id: await matcher.finish()
-    welcome_dict = utils.handle_json(Welcome_Path, 'r')
+    welcome_dict = utils.handle_json(welcome_path, 'r')
     group_id = str(event.group_id)
     if welcome_dict.get(group_id, False):
         group_dict = welcome_dict[f'{group_id}']
@@ -237,7 +237,8 @@ async def self_join_group_welcome_function(matcher: Matcher, event=GroupIncrease
             "嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n"
             "如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n"
             "如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n"
-            "如果您有任何问题，请随时联系管理员[1097740481]哦~")
+            "如果您有任何问题，请随时联系管理员[1097740481]哦~\n"
+            "如果在使用过程中出现了问题，可以通过命令“bug反馈“来直接发送给开发者")
     else:
         pass
 
@@ -245,7 +246,7 @@ async def self_join_group_welcome_function(matcher: Matcher, event=GroupIncrease
 @change_welcome.handle()
 @utils.handle_errors
 async def change_welcome_function(matcher: Matcher, event: GroupMessageEvent):
-    welcome_config = utils.handle_json(Welcome_Path, 'r')
+    welcome_config = utils.handle_json(welcome_path, 'r')
     group_id = str(event.group_id)
     args = event.get_message()
     if "开" in str(args):
@@ -275,7 +276,7 @@ async def change_welcome_function(matcher: Matcher, event: GroupMessageEvent):
             mode_text = "未启动"
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"当前群聊的入群欢迎状态为：{mode_text}\n新人入群欢迎文本：{text}")
-    utils.handle_json(Welcome_Path, 'w', welcome_config)
+    utils.handle_json(welcome_path, 'w', welcome_config)
     await matcher.finish(MessageSegment.reply(event.message_id) + "操作成功完成。")
 
 
@@ -283,7 +284,7 @@ async def change_welcome_function(matcher: Matcher, event: GroupMessageEvent):
 @utils.handle_errors
 async def cwt_function(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     args = str(args)
-    welcome_data = utils.handle_json(Welcome_Path, 'r')
+    welcome_data = utils.handle_json(welcome_path, 'r')
     group = str(event.group_id)
     text = ""
     if not welcome_data.get(group, False):
@@ -300,7 +301,7 @@ async def cwt_function(matcher: Matcher, event: GroupMessageEvent, args: Message
         welcome_data[group][
             'Text'] = "新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~"
         text_1 = "由于未找到对应的文本，所以本次操作将会使用默认文本来进行入群欢迎~"
-    utils.handle_json(Welcome_Path, 'w', welcome_data)
+    utils.handle_json(welcome_path, 'w', welcome_data)
     await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}{text_1}")
 
 
@@ -308,7 +309,7 @@ async def cwt_function(matcher: Matcher, event: GroupMessageEvent, args: Message
 @utils.handle_errors
 async def a_word_function(matcher: Matcher, event=MessageEvent, args: Message = CommandArg()):
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
-    word_list = utils.handle_json(AWord_Path, 'r')
+    word_list = utils.handle_json(aword_path, 'r')
 
     result = word_list[rd.randint(0, len(word_list) - 1)]
     await matcher.finish(MessageSegment.reply(event.message_id) + f"“{result}”")
@@ -325,7 +326,7 @@ async def sign_in_function(matcher: Matcher, event: GroupMessageEvent,
     if any(name not in full for name in nickname):
         await matcher.finish()
     # 打开文件并写入Sign_Dict字典
-    sign_dict = utils.handle_json(Sign_in_Path, 'r')
+    sign_dict = utils.handle_json(sign_in_path, 'r')
     # 获取触发人QQ号和群聊号
     user, group = event.user_id, event.group_id
     # 获取触发时间
@@ -379,18 +380,18 @@ async def sign_in_function(matcher: Matcher, event: GroupMessageEvent,
     group_user_list[f"{user}"] = new_sign_user_dict
     sign_dict[f'{group}'] = new_sign_group_dict
     # 将构建完成的信息写入本地json文件进行保存
-    utils.handle_json(Sign_in_Path, 'w', sign_dict)
-    a_word_list = utils.handle_json(AWord_Path, 'r')
+    utils.handle_json(sign_in_path, 'w', sign_dict)
+    a_word_list = utils.handle_json(aword_path, 'r')
     result = a_word_list[rd.randint(0, len(a_word_list) - 1)]
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         # 生成检测到“好久不见”字样的默认值
         text = "诶...好像也没有太久吧~是不是记错时间了呀~\n"
-        pic = Sign_in_Pic_False
+        pic = sign_in_pic_false
         # 判断：如果读取用户的格林威治时间戳减去当前时间戳大于或等于259200秒（即3天整），则更改输出条件。
         if (greenwich_time - user_greenwich_time) >= 259200:
             text = "确实好久不见了诶~抱抱~\n"
-            pic = Sign_in_Pic_True
+            pic = sign_in_pic_true
         # 输出
         await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(
             pic) + f"{text}签到成功。本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位~\n"

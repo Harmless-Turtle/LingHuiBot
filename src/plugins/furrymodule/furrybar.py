@@ -32,7 +32,7 @@ config = get_driver().config
 try:
     Talk_key = config.furry_aikey
     logger.success("✅已成功加载FurryBar的相关配置！")
-except:
+except ValueError:
     logger.warning("请在配置文件中设置furry_token！")
 
 opendata = Path.cwd()

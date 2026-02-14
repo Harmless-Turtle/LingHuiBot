@@ -136,7 +136,7 @@ def generate_text_image(error_msg, font_path):
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict|list] = None) -> dict | None:
+def handle_json(json_path: Path, mode: str, data: Optional[dict|list] = None) -> dict | list | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 
@@ -403,7 +403,9 @@ def ensure_files_exist(
     """
     智能文件初始化入口
     Args:
-        file_path (list[Path]):输入文件路径，注意：请勿输入文件夹路径，您输入的Path对象应始终保持为文件（即带后缀的格式）而非路径。
+        file_path:list 输入文件路径，注意：请勿输入文件夹路径，您输入的Path对象应始终保持为文件（即带后缀的格式）而非路径。
+        description:str 输入文件描述
+        normal_process:str 当file_path为文件时，要输入的默认值。
     Returns:
         None
     Raises:
