@@ -2,9 +2,7 @@
   <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
 </p>
 
-<h1 align="center"><em>凌辉Bot 主系统功能列表</em></h1>
-
-此系统功能代码位于 <a href="../src/plugins/Main.py">Main.py</a> 中
+<h1 align="center"><em>凌辉Bot 管理系统功能列表</em></h1>
 
 ## 如何阅读该文档？
 可用：表示该功能是否可以使用。<br>
