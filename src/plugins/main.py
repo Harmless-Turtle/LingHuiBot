@@ -35,12 +35,12 @@ from src.plugins import utils
 
 # 定义Data存放路径并作为全局变量使用
 path = Path.cwd() / 'data' / 'main'
-poke_path = path / "Poke_Text.json"
-welcome_path = path / "Welcome_System.json"
-aword_path = path / "AWord.json"
-sign_in_path = path / "Sign_in" / "Sign_in.json"
-sign_in_pic_true = path / "Sign_in" / "Background_True.png"
-sign_in_pic_false = path / "Sign_in" / "Background_False.jpg"
+poke_path = path / "poke_text.json"
+welcome_path = path / "welcome_system.json"
+aword_path = path / "aword.json"
+sign_in_path = path / "sign_in" / "sign_in.json"
+sign_in_pic_true = path / "sign_in" / "Background_True.png"
+sign_in_pic_false = path / "sign_in" / "Background_False.jpg"
 
 # 校验文件
 utils.ensure_files_exist(
