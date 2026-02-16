@@ -41,6 +41,9 @@ aword_path = path / "aword.json"
 sign_in_path = path / "sign_in" / "sign_in.json"
 sign_in_pic_true = path / "sign_in" / "Background_True.png"
 sign_in_pic_false = path / "sign_in" / "Background_False.jpg"
+add_group_check_path = path / "add_group_switch.json"
+check_group_member_path = path / "GroupMemberChange.json"
+friend_like_path = path / "friend_like.json"
 
 # 校验文件
 utils.ensure_files_exist(
@@ -51,6 +54,9 @@ utils.ensure_files_exist(
         sign_in_path,
         sign_in_pic_true,
         sign_in_pic_false,
+        add_group_check_path,
+        check_group_member_path,
+        friend_like_path,
     ],
     description="main"
 )
@@ -85,7 +91,7 @@ async def chek_add_welcome(event: GroupIncreaseNoticeEvent):
 
 async def chek_group_member_change(event: GroupDecreaseNoticeEvent):
     try:
-        data = utils.handle_json(path / "GroupMemberChange.json", "r")
+        data = utils.handle_json(check_group_member_path, "r")
         logger.info(f"检查群 {event.group_id} 的退群通知开关，当前状态：{data.get(str(event.group_id))}")
         return data.get(str(event.group_id), False)
     except Exception as e:
@@ -94,7 +100,7 @@ async def chek_group_member_change(event: GroupDecreaseNoticeEvent):
 
 
 async def add_group_switch(event: GroupRequestEvent):
-    group_switch_data = utils.handle_json(path / "add_group_switch.json", "r")
+    group_switch_data = utils.handle_json(add_group_check_path, "r")
     logger.info(group_switch_data.get(str(event.group_id), False))
     logger.info(event.sub_type == "add")
     return group_switch_data.get(str(event.group_id), False) and event.sub_type == "add"
@@ -443,7 +449,7 @@ async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
 @utils.handle_errors
 async def change_exit_function(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     args = str(args)
-    data = utils.handle_json(path / "GroupMemberChange.json", "r")
+    data = utils.handle_json(check_group_member_path, "r")
     exit_message, write = "", None
     if "开" in args:
         write = True
@@ -463,7 +469,7 @@ async def change_exit_function(matcher: Matcher, event: GroupMessageEvent, args:
 
     logger.info(args)
     data[f'{event.group_id}'] = write
-    utils.handle_json(path / "GroupMemberChange.json", "w", data)
+    utils.handle_json(check_group_member_path, "w", data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) + f"好~凌辉Bot已经{exit_status}了本群的退群提示w~{exit_message}")
 
@@ -531,7 +537,7 @@ async def lf_function(matcher: Matcher, event: NoticeEvent):
     from nonebot import get_bot
     bot = get_bot()
     data = event.model_dump()
-    user_data = utils.handle_json(path / "Friend_Like.json", 'r')
+    user_data = utils.handle_json(friend_like_path, 'r')
     user_id = data['operator_id']
     now = dt.now()
     day = now.day
@@ -554,7 +560,7 @@ async def lf_function(matcher: Matcher, event: NoticeEvent):
     text = f"owo？是你给我点赞了嘛~谢谢~\n凌辉也给你点赞哦~（如果已经点过了那就不点了呐~嘻嘻ww）"
     user_data[f"{user_id}"]['Model'] = False
     user_data[f"{user_id}"]['Time'] = day
-    utils.handle_json(path / "Friend_Like.json", 'w', user_data)
+    utils.handle_json(friend_like_path, 'w', user_data)
     try:
         if user_id != 1097740481:
             await bot.send_private_msg(user_id=user_id, message=text)
@@ -678,7 +684,7 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
 async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     arg = args.extract_plain_text()
 
-    data = utils.handle_json(path / "add_group_switch.json", 'r')
+    data = utils.handle_json(add_group_check_path, 'r')
     if arg == "开":
         write = True
         feature_status = "打开"
@@ -698,7 +704,7 @@ async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, arg
         return
 
     data[str(event.group_id)] = write
-    utils.handle_json(path / "add_group_switch.json", 'w', data)
+    utils.handle_json(add_group_check_path, 'w', data)
     await matcher.finish(
         MessageSegment.reply(event.message_id) +
         f"好~凌辉Bot已经{feature_status}了本群的入群检测功能w~"
