@@ -63,15 +63,13 @@ SWAP：<code>≥2GB</code><br>
 Windows操作系统安装教程：<br>
 > 注意！以下安装教程建立在你已经部署完毕NapCatQQ或任意反向WebSocket端，且配置好协议对应端口。如果您没有配置好协议端，在此处是无法连接的<br>
 
-1. 安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境<code>uv sync</code>
+1. 安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境 `uv sync`
 
-2. 初始化项目数据库，运行<code>nb orm revision -m "Init"</code>，<code>nb orm upgrade</code>
+2. 将 `.env.example` 重命名成 `.env` 并填写相应配置。
 
-3. 配置环境变量或者将<code>PLAYWRIGHT_BROWSERS_PATH=<这里输入你希望安装插件的路径></code>输入进你的dotEnv文件中，这将配置playwright的安装路径
+3. 运行命令 `playwright install chromium` ，安装 `playwright`
 
-4. 运行命令<code>playwright install chromium</code>，安装playwright
-
-5. 尝试运行<code>nb run --reload</code>，并观察终端Log是否出现如下信息：
+4. 尝试运行 `nb run --reload` ，按提示更新至最新迁移并观察终端Log是否出现如下信息：
 
 > 01-31 01:24:18 [INFO] nonebot | OneBot V11 | Bot <此处应该是你Bot的QQ号> connected
 
