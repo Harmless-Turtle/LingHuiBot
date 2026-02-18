@@ -41,7 +41,7 @@ Normal_Path = forward_path / "FurryBar_Normal.json"
 
 utils.ensure_files_exist([Normal_Path],'furrybar模块')
 
-# Model_Path = opendata / "data/Furry_System/FurryBar/model.json"
+# Model_Path = opendata / "data/furry_system/FurryBar/model.json"
 
 @furrybar.handle()
 @utils.handle_errors
@@ -63,7 +63,7 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
         utils.handle_json(main_path, 'w', temp_dict)
         utils.handle_json(normal_dict_temp, 'w', temp_dict)
     url = "http://fb-ai.furrybar.com:3000/v1/chat/completions"
-    model_path = opendata / f"data/Furry_System/FurryBar/{user}/model.json"
+    model_path = opendata / f"data/furry_system/FurryBar/{user}/model.json"
     model = {"model": 'deepseek-reasoner'}
     messages_data = utils.handle_json(main_path, 'r', None)
     if os.path.exists(model_path):
@@ -131,8 +131,8 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
 @reset_furrybar.handle()
 async def reset_function(matcher: Matcher, event: MessageEvent):
     user = event.user_id
-    main_path = opendata / f"data/Furry_System/FurryBar/{user}/{user}.json"
-    normal_path = opendata / f"data/Furry_System/FurryBar/{user}/{user}_Normal.json"
+    main_path = opendata / f"data/furry_system/FurryBar/{user}/{user}.json"
+    normal_path = opendata / f"data/furry_system/FurryBar/{user}/{user}_Normal.json"
     utils.handle_json(main_path, 'w', utils.handle_json(normal_path, 'r'))
     await matcher.finish(MessageSegment.reply(event.message_id) + "已重置聊天记录。")
 
@@ -145,8 +145,8 @@ async def change_config_function(event: MessageEvent, args: Message = CommandArg
     logger.info(args_list)
     # await change_config.finish()
     user = event.user_id
-    main_path = opendata / f"data/Furry_System/FurryBar/{user}/{user}_Normal.json"
-    main_path_temp = opendata / f"data/Furry_System/FurryBar/{user}"
+    main_path = opendata / f"data/furry_system/FurryBar/{user}/{user}_Normal.json"
+    main_path_temp = opendata / f"data/furry_system/FurryBar/{user}"
     if not os.path.exists(main_path_temp):
         os.mkdir(main_path_temp)
     normal_dict = utils.handle_json(Normal_Path, 'r')
@@ -171,7 +171,7 @@ async def change_config_function(event: MessageEvent, args: Message = CommandArg
 @clear.handle()
 async def clear_function(matcher: Matcher, event: MessageEvent):
     user = event.user_id
-    main_path_temp = opendata / f"data/Furry_System/FurryBar/{user}"
+    main_path_temp = opendata / f"data/furry_system/FurryBar/{user}"
     if os.path.exists(main_path_temp):
         shutil.rmtree(main_path_temp)
         await matcher.finish(f"已经清空了{user}的FurryBar数据。")
@@ -182,10 +182,10 @@ async def clear_function(matcher: Matcher, event: MessageEvent):
 @latest.handle()
 async def latest_talk(matcher: Matcher, event: MessageEvent):
     user = event.user_id
-    path = f"{opendata}/data/Furry_System/FurryBar/{user}/{user}.json"
+    path = f"{opendata}/data/furry_system/FurryBar/{user}/{user}.json"
     if not os.path.exists(path):
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到聊天记录")
-    text = utils.handle_json(opendata / "data" / "Furry_System" / "FurryBar" / f"{user}" / f"{user}.json", 'r')
+    text = utils.handle_json(opendata / "data" / "furry_system" / "FurryBar" / f"{user}" / f"{user}.json", 'r')
     if text[-1]['role'] == 'system':
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到聊天记录")
     user = text[-2]['content']
