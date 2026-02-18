@@ -36,7 +36,8 @@ except ValueError:
     logger.warning("请在配置文件中设置furry_token！")
 
 opendata = Path.cwd()
-Normal_Path = opendata / "data" / "furry_system" / "FurryBar" / "FurryBar_Normal.json"
+forward_path = opendata / "data" / "furry_system" / "FurryBar"
+Normal_Path = forward_path / "FurryBar_Normal.json"
 
 utils.ensure_files_exist([Normal_Path],'furrybar模块')
 
@@ -52,8 +53,8 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
             event.user_id) == "2854196310" or "[CQ:at,qq=3806419216]" not in str(
         event.original_message) or "单词" in content: await matcher.finish()
     user = event.user_id
-    main_path = opendata / f"data/Furry_System/FurryBar/{user}/{user}.json"
-    normal_dict_temp = opendata / f"data/Furry_System/FurryBar/{user}/{user}_Normal.json"
+    main_path = forward_path / f"/{user}/{user}.json"
+    normal_dict_temp = forward_path / f"{user}/{user}_Normal.json"
     user_data_directory = opendata / f"data/Furry_System/FurryBar/{user}"
     if not os.path.exists(user_data_directory):
         os.mkdir(user_data_directory)
