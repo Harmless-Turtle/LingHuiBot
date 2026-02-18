@@ -53,7 +53,7 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
             event.user_id) == "2854196310" or "[CQ:at,qq=3806419216]" not in str(
         event.original_message) or "单词" in content: await matcher.finish()
     user = event.user_id
-    main_path = forward_path / f"/{user}/{user}.json"
+    main_path = forward_path / f"{user}/{user}.json"
     normal_dict_temp = forward_path / f"{user}/{user}_Normal.json"
     user_data_directory = forward_path/f"{user}"
     if not os.path.exists(user_data_directory):
