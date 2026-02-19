@@ -16,7 +16,7 @@ from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from .check_path import *
+from .check_file import *
 from .commands import *
 
 # 获取机器人的名字

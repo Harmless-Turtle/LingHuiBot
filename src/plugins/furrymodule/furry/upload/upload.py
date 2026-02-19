@@ -1,11 +1,10 @@
 # 标准库
 import os
 import time
-from pathlib import Path
 
 # 第三方库
 import httpx
-from nonebot import logger, on_command
+from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     Bot,
     GroupMessageEvent,
@@ -15,27 +14,26 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot.permission import SUPERUSER
 
 # 本地模块
 from src.plugins import utils
-from src.plugins.utils import get_config_item,ensure_files_exist
+from src.plugins.utils import get_config_item
+from src.plugins.furrymodule.commands import (
+    upload_furry,
+    batch_upload,
+    batch_set,
+    modify_furry
+)
+from src.plugins.furrymodule.check_file import (
+    DATA_PATH,
+    json_path,
+    batch_path
+)
 
 # ================= 配置与常量 =================
 
 # 定义全局常量
 API_BASE = "https://cloud.foxtail.cn/api"
-OPENDATA = Path.cwd()
-DATA_PATH = OPENDATA / "data" / "furry_system" / "upload"
-FONT_PATH = OPENDATA / "data" / "MiSans-Demibold.ttf"
-json_path = DATA_PATH / "upload_data.json"
-batch_path = DATA_PATH / "batch"
-
-
-ensure_files_exist(
-    [DATA_PATH],
-    "furry_upload"
-)
 
 # 定义全局变量
 LOGIN_COOKIE = {}
@@ -53,14 +51,6 @@ if all([TOKEN != "未获取到数据",ACCOUNT != "未获取到数据",PASSWORD !
 else:
     logger.warning("请注意，当前功能受限制！")
     logger.warning("您没有填写token/account/password，这将导致“投图”功能不可用！")
-
-# ================= 命令注册 =================
-
-upload_furry = on_command("一键上传", aliases={"投图", "管理员上传"}, priority=10, block=True)
-batch_upload = on_command("批量投图", aliases={"批量上传"}, block=True)
-batch_set = on_command("定义#", aliases={"定义"}, priority=10, block=True)
-debugger_upload = on_command("调试", aliases={"上传调试", "上图调试"}, priority=1, permission=SUPERUSER)
-modify_furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)
 
 # ================= 处理函数 =================
 
@@ -101,8 +91,8 @@ async def upload_furry_image(
     elif pic == "":
         await matcher.finish(MessageSegment.reply(event.message_id) + "错误：您似乎并没有发送图片，请按照#名字#类型#留言#图片的格式重新上传")
     
-    if not pic_type.isdigit():
-        await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：类型并非纯数字（0为设定，1为毛图，2为插画）")
+    if not pic_type.isdigit() or int(pic_type) > 3 or int(pic_type) < 0:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：类型并非纯数字或超出了限定范围（0为设定，1为毛图，2为插画）")
 
     # 图片下载逻辑
     msg_group = event.get_message()
