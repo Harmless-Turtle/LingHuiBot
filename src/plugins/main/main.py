@@ -2,19 +2,12 @@ import random as rd
 import time
 from datetime import datetime as dt
 import httpx
-import re
 
-from nonebot import get_driver,logger
+from nonebot import get_driver
 # 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
-    GroupIncreaseNoticeEvent,
-    GroupDecreaseNoticeEvent,
-    FriendRequestEvent,
-    GroupMessageEvent,
-    GroupRequestEvent,
     MessageSegment,
     MessageEvent,
-    NoticeEvent,
     Message,
     Bot,
 )
@@ -23,8 +16,8 @@ from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from src.plugins.main.commands import *
-from src.plugins.main.check_path.check_path import *
+from .check_path import *
+from .commands import *
 
 # 获取机器人的名字
 config = get_driver().config
