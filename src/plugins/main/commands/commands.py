@@ -112,3 +112,5 @@ choice_friend = on_command("同意", rule=chek_friend, permission=SUPERUSER, ali
 handle_group = on_command("允许加群", aliases={"拒绝加群"}, block=True)
 
 add_welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_welcome), priority=1, block=True)
+
+SelfJoinGroupWelcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent), priority=1, block=True)

@@ -2,13 +2,19 @@ import random as rd
 import time
 from datetime import datetime as dt
 import httpx
-import requests
+import re
 
-from nonebot import get_driver
+from nonebot import get_driver,logger
 # 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
+    GroupIncreaseNoticeEvent,
+    GroupDecreaseNoticeEvent,
+    FriendRequestEvent,
+    GroupMessageEvent,
+    GroupRequestEvent,
     MessageSegment,
     MessageEvent,
+    NoticeEvent,
     Message,
     Bot,
 )
@@ -79,7 +85,7 @@ async def tarot_function(matcher: Matcher, event: MessageEvent):
 这个牌的方位解释为：{position_meaning}""")
 
 
-@Add_Welcome.handle()
+@add_welcome.handle()
 @utils.handle_errors
 async def welcome(matcher: Matcher, event=GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id: await matcher.finish()
@@ -99,10 +105,6 @@ async def welcome(matcher: Matcher, event=GroupIncreaseNoticeEvent):
                 "Welcome new members to join this family! Linghui Bot welcomes you~")
     else:
         await matcher.finish()
-
-
-SelfJoinGroupWelcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent), priority=1, block=True)
-
 
 @SelfJoinGroupWelcome.handle()
 @utils.handle_errors
@@ -400,7 +402,7 @@ async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, match
     )
 
 
-@Like_Friend.handle()
+@like_friend.handle()
 @utils.handle_errors
 async def lf_function(matcher: Matcher, event: NoticeEvent):
     from nonebot import get_bot
@@ -438,7 +440,7 @@ async def lf_function(matcher: Matcher, event: NoticeEvent):
         logger.error(f"发送点赞消息失败，可能是因为没有添加好友")
 
 
-@Add_Friend.handle()
+@add_friend.handle()
 @utils.handle_errors
 async def af_function(bot: Bot, matcher: Matcher, event: FriendRequestEvent):
     request_type, user_id, flag, comment = event.request_type, event.user_id, event.flag, event.comment
@@ -458,7 +460,7 @@ async def af_function(bot: Bot, matcher: Matcher, event: FriendRequestEvent):
     await matcher.finish()
 
 
-@Choice_Friend.handle()
+@choice_friend.handle()
 async def cf_function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
     if "同意" in str(event.get_message):
         select = True
