@@ -78,7 +78,7 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
     }
     if len(content) > 100:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：超出请求字数上限（100字符）。")
-    messages_data.append(text_dict)
+    messages_data.get("message",[]).append(text_dict)
     model = "deepseek-reasoner"
     payload = {
         'model': f"{model}",  # 从文件里面导入预设模型
