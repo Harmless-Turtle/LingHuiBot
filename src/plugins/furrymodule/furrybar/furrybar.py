@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import shutil
@@ -31,10 +32,11 @@ normal_path
 
 config = get_driver().config
 try:
-    Talk_key = config.furry_aikey
+    APIKEY = config.furry_aikey
+    BASE_URL = config.furry_ai_baseurl
     logger.success("✅已成功加载FurryBar的相关配置！")
 except ValueError:
-    logger.warning("请在配置文件中设置furry_token！")
+    logger.warning("请在配置文件中设置FURRY_AIKEY以及FURRY_AI_BASEURL！")
 
 
 # Model_Path = opendata / "data/furry_system/FurryBar/model.json"
@@ -42,87 +44,90 @@ except ValueError:
 @furrybar.handle()
 @utils.handle_errors
 async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupMessageEvent):
-    # await matcher.finish(MessageSegment.reply(event.message_id)+"该功能正在维护，暂停提供服务")
-    logger.info("FB")
-    content = str(event.get_message())
-    if content == "" or "reply" in str(reply.get_event_description()) or str(
-            event.user_id) == "2854196310" or "[CQ:at,qq=3806419216]" not in str(
-        event.original_message) or "单词" in content: await matcher.finish()
-    user = event.user_id
-    main_path = forward_path / f"{user}/{user}.json"
-    normal_dict_temp = forward_path / f"{user}/{user}_Normal.json"
-    user_data_directory = forward_path/f"{user}"
-    if not os.path.exists(user_data_directory):
-        os.mkdir(user_data_directory)
-    if not os.path.exists(main_path):
-        temp_dict = utils.handle_json(normal_path, 'r')
-        utils.handle_json(main_path, 'w', temp_dict)
-        utils.handle_json(normal_dict_temp, 'w', temp_dict)
-    url = "http://fb-ai.furrybar.com:3000/v1/chat/completions"
-    model_path = forward_path / f"{user}" / "model.json"
-    model = {"model": 'deepseek-reasoner'}
-    messages_data = utils.handle_json(main_path, 'r', None)
-    if os.path.exists(model_path):
-        model = utils.handle_json(model_path, 'r', None)
-    else:
-        utils.handle_json(model_path, 'w', model)
-        await matcher.send(
-            "未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息")
-    model = model['model']
-    simplified_text = zhconv.convert(content, 'zh-hans')
-    if emoji.emoji_count(content) != 0:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：检测到emoji表情。")
-    text_dict = {
-        "role": "user",
-        "content": f"{simplified_text}"
-    }
+    content = str(event.get_message())   # 用户输入内容
+    # 屏蔽回复信息、复制的at信息、机器人信息、空信息
+    if content == "" or "reply" in str(reply.get_event_description()) or str(event.user_id) == "2854196310" or "at" not in str(event.original_message):
+        await matcher.finish()
     if len(content) > 100:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：超出请求字数上限（100字符）。")
-    messages_data.get("message",[]).append(text_dict)
-    model = "deepseek-reasoner"
-    payload = {
-        'model': f"{model}",  # 从文件里面导入预设模型
-        "messages": messages_data
+    # 将用户输入信息强制转换为简体中文，防止繁体中文以及其他莫名其妙的语言被传入模型
+    user_message = zhconv.convert(content, 'zh-hans')
+    # 驳回emoji
+    if emoji.emoji_count(content) != 0:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：检测到emoji表情。")
+    # 获取默认模型参数
+    normal_path = forward_path / "furrybar_normal.json"
+    normal_data = utils.handle_json(normal_path, 'r')
+    # 定义用户文件路径
+    user = event.user_id
+    user_data_directory = forward_path / f"{user}"
+    user_json_path = user_data_directory / f"{user}.json"
+    user_normal_path = user_data_directory / f"{user}_Normal.json"
+    user_model_path = user_data_directory / f"model.json"
+    # 如果父目录不存在，则新建
+    if not os.path.exists(user_data_directory):
+        os.mkdir(user_data_directory)
+    # 如果未读取到用户文件，则写默认文件
+    if not os.path.exists(user_normal_path):
+        await matcher.send(
+            "未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息")
+        utils.handle_json(user_normal_path, 'w',normal_data)
+        utils.handle_json(user_json_path, 'w',normal_data)
+        utils.handle_json(user_model_path, 'w',{"model":"deepseek-reasoner"})
+    # 读取用户文件
+    user_json_data = utils.handle_json(user_json_path, 'r')
+    user_normal_json_data = utils.handle_json(user_normal_path, 'r')
+    user_model_data = utils.handle_json(user_model_path, 'r')
+    # 构建用户对话json
+    user_message_data = {
+        "role": "user",
+        "content": f"{user_message}"
     }
-    logger.info("Debug:将使用" + model + "模型进行答复。")
+    # 构建请求头
     headers = {
-        'Authorization': f'{Talk_key}',
+        'Authorization': f'{APIKEY}',
         'Content-Type': 'application/json'
     }
-    # response = requests.post(url, headers=headers, data=payload)
+    # 将用户对话添加进data
+    user_json_data['messages'].append(user_message_data)
+    # 将用户的模型数据写入
+    user_model_data['model'] = user_model_data.get("model","deepseek-reasoner")
+    # Async httpx Request to API
     async with httpx.AsyncClient(http2=True, verify=False,
                                  timeout=httpx.Timeout(connect=10, read=60, write=60, pool=30)) as client:
-        response = await client.post(url, headers=headers, json=payload)
+        response = await client.post(BASE_URL, headers=headers, json=user_json_data)
+        # 请求未返回200 OK，输出错误内容
         if response.status_code != 200:
-            logger.error(f"{response.text}")
-            await matcher.finish(MessageSegment.reply(
-                event.message_id) + f"请求失败\n服务器返回:{response['error']['message']}[{response.status_code}]")
+            await matcher.finish(MessageSegment.reply(event.message_id)+f"请求失败，API未返回正确的错误码。[HTTP {response.status_code}]")
+        # 请求返回空值，模型异常
         if response == "":
-            await matcher.finish(
-                MessageSegment.reply(event.message_id) + "模型返回了空值，这可能是因为key失效或不稳定，请稍后再试。")
-        json = response.json()
-        if json.get("error") is not None:
-            error_text = json['error']['message']
+            await matcher.finish(MessageSegment.reply(event.message_id) + "模型返回了空值，这可能是因为key失效或不稳定，请稍后再试。")
+        # 请求返回正确的值，但是值中含有错误，输出错误内容：
+        result = response.json()
+        if result.get("error") is not None:
+            error_text = result['error']['message']
+            # 模型繁忙错误
             if "模型繁忙" in str(error_text):
                 await matcher.finish(MessageSegment.reply(
                     event.message_id) + "遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。")
-            normal_data = utils.handle_json(normal_path, 'r', None)
-            utils.handle_json(main_path, 'w', normal_data)
+            # 如果不是模型繁忙，那么必定是上下文超出长度，重置模型信息
+            utils.handle_json(user_json_data, 'w', user_normal_json_data)
             await matcher.finish(MessageSegment.reply(
                 event.message_id) + f"""遇到问题：{error_text}\n凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题""")
-        logger.info(json)
-        text = json['choices'][0]['message']['content']
-        logger.info("Debug:模型回复，内容是" + text)
-        text = text.replace("\n", "")
-        assistant_dict = {
+        # 模型正确访问，返回数据
+        return_data = result['choices'][0]['message']['content']
+        # 清除回答中的换行符号
+        text = return_data.replace("\n", "")
+        # 构建答复数据
+        assistant_data = {
             "role": "assistant",
             "content": text
         }
-        messages_data.append(assistant_dict)
-        utils.handle_json(main_path, 'w', messages_data)
-        logger.success("Debug:处理完成，最终输出：" + text)
+        # 写入答复数据
+        user_json_data['messages'].append(assistant_data)
+        # 写入用户文件进行保存
+        utils.handle_json(user_json_path, 'w', user_json_data)
         await matcher.finish(MessageSegment.reply(event.message_id) + text)
-
 
 @reset_furrybar.handle()
 async def reset_function(matcher: Matcher, event: MessageEvent):
