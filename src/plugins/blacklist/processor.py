@@ -15,7 +15,7 @@ black_list_path = path / "blacklist" / "black_list.json"
 # 初始化检查
 def init_blacklist():
     """确保黑名单文件存在且格式正确"""
-    utils.ensure_files_exist([black_list_path], "黑名单插件")
+    utils.ensure_files_exist([black_list_path], "黑名单插件",[{}])
     data = utils.handle_json(black_list_path, 'r')
     # 如果文件是空的列表或格式不对，初始化为字典
     if not isinstance(data, dict):

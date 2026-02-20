@@ -2,7 +2,6 @@ import json
 import os
 import time
 import traceback
-import asyncio
 from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
@@ -343,95 +342,54 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         response.raise_for_status()
         return response.json()
 
-async def _ensure_files_exist_async(
-    file_path: list[Path],
-    description: str,
-    normal_process: str = "{}",
-) -> None:
-    for path in file_path:
-        try:
-            # 1. 确保父目录存在
-            parent = path.parent
-            if not parent.exists():
-                logger.warning(
-                    f"[{description}]: 父目录不存在，自动创建 -> {parent}"
-                )
-                parent.mkdir(parents=True, exist_ok=True)
-            # 0.如果输入了路径，则创建文件夹
-            if not path.exists() and '.' not in str(path):
-                logger.warning(f"未找到目录，创建：{path}")
-                os.mkdir(path)
-            # 2. 文件已存在，跳过
-            if path.exists():
-                continue
-
-            logger.warning(
-                f"[{description}]: 文件不存在，初始化 -> {path}"
-            )
-            if path.suffix.lower() in {".jpg", ".png"} and not normal_process.startswith("https://"):
-                logger.critical(
-                    f"严重错误预警：你正在试图初始化一张图片，并且您没有填写合法URL以下载。这会导致图片不可用。建议您手动替换该文件：\n\n{path}\n"
-                )
-            if ".ttf" in str(path):
-                logger.critical(f"注意：缺失必要字体文件，该字体文件暂不支持自动下载。\n\n请您打开链接：https://hyperos.mi.com/font-download/MiSans.zip 下载MiSANS字体包并将其拷贝到如下目录：\n\n{path}\n")
-            # 3. URL 初始化（图片 / 静态资源）
-            if normal_process.startswith("https://"):
-                async with httpx.AsyncClient(
-                    timeout=10,
-                    follow_redirects=True,
-                ) as client:
-                    resp = await client.get(normal_process)
-                    resp.raise_for_status()
-                    path.write_bytes(resp.content)
-
-            # 4. 内容初始化（JSON）
-            else:
-                path.write_text(normal_process, encoding="utf-8")
-
-        except Exception as e:
-            raise RuntimeError(
-                f"[{description}]: 文件初始化失败 -> {path}"
-            ) from e
-    logger.info(f"[{description}]: 文件检查完成")
-
-
-def ensure_files_exist(
-    file_path: list[Path],
-    description: str,
-    normal_process: str = "{}",
-) -> None:
+def ensure_files_exist(file_path: list[Path], description: str, normal_data: list) -> None:
     """
-    智能文件初始化入口
-    Args:
-        file_path:list 输入文件路径，注意：请勿输入文件夹路径，您输入的Path对象应始终保持为文件（即带后缀的格式）而非路径。
-        description:str 输入文件描述
-        normal_process:str 当file_path为文件时，要输入的默认值。
-    Returns:
-        None
-    Raises:
-        RuntimeError:当自动处理出错时，将抛出RuntimeError并阻止加载。
+    文件与路径校验函数
 
+    :param file_path: 需要校验的 Path 对象列表
+    :param description: 当前校验模块的描述名称，用于 logger 输出
+    :param normal_data: 与 file_path 一一对应的默认数据列表
     """
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
+    # 健壮性检查：确保路径和数据数量一一对应
+    if len(file_path) != len(normal_data):
+        logger.error(f"[{description}] 校验异常：file_path 和 normal_data 列表长度不一致！")
+        return
 
-    if loop and loop.is_running():
-        # 已在事件循环中（NoneBot / FastAPI）
-        loop.create_task(
-            _ensure_files_exist_async(
-                file_path,
-                description,
-                normal_process,
-            )
-        )
-    else:
-        # 普通同步环境
-        asyncio.run(
-            _ensure_files_exist_async(
-                file_path,
-                description,
-                normal_process,
-            )
-        )
+    for path, data in zip(file_path, normal_data):
+        if path.suffix != "":
+            # ======= 处理文件 =======
+            # 1. 如果文件的父目录不存在，先创建父目录
+            if not path.parent.exists():
+                path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 2. 如果文件实体不存在，则尝试创建并写入默认数据
+            if not path.exists():
+                logger.info(f"[{description}] {path}不存在，尝试创建")
+                try:
+                    # 判断数据和文件类型进行安全写入
+                    if isinstance(data, (dict, list)) and path.suffix.lower() == ".json":
+                        # 专门为 json 文件写入标准 JSON 格式数据
+                        with open(path, "w", encoding="utf-8") as f:
+                            json.dump(data, f, ensure_ascii=False, indent=4)
+                    elif isinstance(data, str):
+                        # 如果是字符串，直接写入（如txt文本等）
+                        path.write_text(data, encoding="utf-8")
+                    else:
+                        # 对于 .jpg / .ttf 等非文本文件，或 data 未指定时，只创建空文件实体
+                        path.touch()
+
+                    logger.success(f"[{description}] 文件创建成功")
+                except Exception as e:
+                    logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
+
+        else:
+            # ======= 处理目录 =======
+            if not path.exists():
+                logger.info(f"[{description}] {path}不存在，尝试创建")
+                try:
+                    path.mkdir(parents=True, exist_ok=True)
+                    logger.success(f"[{description}] 目录创建成功")
+                except Exception as e:
+                    logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
+
+    logger.info(f"[{description}] 所有的文件及路径自检完毕。")

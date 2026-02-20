@@ -23,7 +23,6 @@ from .commands import *
 config = get_driver().config
 try:
     nickname = config.nickname
-    logger.info("加载完成")
 except AttributeError:
     logger.warning("未加载到NICKNAME配置，请前往dotEnv文件新建该配置项，否则部分功能可能不可用")
 

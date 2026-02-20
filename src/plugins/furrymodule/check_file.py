@@ -13,18 +13,17 @@ forward_path = OPENDATA / "data" / "furry_system" / "furrybar"
 normal_path = forward_path / "furrybar_normal.json"
 
 # 校验文件
-def _check_path():
-    utils.ensure_files_exist(
-        file_path=[
-            DATA_PATH,
-            FONT_PATH,
-            json_path,
-            batch_path,
-            temp_image_path,
-            allin_pic_prerequisite_path,
-            forward_path,
-            normal_path,
-        ],
-        description="furrymodule模块 自检"
-    )
-_check_path()
+utils.ensure_files_exist(
+    file_path=[
+        DATA_PATH,
+        FONT_PATH,
+        json_path,
+        batch_path,
+        temp_image_path,
+        allin_pic_prerequisite_path,
+        forward_path,
+        normal_path,
+    ],
+    description="furrymodule模块 自检",
+    normal_data=[None,None,[],None,None,None,None,[]]
+)
