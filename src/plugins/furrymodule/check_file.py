@@ -25,5 +25,5 @@ utils.ensure_files_exist(
         normal_path,
     ],
     description="furrymodule模块 自检",
-    normal_data=[None,None,[],None,None,None,None,[]]
+    normal_data=[None,None,[],None,None,None,None, {}]
 )
