@@ -1,8 +1,8 @@
 import random as rd
 import time
 from datetime import datetime as dt
-import httpx
 
+import httpx
 from nonebot import get_driver
 # 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
@@ -98,6 +98,7 @@ async def welcome(matcher: Matcher, event=GroupIncreaseNoticeEvent):
     else:
         await matcher.finish()
 
+
 @SelfJoinGroupWelcome.handle()
 @utils.handle_errors
 async def self_join_group_welcome_function(matcher: Matcher, event=GroupIncreaseNoticeEvent):
@@ -187,13 +188,7 @@ async def a_word_function(matcher: Matcher, event=MessageEvent, args: Message = 
 # 签到触发器与实现
 @sign_in.handle()
 @utils.handle_errors
-async def sign_in_function(matcher: Matcher, event: GroupMessageEvent,
-                           args: Message = CommandArg()):
-    if args.extract_plain_text():
-        await matcher.finish()  # 若消息后面存在文本则不响应
-    full = str(event.original_message).strip()
-    if any(name not in full for name in nickname):
-        await matcher.finish()
+async def sign_in_function(matcher: Matcher, event: GroupMessageEvent):
     # 打开文件并写入Sign_Dict字典
     sign_dict = utils.handle_json(sign_in_path, 'r')
     # 获取触发人QQ号和群聊号

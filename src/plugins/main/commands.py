@@ -3,7 +3,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from nonebot import logger, on_request, on_notice
-# 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
     GroupDecreaseNoticeEvent,
     GroupIncreaseNoticeEvent,
@@ -15,7 +14,7 @@ from nonebot.adapters.onebot.v11 import (
     NoticeEvent,
 )
 from nonebot.permission import SUPERUSER
-from nonebot.plugin import on_command,on_type
+from nonebot.plugin import on_command, on_type
 from nonebot.rule import to_me, is_type, Rule
 
 from src.plugins import utils
@@ -24,6 +23,7 @@ path = Path.cwd() / 'data' / 'main'
 welcome_path = path / "welcome_system.json"
 check_group_member_path = path / "GroupMemberChange.json"
 add_group_check_path = path / "add_group_switch.json"
+
 
 async def check_bt(event: GroupMessageEvent):
     s = re.match(r'我是(.+)控', str(event.original_message))
@@ -79,9 +79,10 @@ async def chek_friend(event: PrivateMessageEvent):
     else:
         return True
 
+
 # 基础功能
 sign_in = on_command("签到", aliases={"好久不见"}, priority=2, block=True)
-poke_check = on_type(PokeNotifyEvent,to_me())
+poke_check = on_type(PokeNotifyEvent, to_me())
 tarot = on_command("塔罗牌", priority=4, block=True)
 a_word = on_command("一言", priority=4, block=True)
 btfrk = on_command("我是", rule=check_bt)
