@@ -3,12 +3,11 @@
 ######################################
 
 # 导入所需模块
-import os
 import datetime
 from PIL import Image, ImageDraw, ImageFont
-import httpx
 from src.plugins.utils import get_config_item,get_api_httpx
-from pathlib import Path
+
+from ..check_file import FONT_PATH
 
 # 导入特殊兽聚列表
 SPECIAL_EVENTS = get_config_item('furry_special_events', default="未获取到数据", required=True, desc="FurryFusion特殊兽聚列表")
@@ -87,7 +86,7 @@ def render_schedule_image(groups: dict):
 
 
     # 字体路径
-    FONT_PATH = str(Path(__file__).parents[2] / 'MiSans-Demibold.ttf')
+    # FONT_PATH = str(Path(__file__).parents[2] / 'MiSans-Demibold.ttf')
     font_title = ImageFont.truetype(FONT_PATH, 30)
     font_small = ImageFont.truetype(FONT_PATH, 20)
 
