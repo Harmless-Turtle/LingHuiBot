@@ -132,5 +132,4 @@ menu_config/
 .vscode/
 *.ttf
 *.png
-/migrations/
 /cache/
