@@ -1,34 +1,14 @@
 import io
-from pathlib import Path
+
 
 from PIL import Image
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent
 from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot.plugin import on_command
 from nonebot_plugin_htmlrender import md_to_pic
 
-menu = on_command("菜单", aliases={"凌辉菜单"}, priority=98, block=True)
-main_menu = on_command("菜单01", aliases={"基本菜单"}, priority=99, block=True)
-furry_menu = on_command("菜单02", aliases={"Furry菜单", "furry菜单"}, priority=99, block=True)
-marry_menu = on_command("菜单03", aliases={"结婚菜单"}, priority=99, block=True)
-admin_menu = on_command("菜单04",aliases={"管理菜单"},priority=99, block=True)
-service_menu = on_command("服务条款", aliases={"用户协议"}, block=True)
-
-ALL_MENU_MD = Path() / 'markdown' / 'all_menu.md'
-FURRY_MENU_MD = Path() / 'markdown' / 'furry_system.md'
-MAIN_MENU_MD = Path() / 'markdown' / 'main_system.md'
-SERVICE_MENU_MD = Path() / 'markdown' / 'user_agreement.md'
-MARRY_MENU_MD = Path() / 'markdown' / 'marry_system.md'
-ADMIN_MENU_MD = Path() / 'markdown' / 'admin_system.md'
-
-ALL_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'All_Menu.png'
-FURRY_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Furry_Menu.png'
-MAIN_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Main_Menu.png'
-SERVICE_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Service_Menu.png'
-MARRY_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Marry_Menu.png'
-ADMIN_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Admin_Menu.png'
-
+from .commands import *
+from .check_files import *
 
 @menu.handle()
 async def menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):

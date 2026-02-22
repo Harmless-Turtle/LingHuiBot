@@ -388,7 +388,6 @@ def ensure_files_exist(file_path: list[Path], description: str, normal_data: lis
                 logger.info(f"[{description}] {path}不存在，尝试创建")
                 try:
                     path.mkdir(parents=True, exist_ok=True)
-                    logger.success(f"[{description}] 目录创建成功")
                 except Exception as e:
                     logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
 
