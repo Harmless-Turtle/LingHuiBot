@@ -37,7 +37,7 @@ async def del_group(matcher: Matcher,event:GroupMessageEvent,args:Message = Comm
     gid, text = check_number(str(event.group_id),'group')
     if raw_args:
         gid, text = check_number(raw_args,'group')
-        if not gid == "not is number":
+        if not gid:
             await matcher.finish(MessageSegment.reply(event.message_id) + "唔...请输入一个正确的数字才可以呢。")
     data = utils.handle_json(blacklist_path,'r')
     if gid not in data["group"]:
