@@ -10,8 +10,6 @@ from nonebot.adapters.onebot.v11 import (
     Bot,
 )
 from nonebot.matcher import Matcher
-from nonebot.plugin import on_command
-from nonebot.permission import SUPERUSER
 from nonebot.params import CommandArg
 from pathlib import Path
 from .tools import (
@@ -21,24 +19,13 @@ from .tools import (
 ) 
 from src.plugins.utils import get_api_httpx
 
-
-# 定义Data存放路径并作为全局变量使用
-opendata = Path.cwd()
-timeout = None
-DATA_PATH = opendata / 'data' / 'Furry_System' / 'Upload'
-FONT_PATH = opendata / 'data' / 'MiSans-Demibold.ttf'
-PIC_URL = opendata / 'data' / 'temp.jpg'
-PROCESSED_IMAGES_PATH = opendata / 'data' / 'Furry_System' / 'processed_images'
-
-
-# FurryFusion 兽聚汇总服务
-furryfusion_list = on_command(
-    "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
-furryfusion_check = on_command("兽聚查询", block=True)
-furryfusion_countdown = on_command("兽聚倒计时", block=True)
-furryfusion_quick_information = on_command("兽聚快讯#", block=True)
-furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
-
+from ..commands import (
+    furryfusion_list,
+    furryfusion_check,
+    furryfusion_countdown,
+    furryfusion_quick_information,
+    furryfusion_information
+)
 
 
 @furryfusion_list.handle()
@@ -79,7 +66,7 @@ async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: 
     user_qq = event.user_id
     stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    if city_list == []:
+    if not city_list:
         city_list = response['data']['history']['city']
     for i in range(0, len(city_list)):
         title = city_list[i]['title']
@@ -99,7 +86,7 @@ async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: 
         text = f"展会名称：{title}\n举办展会主题：{name}\n官方群聊：{group_str}\n举办地点：{address}\n举办总时长：{time_day}天\n【{time_start}~{time_end}】"
         make_text = await utils.batch_get(text, image_url, event.self_id, nickname)
         final_list.append(make_text)
-    if final_list == []:
+    if not final_list:
         await matcher.finish(MessageSegment.reply(event.message_id) + "未查找到任何兽聚。")
     else:
         # logger.info(final_list)
@@ -134,6 +121,7 @@ async def furryfusion_countdown_handler(matcher: Matcher, event: MessageEvent, b
         final_list.append(make_text)
     # logger.info(final_list)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
+    await matcher.finish()
 
 
 @furryfusion_quick_information.handle()
