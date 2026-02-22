@@ -111,7 +111,7 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
                 await matcher.finish(MessageSegment.reply(
                     event.message_id) + "遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。")
             # 如果不是模型繁忙，那么必定是上下文超出长度，重置模型信息
-            utils.handle_json(user_json_data, 'w', user_normal_json_data)
+            utils.handle_json(user_json_path, 'w', user_normal_json_data)
             await matcher.finish(MessageSegment.reply(
                 event.message_id) + f"""遇到问题：{error_text}\n凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题""")
         # 模型正确访问，返回数据
