@@ -1,6 +1,6 @@
 import time
 from collections import deque
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from nonebot import  on_command
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message, MessageSegment
@@ -91,8 +91,8 @@ async def report_bug(bot: Bot, event: MessageEvent):
     group_id = f"group_{event.group_id}" if isinstance(event, GroupMessageEvent) else f"private_{event.user_id}"
     history: List[dict] = list(recent_messages.get(group_id, []))
     
-    user_cmd: Optional[dict,None] = None
-    bot_resp: Optional[dict] = None
+    user_cmd: dict | None = None
+    bot_resp: dict | None = None
 
     # 1. 逆序查找该用户最后一次发送的非反馈指令
     for i in range(len(history) - 1, -1, -1):
