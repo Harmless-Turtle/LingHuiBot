@@ -6,6 +6,7 @@ import httpx
 from nonebot import get_driver
 # 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
+    GroupIncreaseNoticeEvent,
     MessageSegment,
     MessageEvent,
     Message,
@@ -79,7 +80,7 @@ async def tarot_function(matcher: Matcher, event: MessageEvent):
 
 @add_welcome.handle()
 @utils.handle_errors
-async def welcome(matcher: Matcher, event=GroupIncreaseNoticeEvent):
+async def welcome(matcher: Matcher, event: GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id: await matcher.finish()
     welcome_dict = utils.handle_json(welcome_path, 'r')
     group_id = str(event.group_id)
@@ -101,7 +102,7 @@ async def welcome(matcher: Matcher, event=GroupIncreaseNoticeEvent):
 
 @SelfJoinGroupWelcome.handle()
 @utils.handle_errors
-async def self_join_group_welcome_function(matcher: Matcher, event=GroupIncreaseNoticeEvent):
+async def self_join_group_welcome_function(matcher: Matcher, event: GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id:
         await matcher.finish(
             "嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n"
@@ -177,7 +178,7 @@ async def cwt_function(matcher: Matcher, event: GroupMessageEvent, args: Message
 
 @a_word.handle()
 @utils.handle_errors
-async def a_word_function(matcher: Matcher, event=MessageEvent, args: Message = CommandArg()):
+async def a_word_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     word_list = utils.handle_json(aword_path, 'r')
 

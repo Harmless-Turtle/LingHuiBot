@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 
 import httpx
-from PIL import ImageFont
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
@@ -152,13 +151,7 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
                            time_noend=True)
 
         # 优化后的图片生成部分
-        try:
-            font = ImageFont.truetype(FONT_PATH, size=30)
-        except (OSError,ValueError):
-            font = ImageFont.load_default()
-
-        text_lines = [line for line in text.split('\n') if line.strip() != '']
-        image = utils.generate_text_image(text_lines, font)
+        image = utils.generate_text_image(text, FONT_PATH)
         image.save(temp_image_path)
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"共获取到了{list_length}条消息：" + MessageSegment.image(

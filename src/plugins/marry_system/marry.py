@@ -184,14 +184,14 @@ async def marry_propose_func(matcher:Matcher,event:MessageEvent,bot:Bot):
     self_dict = {
         "cp_qq":114514,
         "response":int(user_id),
-        "time":time,
+        "time":timestamp,
         "Request_Mode":0,
         "count":self_count
     }
     request_dict = {
         "cp_qq":114514,
         "response":self_qq,
-        "time":time,
+        "time":timestamp,
         "Request_Mode":1,
         "count":cp_count
     }

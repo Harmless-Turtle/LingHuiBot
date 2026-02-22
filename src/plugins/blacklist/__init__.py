@@ -11,11 +11,11 @@ from .__main__ import (
 
 
 __all__ = [
-    black_processor,
-    add_group_blacklist,
-    del_group_blacklist,
-    add_user_blacklist,
-    del_user_blacklist,
-    check_user_blacklist,
-    check_group_blacklist
+    "black_processor",
+    "add_group_blacklist",
+    "del_group_blacklist",
+    "add_user_blacklist",
+    "del_user_blacklist",
+    "check_user_blacklist",
+    "check_group_blacklist",
 ]
