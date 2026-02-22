@@ -1,6 +1,6 @@
 from pathlib import Path
-from src.plugins import utils
 
+from ..utils import ensure_files_exist
 
 OPENDATA = Path.cwd()
 DATA_PATH = OPENDATA / "data" / "furry_system" / "upload"
@@ -13,7 +13,7 @@ forward_path = OPENDATA / "data" / "furry_system" / "furrybar"
 normal_path = forward_path / "furrybar_normal.json"
 
 # 校验文件
-utils.ensure_files_exist(
+ensure_files_exist(
     file_path=[
         DATA_PATH,
         FONT_PATH,
@@ -25,5 +25,5 @@ utils.ensure_files_exist(
         normal_path,
     ],
     description="furrymodule模块 自检",
-    normal_data=[None,None,[],None,None,None,None, {}]
+    normal_data=[None, None, [], None, None, None, None, {}]
 )

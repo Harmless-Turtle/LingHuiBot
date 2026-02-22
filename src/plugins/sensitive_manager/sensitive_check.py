@@ -1,12 +1,11 @@
 # 标准库导入
 import json
+from datetime import datetime as dt
 from pathlib import Path
 from typing import Dict, Set
-from datetime import datetime as dt
 
 # 第三方库导入
 import ahocorasick
-
 # NoneBot相关导入
 from nonebot import get_driver, on_command, on_message
 from nonebot.adapters.onebot.v11 import (
@@ -15,13 +14,13 @@ from nonebot.adapters.onebot.v11 import (
     Message,
     MessageSegment,
 )
-from nonebot.params import CommandArg
-from nonebot.rule import Rule
 from nonebot.log import logger
 from nonebot.matcher import Matcher
+from nonebot.params import CommandArg
+from nonebot.rule import Rule
 
 # 本地模块导入
-from src.plugins import utils
+from ..utils import handle_json
 
 # 配置文件路径
 DATA_DIR = Path() / "data" / "sensitive_manager"
@@ -71,18 +70,18 @@ class SensitiveManager:
         self.load_data()
         self.build_all_ac()
 
-        self.group_settings = utils.handle_json(GROUP_SETTINGS_PATH, 'r') or {}
+        self.group_settings = handle_json(GROUP_SETTINGS_PATH, 'r') or {}
         # 直接加载新格式的违规记录
-        self.group_violations = utils.handle_json(USER_VIOLATIONS_PATH, 'r') or {}
+        self.group_violations = handle_json(USER_VIOLATIONS_PATH, 'r') or {}
 
         # 初始化时遍历所有群组构建 AC 自动机
         self.build_all_ac()
 
-        self.group_settings = utils.handle_json(GROUP_SETTINGS_PATH, 'r') or {}
-        self.user_violations = utils.handle_json(USER_VIOLATIONS_PATH, 'r') or {}
+        self.group_settings = handle_json(GROUP_SETTINGS_PATH, 'r') or {}
+        self.user_violations = handle_json(USER_VIOLATIONS_PATH, 'r') or {}
 
     def load_data(self):
-        data = utils.handle_json(SENSITIVE_DATA_PATH, 'r') or {}
+        data = handle_json(SENSITIVE_DATA_PATH, 'r') or {}
         self.sensitive_words = {}
         for group_id, content in data.items():
             if isinstance(content, list):
@@ -197,34 +196,34 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
         violations["warnings"] += 1
         warn_level = violations["warnings"]
         try:
-            Role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
-            Role = Role['role']
-            if Role not in "member":
+            role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
+            role = role['role']
+            if role not in "member":
                 if warn_level == 1:
-                    await bot.set_group_ban(group_id=group_id, user_id=event.user_id, duration=7 * 24 * 60 * 60)
+                    await bot.set_group_ban(group_id=int(group_id), user_id=event.user_id, duration=7 * 24 * 60 * 60)
                     action_taken = True
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计3次违规，禁言7天")
                 elif warn_level == 2:
-                    await bot.set_group_ban(group_id=group_id, user_id=event.user_id, duration=30 * 24 * 60 * 60)
+                    await bot.set_group_ban(group_id=int(group_id), user_id=event.user_id, duration=30 * 24 * 60 * 60)
                     action_taken = True
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计6次违规，将禁言30天")
                 elif warn_level >= 3:
-                    await bot.set_group_kick(group_id=group_id, user_id=event.user_id)
+                    await bot.set_group_kick(group_id=int(group_id), user_id=event.user_id)
                     action_taken = True
                     # 只删除该用户在当前群的记录
                     if group_id in manager.group_violations and user_id in manager.group_violations[group_id]:
                         del manager.group_violations[group_id][user_id]
                     manager.build_ac(group_id)  # 重建当前群的AC自动机
-                    utils.handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
+                    handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计9次违规，将踢出该群员")
         except Exception as e:
             logger.error(f"执行惩罚时出错：{e}")
 
     # 保存记录
-    utils.handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
+    handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
     if not action_taken:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"检测到敏感词，请文明发言！（累计违规次数：{violations['count']}）")
@@ -271,7 +270,7 @@ async def handle_add(event: GroupMessageEvent, args: Message = CommandArg()):
         }
         for gid, values in manager.sensitive_words.items()
     }
-    utils.handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
+    handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
 
     # 重建当前群的AC自动机 - 确保立即生效
     manager.build_ac(group_id)
@@ -316,7 +315,7 @@ async def handle_del(event: GroupMessageEvent, args: Message = CommandArg()):
         }
         for gid, words in manager.sensitive_words.items()
     }
-    utils.handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
+    handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
 
     await cmd_del.finish(MessageSegment.reply(event.message_id) + f"已删除敏感词：{word}")
 
@@ -331,7 +330,7 @@ async def handle_list(event: GroupMessageEvent):
 
 
 @cmd_group.handle()
-async def handle_toggle(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
+async def handle_toggle(event: GroupMessageEvent, args: Message = CommandArg()):
     group_id = str(event.group_id)
     user_id = str(event.user_id)
     action = args.extract_plain_text().strip()
@@ -354,7 +353,11 @@ async def handle_toggle(bot: Bot, event: GroupMessageEvent, args: Message = Comm
     else:
         current_status = "开启" if manager.group_settings.get(group_id, False) else "关闭"
         await cmd_group.finish(
-            MessageSegment.reply(event.message_id) + f"参数错误！当前状态：{current_status}\n请使用【开启】或【关闭】")
+            MessageSegment.reply(event.message_id) +
+            f"参数错误！当前状态：{current_status}\n"
+            f"请使用【开启】或【关闭】"
+        )
+        return
 
-    utils.handle_json(GROUP_SETTINGS_PATH, 'w', manager.group_settings)
+    handle_json(GROUP_SETTINGS_PATH, 'w', manager.group_settings)
     await cmd_group.finish(MessageSegment.reply(event.message_id) + msg)

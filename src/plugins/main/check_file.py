@@ -1,5 +1,6 @@
-from src.plugins import utils
 from pathlib import Path
+
+from ..utils import ensure_files_exist
 
 # 定义Data存放路径并作为全局变量使用
 path = Path.cwd() / 'data' / 'main'
@@ -14,7 +15,7 @@ check_group_member_path = path / "GroupMemberChange.json"
 friend_like_path = path / "friend_like.json"
 
 # 校验文件
-utils.ensure_files_exist(
+ensure_files_exist(
     file_path=[
         poke_path,
         welcome_path,
@@ -27,5 +28,5 @@ utils.ensure_files_exist(
         friend_like_path,
     ],
     description="main 模块自检",
-    normal_data=[[],{},[],{},None,None,{},{},{}]
+    normal_data=[[], {}, [], {}, None, None, {}, {}, {}]
 )

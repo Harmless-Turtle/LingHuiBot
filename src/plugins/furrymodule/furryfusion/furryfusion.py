@@ -1,24 +1,21 @@
-# 导入标准库
 import time
+from pathlib import Path
 
-from src.plugins import utils
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     MessageSegment,
-    MessageEvent,
     Message,
     Bot,
+    GroupMessageEvent,
 )
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from pathlib import Path
+
 from .tools import (
     render_schedule_image,
     group_by_year_month,
     get_event_list,
-) 
-from src.plugins.utils import get_api_httpx
-
+)
 from ..commands import (
     furryfusion_list,
     furryfusion_check,
@@ -26,10 +23,11 @@ from ..commands import (
     furryfusion_quick_information,
     furryfusion_information
 )
+from ...utils import get_api_httpx, handle_errors, batch_get
 
 
 @furryfusion_list.handle()
-async def furryfusion_list_handler(matcher:Matcher):
+async def furry_fusion_list_handler(matcher: Matcher):
     events = await get_event_list()
     if events is False:
         await matcher.finish("无法获取活动列表，请稍后再试。")
@@ -44,8 +42,9 @@ async def furryfusion_list_handler(matcher:Matcher):
 
 
 @furryfusion_check.handle()
-@utils.handle_errors
-async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+@handle_errors
+async def furry_fusion_check_handler(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
+                                     args: Message = CommandArg()):
     message = str(args)
     if "省" in message and "市" in message:
         await matcher.send("不应带有省+市字样，将取市作为查找依据。")
@@ -58,7 +57,11 @@ async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: 
         message = message.split("市")
         message = message[0]
     logger.info(message)
-    response = await get_api_httpx(f"service/screen?content={message}&mode=address", service="furryfusion", request_mode="get")
+    response = await get_api_httpx(
+        f"service/screen?content={message}&mode=address",
+        service="furryfusion",
+        request_mode="get"
+    )
     city_list = response['data']['history']['province']
     final_list = []
     logger.info(message)
@@ -83,18 +86,24 @@ async def furryfusion_check_handler(matcher: Matcher, event: MessageEvent, bot: 
         time_end = city_list[i]['time_end']
         time_day = city_list[i]['time_day']
         address = city_list[i]['address']
-        text = f"展会名称：{title}\n举办展会主题：{name}\n官方群聊：{group_str}\n举办地点：{address}\n举办总时长：{time_day}天\n【{time_start}~{time_end}】"
-        make_text = await utils.batch_get(text, image_url, event.self_id, nickname)
+        text = (
+            f"展会名称：{title}\n"
+            f"举办展会主题：{name}\n"
+            f"官方群聊：{group_str}\n"
+            f"举办地点：{address}\n举办总时长：{time_day}天\n"
+            f"【{time_start}~{time_end}】"
+        )
+        make_text = await batch_get(text, image_url, event.self_id, nickname)
         final_list.append(make_text)
     if not final_list:
         await matcher.finish(MessageSegment.reply(event.message_id) + "未查找到任何兽聚。")
     else:
-        # logger.info(final_list)
         await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
 
+
 @furryfusion_countdown.handle()
-@utils.handle_errors
-async def furryfusion_countdown_handler(matcher: Matcher, event: MessageEvent, bot: Bot):
+@handle_errors
+async def furry_fusion_countdown_handler(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
     data = await get_api_httpx("service/countdown", service="furryfusion", request_mode="get")
     data = data['data']
     state_text_list = ['活动结束', '预告中', '售票中', '活动中', '活动取消']
@@ -114,20 +123,36 @@ async def furryfusion_countdown_handler(matcher: Matcher, event: MessageEvent, b
         time_end = data[i]['time_end']
         time_surplus = data[i]['time_surplus']
         state = state_text_list[state]
-        text = f"展会名称：{title}\n举办展会主题：{name}\n当前展会状态：{state}\n举办地点：{address}\n举办\
-总时长：{time_day}天\n【{time_start}~{time_end}】\n距离展会开始还有：{time_surplus + 1}天\n该倒计时天数已加上今天"
-        make_text = await utils.batch_get(f"{text}\n生成时间：{time.strftime('%Y-%m-%d %a %H:%M:%S', time.localtime())}",
-                                          None, event.self_id, nickname)
+        text = (
+            f"展会名称：{title}\n"
+            f"举办展会主题：{name}\n"
+            f"当前展会状态：{state}\n"
+            f"举办地点：{address}\n"
+            f"举办总时长：{time_day}天\n"
+            f"【{time_start}~{time_end}】\n"
+            f"距离展会开始还有：{time_surplus + 1}天\n"
+            f"该倒计时天数已加上今天"
+        )
+        make_text = await batch_get(
+            f"{text}\n"
+            f"生成时间：{time.strftime('%Y-%m-%d %a %H:%M:%S', time.localtime())}",
+            None,
+            event.self_id,
+            nickname
+        )
         final_list.append(make_text)
-    # logger.info(final_list)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
     await matcher.finish()
 
 
 @furryfusion_quick_information.handle()
-@utils.handle_errors
-async def furryfusion_quick_information_handler(matcher: Matcher, event: MessageEvent, bot: Bot,
-                                                 args: Message = CommandArg()):
+@handle_errors
+async def furry_fusion_quick_information_handler(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        bot: Bot,
+        args: Message = CommandArg()
+):
     args = int(str(args))
     response = await get_api_httpx("service/activity", service="furryfusion", request_mode="get")
     code = response['code']
@@ -155,18 +180,27 @@ async def furryfusion_quick_information_handler(matcher: Matcher, event: Message
     time_day = information['time_day']
     time_start = information['time_start']
     time_end = information['time_end']
-    text = f"展会名称：{title}\n举办展会主题：{name}\n展会状态：{state_text}\n官方群聊：{group_str}\n举办地点：{address}\n举办总时长：{time_day}天\n【{time_start}~{time_end}】\n推荐结合“今年兽聚”命令使用"
+    text = (
+        f"展会名称：{title}\n"
+        f"举办展会主题：{name}\n"
+        f"展会状态：{state_text}\n"
+        f"官方群聊：{group_str}\n"
+        f"举办地点：{address}\n举办总时长：{time_day}天\n"
+        f"【{time_start}~{time_end}】\n"
+        f"推荐结合“今年兽聚”命令使用"
+    )
     user_qq = event.user_id
     stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    make_text = await utils.batch_get(text, image, event.self_id, nickname)
+    make_text = await batch_get(text, image, event.self_id, nickname)
     final_list.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
 
 
 @furryfusion_information.handle()
-@utils.handle_errors
-async def furryfusion_information_handler(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+@handle_errors
+async def furry_fusion_information_handler(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
+                                           args: Message = CommandArg()):
     args = str(args)
     final_list = []
     response = await get_api_httpx(f"service/details?title={args}", service="furryfusion", request_mode="get")
@@ -210,21 +244,23 @@ async def furryfusion_information_handler(matcher: Matcher, event: MessageEvent,
         weibo_name, weibo_url = "暂未获取到数据", "暂未获取到数据"
     if mail == "":
         mail = "暂未获取到数据"
-    text = f"""展会名称：{title}
-展会介绍：{brief}
-展会状态：{state_text}
-展会官网：{url}
-工商主体：{ltd_name}，URL：{ltd_url}
-bilibili：{bilibili_name}，URL：{bilibili_url}
-官方微博：{weibo_name}，URL：{weibo_url}
-官方邮箱：{mail}
-官方群聊：{group_str}
-具有关联性的其他品牌名称：{correlation_str}
-下面为该展会举办的部分活动/线下兽聚"""
+    text = (
+        f"展会名称：{title}\n"
+        f"展会介绍：{brief}\n"
+        f"展会状态：{state_text}\n"
+        f"展会官网：{url}\n"
+        f"工商主体：{ltd_name}，URL：{ltd_url}\n"
+        f"bilibili：{bilibili_name}，URL：{bilibili_url}\n"
+        f"官方微博：{weibo_name}，URL：{weibo_url}\n"
+        f"官方邮箱：{mail}\n"
+        f"官方群聊：{group_str}\n"
+        f"具有关联性的其他品牌名称：{correlation_str}\n"
+        f"下面为该展会举办的部分活动/线下兽聚\n"
+    )
     user_qq = event.user_id
     stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    make_text = await utils.batch_get(text, image, event.self_id, nickname)
+    make_text = await batch_get(text, image, event.self_id, nickname)
     final_list.append(make_text)
     info = response['info']
     info_state_list_str = ['活动结束', '预告中', '售票中', '活动中', '活动取消']
@@ -236,12 +272,14 @@ bilibili：{bilibili_name}，URL：{bilibili_url}
         info_address = info[i]['address']
         info_time_start = info[i]['time_start']
         info_time_end = info[i]['time_end']
-        text = f"""第{i + 1}条：
-举办展会：{info_title}
-活动名称：{info_name}
-活动举办状态：{info_state}
-活动举办地点：{info_address}
-举办时间：【{info_time_start}~{info_time_end}】"""
-        make_text = await utils.batch_get(text, info_image, event.self_id, nickname)
+        text = (
+            f"第{i + 1}条：\n"
+            f"举办展会：{info_title}\n"
+            f"活动名称：{info_name}\n"
+            f"活动举办状态：{info_state}\n"
+            f"活动举办地点：{info_address}\n"
+            f"举办时间：【{info_time_start}~{info_time_end}】"
+        )
+        make_text = await batch_get(text, info_image, event.self_id, nickname)
         final_list.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)

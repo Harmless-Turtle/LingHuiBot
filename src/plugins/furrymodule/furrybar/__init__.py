@@ -1,1 +1,1 @@
-from .furrybar import *
+from . import furrybar

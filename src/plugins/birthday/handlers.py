@@ -8,7 +8,7 @@ from nonebot.params import CommandArg, Depends
 from nonebot.plugin.on import on_command, on_message
 from nonebot.rule import is_type, startswith
 
-from src.plugins import utils
+from .. import utils
 from .models import (
     UserBirthday,
     GroupSettings,

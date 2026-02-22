@@ -1,9 +1,9 @@
-from .langrensha import (
-    start,
-    join,
-    start_game,
-    Delete_Room,
-)
+# from .langrensha import (
+#     start,
+#     join,
+#     start_game,
+#     Delete_Room,
+# )
 
 __plugin_name__ = "狼人杀游戏"
 __plugin_usage__ = """
@@ -16,9 +16,9 @@ __plugin_usage__ = """
 """
 
 # 导出处理器以便NoneBot自动加载
-__all__ = [
-    start,
-    join,
-    start_game,
-    Delete_Room,
-]
+# __all__ = [
+#     start,
+#     join,
+#     start_game,
+#     Delete_Room,
+# ]

@@ -1,12 +1,10 @@
-import asyncio
-from datetime import date, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import nonebot
 import pytest
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
-from src.plugins.birthday.tasks import _init_birthday_jobs
+from plugins import _init_birthday_jobs
 
 
 # Ensure NoneBot is initialized for plugin loading

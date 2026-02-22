@@ -5,7 +5,7 @@ from nonebot_plugin_orm import Model, async_scoped_session
 from sqlalchemy import Date, DateTime, ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.plugins.database.models import Users, Groups
+from ..database.models import Users, Groups
 
 
 class GroupSettings(Model):

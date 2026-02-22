@@ -135,7 +135,7 @@ def generate_text_image(error_msg, font_path):
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict|list] = None) -> dict | list | None:
+def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict | list | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 
@@ -341,6 +341,7 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         # 如果状态码不是 2xx，抛出异常
         response.raise_for_status()
         return response.json()
+
 
 def ensure_files_exist(file_path: list[Path], description: str, normal_data: list) -> None:
     """

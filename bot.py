@@ -1,14 +1,16 @@
 import nonebot
+from nonebot import require
 from nonebot.adapters.onebot.v11 import Adapter
 
-nonebot.init(dotenv_path=".env")
+nonebot.init()
 
-# 注册适配器
 driver = nonebot.get_driver()
 driver.register_adapter(Adapter)
 
 # 加载插件
-nonebot.load_from_toml("pyproject.toml")
+require("nonebot_plugin_orm")
+require("nonebot_plugin_htmlrender")
+nonebot.load_plugins("src/plugins")
 
 if __name__ == "__main__":
     nonebot.run()

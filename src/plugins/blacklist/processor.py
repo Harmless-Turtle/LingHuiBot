@@ -1,12 +1,13 @@
+from pathlib import Path
 from typing import Literal
+
 from nonebot import get_driver, logger, on_notice
+from nonebot.adapters.onebot.v11 import Event, GroupBanNoticeEvent
 from nonebot.exception import IgnoredException
 from nonebot.message import event_preprocessor
-from nonebot.adapters.onebot.v11 import Event, GroupBanNoticeEvent
-from pathlib import Path
 from nonebot.rule import Rule
 
-from src.plugins import utils
+from ..utils import ensure_files_exist, handle_json
 
 path = Path.cwd() / 'data'
 black_list_path = path / "blacklist" / "black_list.json"
@@ -15,12 +16,12 @@ black_list_path = path / "blacklist" / "black_list.json"
 # 初始化检查
 def init_blacklist():
     """确保黑名单文件存在且格式正确"""
-    utils.ensure_files_exist([black_list_path], "黑名单插件",[{}])
-    data = utils.handle_json(black_list_path, 'r')
+    ensure_files_exist([black_list_path], "黑名单模块自检", [{}])
+    data = handle_json(black_list_path, 'r')
     # 如果文件是空的列表或格式不对，初始化为字典
     if not isinstance(data, dict):
         data = {"user": [], "group": []}
-        utils.handle_json(black_list_path, 'w', data)
+        handle_json(black_list_path, 'w', data)
     return data
 
 
@@ -35,7 +36,7 @@ def add_to_blacklist(target_id: str, type_: Literal['user', 'group']) -> bool:
     :param target_id: 用户 QQ 或群号
     :param type_: 'user' 或 'group'
     """
-    black_list = utils.handle_json(black_list_path, 'r')
+    black_list = handle_json(black_list_path, 'r')
 
     # 确保字典键存在
     if type_ not in black_list:
@@ -43,7 +44,7 @@ def add_to_blacklist(target_id: str, type_: Literal['user', 'group']) -> bool:
 
     if target_id not in black_list[type_]:
         black_list[type_].append(target_id)
-        utils.handle_json(black_list_path, 'w', black_list)
+        handle_json(black_list_path, 'w', black_list)
         return True
     return False
 
@@ -79,7 +80,7 @@ def black_processor(event: Event):
         return
 
     # 2. 读取黑名单字典
-    black_list = utils.handle_json(black_list_path, 'r')
+    black_list = handle_json(black_list_path, 'r')
     if not isinstance(black_list, dict):
         return
 

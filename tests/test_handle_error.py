@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from nonebot.adapters.onebot.v11 import Message, MessageEvent
+from nonebot.adapters.onebot.v11 import MessageEvent
 from nonebot.matcher import Matcher
 
-from src.plugins.utils import handle_errors
+from plugins import handle_errors
 
 
 # A simple async function that raises an exception, to be decorated

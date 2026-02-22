@@ -17,7 +17,7 @@ from nonebot.permission import SUPERUSER
 from nonebot.plugin import on_command, on_type
 from nonebot.rule import to_me, is_type, Rule
 
-from src.plugins import utils
+from ..utils import handle_json
 
 path = Path.cwd() / 'data' / 'main'
 welcome_path = path / "welcome_system.json"
@@ -34,7 +34,7 @@ async def check_bt(event: GroupMessageEvent):
 
 
 async def chek_add_welcome(event: GroupIncreaseNoticeEvent):
-    welcome_data = utils.handle_json(welcome_path, 'r')
+    welcome_data = handle_json(welcome_path, 'r')
     group_id = event.group_id
     logger.info(f"检查群 {group_id} 的欢迎配置，当前数据：{welcome_data.get(group_id)}")
     if welcome_data.get(group_id, False):
@@ -46,7 +46,7 @@ async def chek_add_welcome(event: GroupIncreaseNoticeEvent):
 
 async def chek_group_member_change(event: GroupDecreaseNoticeEvent):
     try:
-        data = utils.handle_json(check_group_member_path, "r")
+        data = handle_json(check_group_member_path, "r")
         logger.info(f"检查群 {event.group_id} 的退群通知开关，当前状态：{data.get(str(event.group_id))}")
         return data.get(str(event.group_id), False)
     except Exception as e:
@@ -55,7 +55,7 @@ async def chek_group_member_change(event: GroupDecreaseNoticeEvent):
 
 
 async def add_group_switch(event: GroupRequestEvent):
-    group_switch_data = utils.handle_json(add_group_check_path, "r")
+    group_switch_data = handle_json(add_group_check_path, "r")
     logger.info(group_switch_data.get(str(event.group_id), False))
     logger.info(event.sub_type == "add")
     return group_switch_data.get(str(event.group_id), False) and event.sub_type == "add"

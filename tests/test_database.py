@@ -12,7 +12,7 @@ from nonebot.internal.matcher import Matcher
 from nonebot.internal.params import Depends
 from nonebot.plugin import on_command
 
-from src.plugins.birthday.models import GroupSettings, get_or_create_group_settings
+from plugins import GroupSettings, get_or_create_group_settings
 
 
 test_db = on_command("test_db", priority=100, block=False)
@@ -30,7 +30,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 
-from src.plugins.birthday.models import GroupSettings, get_or_create_group_settings
+from plugins import GroupSettings, get_or_create_group_settings
 
 
 # Helper to consume async generator

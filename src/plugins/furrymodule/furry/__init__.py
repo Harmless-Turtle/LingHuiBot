@@ -1,2 +1,1 @@
-from .furry import *
-from .upload import *
+from . import furry, upload

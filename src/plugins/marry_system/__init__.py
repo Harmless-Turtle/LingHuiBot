@@ -1,1 +1,1 @@
-from .marry import *
+from . import marry

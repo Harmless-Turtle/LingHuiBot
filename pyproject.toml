@@ -28,39 +28,39 @@ plugin_dirs = ["src/plugins"]
 builtin_plugins = []
 [tool.nonebot.plugins]
 "@local" = []
+nonebot-plugin-orm = ["nonebot_plugin_orm"]
 nonebot-plugin-apscheduler = ["nonebot_plugin_apscheduler"]
-nonebot-plugin-localstore = ["nonebot_plugin_localstore"]
+nonebot-plugin-picmcstat = ["nonebot_plugin_picmcstat"]
 nonebot-plugin-multincm = ["nonebot_plugin_multincm"]
 nonebot-plugin-datastore = ["nonebot_plugin_datastore"]
-nonebot-plugin-picmcstat = ["nonebot_plugin_picmcstat"]
-nonebot-plugin-orm = ["nonebot_plugin_orm"]
+nonebot-plugin-localstore = ["nonebot_plugin_localstore"]
 nonebot_plugin_mc_server_status = ["nonebot_plugin_mc_server_status"]
 nonebot-plugin-htmlrender = ["nonebot_plugin_htmlrender"]
 
 
 [tool.nonebot.adapters]
 "@local" = []
-nonebot-adapter-onebot = [{name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11"}]
+nonebot-adapter-onebot = [{ name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }]
 
 [tool.pyright]
-"typeCheckingMode"= "basic"
-"reportArgumentType"= "none"
-"reportOptionalSubscript"= "none"
-"reportCallIssue"= "none"
-"reportOptionalMemberAccess"= "none"
-"reportAttributeAccessIssue"= "none"
-"reportAssignmentType"= "none"
-"reportReturnType"= "none"
-"reportGeneralTypeIssues"= "none"
-"reportInvalidTypeVarUse"= "none"
-"reportInvalidTypeArguments"= "none"
-"reportOptionalCall"= "none"
-"reportUnboundVariable"="none"
-"reportRedeclaration"="none"
-"reportOperatorIssue"="none"
-"reportUnsupportedDunderAll"="none"
-"reportIndexIssue"="none"
-"reportOptionalIterable"="none"
+"typeCheckingMode" = "basic"
+"reportArgumentType" = "none"
+"reportOptionalSubscript" = "none"
+"reportCallIssue" = "none"
+"reportOptionalMemberAccess" = "none"
+"reportAttributeAccessIssue" = "none"
+"reportAssignmentType" = "none"
+"reportReturnType" = "none"
+"reportGeneralTypeIssues" = "none"
+"reportInvalidTypeVarUse" = "none"
+"reportInvalidTypeArguments" = "none"
+"reportOptionalCall" = "none"
+"reportUnboundVariable" = "none"
+"reportRedeclaration" = "none"
+"reportOperatorIssue" = "none"
+"reportUnsupportedDunderAll" = "none"
+"reportIndexIssue" = "none"
+"reportOptionalIterable" = "none"
 
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"

@@ -7,7 +7,7 @@ from nonebot.plugin import on_command
 
 from pathlib import Path
 
-from src.plugins import utils
+from .. import utils
 from .tools import check_number
 
 path = Path.cwd() / 'data'

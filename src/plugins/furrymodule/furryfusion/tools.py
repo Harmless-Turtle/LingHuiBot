@@ -1,16 +1,17 @@
-######################################
-# FurryFusion 活动日程工具函数        #
-######################################
-
-# 导入所需模块
 import datetime
+
 from PIL import Image, ImageDraw, ImageFont
-from src.plugins.utils import get_config_item,get_api_httpx
 
 from ..check_file import FONT_PATH
+from ...utils import get_config_item, get_api_httpx
 
 # 导入特殊兽聚列表
-SPECIAL_EVENTS = get_config_item('furry_special_events', default="未获取到数据", required=True, desc="FurryFusion特殊兽聚列表")
+SPECIAL_EVENTS = get_config_item(
+    'furry_special_events',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion特殊兽聚列表"
+)
 
 
 # ========= 工具函数：请求 API =========
@@ -30,12 +31,13 @@ async def get_event_list():
                 "time_end": "9999.01.01"
             },
             {
-                "title":"错误内容",
-                "address":f"{e}",
-                "time_start":"1900.01.01",
-                "time_end":"9999.01.01"
+                "title": "错误内容",
+                "address": f"{e}",
+                "time_start": "1900.01.01",
+                "time_end": "9999.01.01"
             }
         ]
+
 
 # ========= 工具函数：生成倒计时 =========
 def calc_days_remaining(start_date: str):
@@ -43,6 +45,7 @@ def calc_days_remaining(start_date: str):
     start = datetime.datetime.strptime(start_date, "%Y.%m.%d").date()
     days = (start - today).days
     return days
+
 
 def format_remaining_days(days: int) -> tuple:
     """格式化剩余天数显示，返回(文本, 颜色)"""
@@ -74,7 +77,7 @@ def group_by_year_month(events):
 
         groups[year][month].append(e)
     return groups
-    
+
 
 # ========= 图片生成 =========
 def render_schedule_image(groups: dict):
@@ -83,7 +86,6 @@ def render_schedule_image(groups: dict):
     card_w = 300
     card_h = 150
     gap = 30
-
 
     # 字体路径
     # FONT_PATH = str(Path(__file__).parents[2] / 'MiSans-Demibold.ttf')
@@ -139,7 +141,8 @@ def render_schedule_image(groups: dict):
             draw.line((timeline_x, start_y, timeline_x, end_y), fill=line_color, width=3)
 
         # 年份圆（实心）和文本
-        draw.ellipse((timeline_x - year_r, year_center_y - year_r, timeline_x + year_r, year_center_y + year_r), fill=(255, 255, 255))
+        draw.ellipse((timeline_x - year_r, year_center_y - year_r, timeline_x + year_r, year_center_y + year_r),
+                     fill=(255, 255, 255))
         draw.text((padding, y_offset), year, font=font_title, fill=(255, 255, 255))
         y_offset += year_h + 12
 
@@ -162,7 +165,11 @@ def render_schedule_image(groups: dict):
                 draw.line((timeline_x, start_y, timeline_x, end_y), fill=line_color, width=3)
 
             # 月份空心圆和文本
-            draw.ellipse((timeline_x - month_r, month_center_y - month_r, timeline_x + month_r, month_center_y + month_r), outline=line_color, width=2)
+            draw.ellipse(
+                (timeline_x - month_r, month_center_y - month_r, timeline_x + month_r, month_center_y + month_r),
+                outline=line_color,
+                width=2
+            )
             draw.text((padding + 20, y_offset), month, font=font_small, fill=(200, 200, 200))
             y_offset += month_h + 10
 

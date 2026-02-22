@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import shutil
@@ -17,7 +16,10 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from src.plugins import utils
+from ..check_file import (
+    forward_path,
+    normal_path
+)
 from ..commands import (
     furrybar,
     change_config,
@@ -25,10 +27,7 @@ from ..commands import (
     clear,
     latest
 )
-from ..check_file import (
-forward_path,
-normal_path
-)
+from ...utils import handle_json, handle_errors
 
 config = get_driver().config
 try:
@@ -42,11 +41,12 @@ except ValueError:
 # Model_Path = opendata / "data/furry_system/FurryBar/model.json"
 
 @furrybar.handle()
-@utils.handle_errors
-async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupMessageEvent):
-    content = str(event.get_message())   # 用户输入内容
+@handle_errors
+async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: GroupMessageEvent):
+    content = str(event.get_message())  # 用户输入内容
     # 屏蔽回复信息、复制的at信息、机器人信息、空信息
-    if content == "" or "reply" in str(reply.get_event_description()) or str(event.user_id) == "2854196310" or "at" not in str(event.original_message):
+    if content == "" or "reply" in str(reply.get_event_description()) or str(
+            event.user_id) == "2854196310" or "at" not in str(event.original_message):
         await matcher.finish()
     if len(content) > 100:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：超出请求字数上限（100字符）。")
@@ -56,8 +56,8 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
     if emoji.emoji_count(content) != 0:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：检测到emoji表情。")
     # 获取默认模型参数
-    normal_path = forward_path / "furrybar_normal.json"
-    normal_data = utils.handle_json(normal_path, 'r')
+    normal_data_path = forward_path / "furrybar_normal.json"
+    normal_data = handle_json(normal_data_path, 'r')
     # 定义用户文件路径
     user = event.user_id
     user_data_directory = forward_path / f"{user}"
@@ -71,13 +71,13 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
     if not os.path.exists(user_normal_path):
         await matcher.send(
             "未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息")
-        utils.handle_json(user_normal_path, 'w',normal_data)
-        utils.handle_json(user_json_path, 'w',normal_data)
-        utils.handle_json(user_model_path, 'w',{"model":"deepseek-reasoner"})
+        handle_json(user_normal_path, 'w', normal_data)
+        handle_json(user_json_path, 'w', normal_data)
+        handle_json(user_model_path, 'w', {"model": "deepseek-reasoner"})
     # 读取用户文件
-    user_json_data = utils.handle_json(user_json_path, 'r')
-    user_normal_json_data = utils.handle_json(user_normal_path, 'r')
-    user_model_data = utils.handle_json(user_model_path, 'r')
+    user_json_data = handle_json(user_json_path, 'r')
+    user_normal_json_data = handle_json(user_normal_path, 'r')
+    user_model_data = handle_json(user_model_path, 'r')
     # 构建用户对话json
     user_message_data = {
         "role": "user",
@@ -91,29 +91,39 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
     # 将用户对话添加进data
     user_json_data['messages'].append(user_message_data)
     # 将用户的模型数据写入
-    user_model_data['model'] = user_model_data.get("model","deepseek-reasoner")
+    user_model_data['model'] = user_model_data.get("model", "deepseek-reasoner")
     # Async httpx Request to API
-    async with httpx.AsyncClient(http2=True, verify=False,
-                                 timeout=httpx.Timeout(connect=10, read=60, write=60, pool=30)) as client:
+    async with httpx.AsyncClient(
+            http2=True,
+            verify=False,
+            timeout=httpx.Timeout(connect=10, read=60, write=60, pool=30)
+    ) as client:
         response = await client.post(BASE_URL, headers=headers, json=user_json_data)
         # 请求未返回200 OK，输出错误内容
         if response.status_code != 200:
-            await matcher.finish(MessageSegment.reply(event.message_id)+f"请求失败，API未返回正确的错误码。[HTTP {response.status_code}]")
+            await matcher.finish(MessageSegment.reply(
+                event.message_id) + f"请求失败，API未返回正确的错误码。[HTTP {response.status_code}]")
         # 请求返回空值，模型异常
         if response == "":
-            await matcher.finish(MessageSegment.reply(event.message_id) + "模型返回了空值，这可能是因为key失效或不稳定，请稍后再试。")
+            await matcher.finish(
+                MessageSegment.reply(event.message_id) + "模型返回了空值，这可能是因为key失效或不稳定，请稍后再试。")
         # 请求返回正确的值，但是值中含有错误，输出错误内容：
         result = response.json()
         if result.get("error") is not None:
             error_text = result['error']['message']
             # 模型繁忙错误
             if "模型繁忙" in str(error_text):
-                await matcher.finish(MessageSegment.reply(
-                    event.message_id) + "遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。")
+                await matcher.finish(
+                    MessageSegment.reply(event.message_id) +
+                    "遇到一个错误，这可能是因为模型认为该内容不适合展示或该模型繁忙，请稍后重试。"
+                )
             # 如果不是模型繁忙，那么必定是上下文超出长度，重置模型信息
-            utils.handle_json(user_json_path, 'w', user_normal_json_data)
-            await matcher.finish(MessageSegment.reply(
-                event.message_id) + f"""遇到问题：{error_text}\n凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题""")
+            handle_json(user_json_path, 'w', user_normal_json_data)
+            await matcher.finish(
+                MessageSegment.reply(event.message_id) +
+                f"遇到问题：{error_text}\n"
+                f"凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题"
+            )
         # 模型正确访问，返回数据
         return_data = result['choices'][0]['message']['content']
         # 清除回答中的换行符号
@@ -126,15 +136,16 @@ async def furrybar_function(matcher: Matcher, event: MessageEvent, reply: GroupM
         # 写入答复数据
         user_json_data['messages'].append(assistant_data)
         # 写入用户文件进行保存
-        utils.handle_json(user_json_path, 'w', user_json_data)
+        handle_json(user_json_path, 'w', user_json_data)
         await matcher.finish(MessageSegment.reply(event.message_id) + text)
+
 
 @reset_furrybar.handle()
 async def reset_function(matcher: Matcher, event: MessageEvent):
     user = event.user_id
     main_path = forward_path / f"{user}" / f"{user}.json"
-    normal_path = forward_path/ f"{user}" / f"{user}_Normal.json"
-    utils.handle_json(main_path, 'w', utils.handle_json(normal_path, 'r'))
+    user_data_path = forward_path / f"{user}" / f"{user}_Normal.json"
+    handle_json(main_path, 'w', handle_json(user_data_path, 'r'))
     await matcher.finish(MessageSegment.reply(event.message_id) + "已重置聊天记录。")
 
 
@@ -150,7 +161,7 @@ async def change_config_function(event: MessageEvent, args: Message = CommandArg
     main_path_temp = forward_path / f"{user}"
     if not os.path.exists(main_path_temp):
         os.mkdir(main_path_temp)
-    normal_dict = utils.handle_json(normal_path, 'r')
+    normal_dict = handle_json(normal_path, 'r')
     for i in range(0, len(normal_dict) - 1):
         if normal_dict[i].get("你知道我是谁吗") is not None:
             del normal_dict[i], normal_dict[i + 1]
@@ -163,7 +174,7 @@ async def change_config_function(event: MessageEvent, args: Message = CommandArg
     }
     normal_dict.append(temp_dict_1)
     normal_dict.append(temp_dict_2)
-    utils.handle_json(main_path, 'w', normal_dict)
+    handle_json(main_path, 'w', normal_dict)
     temp = temp_dict_2['content']
     await change_config.finish(MessageSegment.reply(
         event.message_id) + f"已记录个人设定，内容如下：\nUser：你知道我是谁吗\nAssistant：{temp}\n注：如需改动立即生效，请发送“重置模型”命令")
@@ -186,7 +197,7 @@ async def latest_talk(matcher: Matcher, event: MessageEvent):
     path = forward_path / f"{user}" / f"{user}.json"
     if not os.path.exists(path):
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到聊天记录")
-    text = utils.handle_json(forward_path / f"{user}" / f"{user}.json", 'r')
+    text = handle_json(forward_path / f"{user}" / f"{user}.json", 'r')
     if text[-1]['role'] == 'system':
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到聊天记录")
     user = text[-2]['content']
