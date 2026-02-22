@@ -1,2 +1,5 @@
-# Make 'src' a proper Python package so imports like 'src.plugins' work during tests.
+from nonebot import require
 
+
+require("nonebot_plugin_orm")
+require("nonebot_plugin_alconna")

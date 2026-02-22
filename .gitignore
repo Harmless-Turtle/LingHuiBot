@@ -52,6 +52,7 @@ coverage.xml
 pytestdebug.log
 
 # 环境变量/虚拟环境
+.env
 .env.dev
 .venv
 env/
@@ -130,3 +131,5 @@ menu_config/
 .vscode/
 *.ttf
 *.png
+/migrations/
+/cache/

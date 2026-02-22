@@ -1,31 +1,14 @@
 import io
-from pathlib import Path
+
 
 from PIL import Image
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent
 from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot.plugin import on_command
 from nonebot_plugin_htmlrender import md_to_pic
 
-menu = on_command("菜单", aliases={"凌辉菜单"}, priority=100, block=True)
-main_menu = on_command("菜单01", aliases={"基本菜单"}, priority=99, block=True)
-furry_menu = on_command("菜单02", aliases={"Furry菜单", "furry菜单"}, priority=99, block=True)
-marry_menu = on_command("菜单03", aliases={"结婚菜单"}, priority=99, block=True)
-service_menu = on_command("服务条款", aliases={"用户协议"}, block=True)
-
-ALL_MENU_MD = Path() / 'Markdown' / 'All_Menu.md'
-FURRY_MENU_MD = Path() / 'Markdown' / 'Furry_System.md'
-MAIN_MENU_MD = Path() / 'Markdown' / 'Main_System.md'
-SERVICE_MENU_MD = Path() / 'Markdown' / 'User_Agreement.md'
-MARRY_MENU_MD = Path() / 'Markdown' / 'Marry_Menu.md'
-
-ALL_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'All_Menu.png'
-FURRY_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Furry_Menu.png'
-MAIN_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Main_Menu.png'
-SERVICE_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Service_Menu.png'
-MARRY_MENU_PIC_DATA = Path() / 'data' / 'Menu' / 'Marry_Menu.png'
-
+from .commands import *
+from .check_files import *
 
 @menu.handle()
 async def menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
@@ -51,6 +34,9 @@ async def service_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Me
 async def marry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, MARRY_MENU_MD, MARRY_MENU_PIC_DATA, args)
 
+@admin_menu.handle()
+async def admin_menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+    await handle_menu_command(matcher, event, ADMIN_MENU_MD, ADMIN_MENU_PIC_DATA, args)
 
 async def handle_menu_command(matcher: Matcher, event: MessageEvent, md_path: Path, pic_path: Path, args: Message):
     """通用的菜单命令处理函数"""
@@ -75,5 +61,6 @@ async def get_menu_pic(md_path: Path, pic_path: Path = None, width: int = 900) -
 
     image_bytes = await md_to_pic(md_path=str(md_path), width=width)
     with Image.open(io.BytesIO(image_bytes)) as img:
+        pic_path.parent.mkdir(parents=True, exist_ok=True)
         img.save(pic_path)
     return image_bytes

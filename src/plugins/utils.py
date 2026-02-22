@@ -1,4 +1,3 @@
-import io
 import json
 import os
 import time
@@ -17,7 +16,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
-FONT_PATH = Path() / 'data' / 'font' / 'MiSans-Demibold.ttf'
+FONT_PATH = Path() / 'data' / 'MiSans-Demibold.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'Furry_System' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
@@ -67,7 +66,7 @@ def handle_errors(func):
             matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
 
             if isinstance(event, MessageEvent) and matcher:
-                buffer_image = io.BytesIO()
+                buffer_image = BytesIO()
                 error_image.save(buffer_image, format="PNG")
                 buffer_image.seek(0)
                 error_response = create_error_reply(error, event, buffer_image)
@@ -107,48 +106,36 @@ def create_error_reply(error: Exception, event: MessageEvent, buffer_image: Byte
 
 
 # 根据多行文本和字体生成一张自动排版的图片
-# TODO: 需要重构，有乱码问题，格式欠佳
-def generate_text_image(lines, font):
-    padding = 20  # 增加边距
-    line_height = 0
-    max_width = 0
+def generate_text_image(error_msg, font_path):
+    font = ImageFont.truetype(font_path, size=30) if font_path.exists() else ImageFont.load_default()
+    lines = error_msg.split('\n')
+    padding = 20
+    line_spacing = 5
 
-    # 预先计算所有文本的尺寸
-    for line in lines:
-        # 使用 get bbox 获取文本边界框
-        bbox = font.getbbox(line)
-        # 计算实际宽度和高度
-        line_width = bbox[2] - bbox[0]
-        line_height = max(line_height, bbox[3] - bbox[1])
-        max_width = max(max_width, line_width)
+    default_height = font.getbbox("A")[3] - font.getbbox("A")[1]
+    line_sizes = [font.getbbox(line) for line in lines]
+    line_widths = [bbox[2] - bbox[0] for bbox in line_sizes]
+    line_heights = [
+        (bbox[3] - bbox[1]) if line.strip() else default_height  # 有空行时用“A”的行高
+        for line, bbox in zip(lines, line_sizes)
+    ]
 
-    # 添加边距
-    total_width = int(max_width) + 2 * padding
-    total_height = len(lines) * (line_height + 5) + 2 * padding
+    width = int(max(line_widths) + padding * 2)
+    height = int(sum(line_heights) + line_spacing * (len(lines) - 1) + padding * 2)
 
-    # 创建画布
-    image = Image.new("RGB", (total_width, total_height), (255, 255, 255))
+    image = Image.new("RGB", (width, height), (255, 255, 255))
     draw = ImageDraw.Draw(image)
 
-    # 绘制文字 - 居左显示
     y = padding
-    for line in lines:
-        # 获取文本尺寸
-        bbox = font.getbbox(line)
-        text_height = bbox[3] - bbox[1]
-
-        # 居左显示 - 固定从左侧padding位置开始
-        x = padding
-
-        # 绘制文本
-        draw.text((x, y), line, fill=(0, 0, 0), font=font)
-        y += line_height + 5  # 行间距
+    for i, line in enumerate(lines):
+        draw.text((padding, y), line, fill=(0, 0, 0), font=font)
+        y += line_heights[i] + line_spacing
 
     return image
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict] = None) -> dict | None:
+def handle_json(json_path: Path, mode: str, data: Optional[dict|list] = None) -> dict | list | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 
@@ -288,18 +275,19 @@ async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str
     overlay_image = Image.open(FURRY_FUSION_BG_PATH).convert("RGBA")
     _, _, _, alpha = overlay_image.split()
     target_size = (1920, 1080)  # 设置目标尺寸
-    img_resized = img.resize(target_size, Image.LANCZOS)
+    img_resized = img.resize(target_size, Image.Resampling.LANCZOS)
     img_resized.paste(
         overlay_image,
         (0, 0),
         alpha
     )
+    img_resized = img_resized.convert("RGB")
     output_dir = Path.cwd() / 'data' / 'Furry_System' / "processed_images"
     os.makedirs(output_dir, exist_ok=True)
 
     draw = ImageDraw.Draw(img_resized)
     font_path = Path.cwd() / 'data' / 'SourceHanSansSC-VF.ttf'
-    font = ImageFont.truetype(font_path, size=95)
+    font = ImageFont.truetype(str(font_path), size=95)
 
     text_color = (255, 255, 255)
     draw.text((10, 50), text, font=font, fill=text_color)
@@ -324,3 +312,83 @@ def get_config_item(key: str, default=None, required=False, desc=None):
     if required:
         logger.warning(f"[Furry模块] 缺少必要配置项: {key} ，{desc or ''}")
     return default
+
+
+# ========= 工具函数：异步请求 API =========
+async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str = "get") -> dict:
+    """
+    统一的异步 API 请求工具。
+
+    参数:
+        endpoint (str): API 路径（如 'service/screen'）。
+        params (dict | None): 查询参数字典，可选，默认为 None。
+        service (str): 服务名称，用于区分不同api的请求。
+        request_mode (str): 请求方式，'get' 或 'post'，默认为 'get'。
+    返回:
+        dict: 成功时返回解析后的 JSON 数据；发生错误时抛出 Exception。
+    """
+    if service == "furryfusion":
+        url = f"https://api.furryfusion.net/{endpoint}"
+    elif service == "furry":
+        url = f"https://cloud.foxtail.cn/api/{endpoint}"
+    else:
+        raise ValueError("未填写服务url，工具运行失败。")
+    async with httpx.AsyncClient() as client:
+        if request_mode == "post":
+            response = await client.post(url, timeout=10.0)
+        else:
+            response = await client.get(url, timeout=10.0)
+        # 如果状态码不是 2xx，抛出异常
+        response.raise_for_status()
+        return response.json()
+
+def ensure_files_exist(file_path: list[Path], description: str, normal_data: list) -> None:
+    """
+    文件与路径校验函数
+
+    :param file_path: 需要校验的 Path 对象列表
+    :param description: 当前校验模块的描述名称，用于 logger 输出
+    :param normal_data: 与 file_path 一一对应的默认数据列表
+    """
+    # 健壮性检查：确保路径和数据数量一一对应
+    if len(file_path) != len(normal_data):
+        logger.error(f"[{description}] 校验异常：file_path 和 normal_data 列表长度不一致！")
+        return
+
+    for path, data in zip(file_path, normal_data):
+        if path.suffix != "":
+            # ======= 处理文件 =======
+            # 1. 如果文件的父目录不存在，先创建父目录
+            if not path.parent.exists():
+                path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 2. 如果文件实体不存在，则尝试创建并写入默认数据
+            if not path.exists():
+                logger.info(f"[{description}] {path}不存在，尝试创建")
+                try:
+                    # 判断数据和文件类型进行安全写入
+                    if isinstance(data, (dict, list)) and path.suffix.lower() == ".json":
+                        # 专门为 json 文件写入标准 JSON 格式数据
+                        with open(path, "w", encoding="utf-8") as f:
+                            json.dump(data, f, ensure_ascii=False, indent=4)
+                    elif isinstance(data, str):
+                        # 如果是字符串，直接写入（如txt文本等）
+                        path.write_text(data, encoding="utf-8")
+                    else:
+                        # 对于 .jpg / .ttf 等非文本文件，或 data 未指定时，只创建空文件实体
+                        path.touch()
+
+                    logger.success(f"[{description}] 文件创建成功")
+                except Exception as e:
+                    logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
+
+        else:
+            # ======= 处理目录 =======
+            if not path.exists():
+                logger.info(f"[{description}] {path}不存在，尝试创建")
+                try:
+                    path.mkdir(parents=True, exist_ok=True)
+                except Exception as e:
+                    logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
+
+    logger.info(f"[{description}] 所有的文件及路径自检完毕。")
