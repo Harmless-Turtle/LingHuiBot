@@ -34,7 +34,7 @@ async def record_actual_commands(event: MessageEvent):
     _add_to_history(group_id, {
         "role": "user",
         "user_id": event.user_id,
-        "group_id": event.group_id,
+        "group_id": event.group_id if isinstance(event, GroupMessageEvent) else None,
         "content": raw_msg,
         "time": time.time() # 使用浮点数记录更精确的时间
     })
