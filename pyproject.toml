@@ -15,11 +15,13 @@ dependencies = [
     "nonebot-plugin-localstore>=0.7.4",
     "nonebot_plugin_mc_server_status>=0.4.1",
     "nonebot-plugin-htmlrender>=0.6.7",
+    "nb_cli>=1.7.0",
     "pandas>=2.3.3",
     "pyahocorasick>=2.2.0",
     "zhconv>=1.4.3",
     "emoji==2.15.0",
-    "psutil==7.0.0"
+    "psutil==7.0.0",
+    "nonebot-plugin-kawaii-status>=0.2.0",
 ]
 
 [tool.nonebot]
@@ -36,6 +38,7 @@ nonebot-plugin-datastore = ["nonebot_plugin_datastore"]
 nonebot-plugin-localstore = ["nonebot_plugin_localstore"]
 nonebot_plugin_mc_server_status = ["nonebot_plugin_mc_server_status"]
 nonebot-plugin-htmlrender = ["nonebot_plugin_htmlrender"]
+nonebot-plugin-kawaii-status = ["nonebot_plugin_kawaii_status"]
 
 
 [tool.nonebot.adapters]
