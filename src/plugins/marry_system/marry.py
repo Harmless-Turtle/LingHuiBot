@@ -40,7 +40,7 @@ async def marry_random_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
             text = f"你当前正在{request_list[request_mode]}\n请先通过“同意/拒绝求婚”或“取消求婚”命令作出决定后再试。"
         await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}")
     # 排除不应该被随机到的用户列表，例如is_robot为True、机器人自身以及用户本身
-    exclude_ids = {user_qq, event.self_id}
+    exclude_ids = {int(user_qq), event.self_id}
     member_list = [
         x['user_id']
         for x in user_list
@@ -91,7 +91,7 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     data = handle_json(marry_json_path, 'r')
     self_data: Optional[dict, None] = data.get(self_qq, False)
     # 异常处理
-    if self_data and not self_data.get(group_id) and self_data[group_id].get("cp_qq", 114514) == 114514:
+    if not data.get(self_qq).get(group_id) or self_data[group_id].get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎还没有对象吧xwx")
     # 确定用户存在对象后，读取其对象的值
     self_data = self_data[group_id]
@@ -142,7 +142,7 @@ async def marry_propose_func(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     if data.get(str(self_qq), {}).get(group_id, {}).get("cp_qq", 114514) != 114514:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你已经有对象了啦qwq怎么可以一夫多妻呢/_ \\")
     if data.get(str(self_qq), {}).get(group_id, {}).get("request", 0) != 0:
-        response = data[str(self_qq)][group_id]['response']
+        response = data[str(self_qq)][group_id]['request']
         stranger_info = await bot.get_stranger_info(user_id=response)
         request_text = [f"向{stranger_info["nick"]}求婚中", f"被{stranger_info["nick"]}求婚中"]
         request_mode = data[str(self_qq)][group_id]['request_mode']
@@ -186,8 +186,7 @@ async def marry_select_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     data = handle_json(marry_json_path, 'r')
     if data.get(self_qq, {}).get(group_id, {}).get("request", 0) == 0:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎没有被求婚或正在向他人求婚呢owo")
-    if data.get(self_qq).get(group_id).get('cp_qq', 0) != 114514 and data.get(self_qq).get(group_id).get('cp_qq',
-                                                                                                         0) != 0:
+    if data.get(self_qq).get(group_id).get('cp_qq', 0) != 114514 and data.get(self_qq).get(group_id).get('cp_qq',0) != 0:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎已经有对象了吧...？")
     request = data[self_qq][group_id]['request']
     mode = data[self_qq][group_id]["request_mode"]
@@ -197,9 +196,7 @@ async def marry_select_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
         if not "取消" in text:
             if mode != 1:
                 await matcher.finish(MessageSegment.reply(event.message_id) + "这个命令不是你用的吧owo")
-        del data[self_qq][group_id]["cp_qq"], data[self_qq][group_id]["request"], data[self_qq][group_id][
-            "request_mode"], data[str(request)][group_id]["cp_qq"], data[str(request)][group_id]["request"], \
-            data[str(request)][group_id]["request_mode"]
+        del data[self_qq][group_id], data[str(request)][group_id]
         handle_json(marry_json_path, 'w', data)
         temp = "拒绝"
         temp_1 = ""
