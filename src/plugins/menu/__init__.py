@@ -1,1 +1,1 @@
-from . import menu
+from .menu import *
