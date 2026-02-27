@@ -91,7 +91,7 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     data = handle_json(marry_json_path, 'r')
     self_data: Optional[dict, None] = data.get(self_qq, False)
     # 异常处理
-    if not data.get(self_qq).get(group_id) or self_data[group_id].get("cp_qq", 114514) == 114514:
+    if not data.get(self_qq,{}).get(group_id,{}) or self_data[group_id].get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎还没有对象吧xwx")
     # 确定用户存在对象后，读取其对象的值
     self_data = self_data[group_id]
