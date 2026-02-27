@@ -29,11 +29,6 @@ async def furry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Mess
 async def service_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, SERVICE_MENU_MD, SERVICE_MENU_PIC_DATA, args)
 
-
-@marry_menu.handle()
-async def marry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
-    await handle_menu_command(matcher, event, MARRY_MENU_MD, MARRY_MENU_PIC_DATA, args)
-
 @admin_menu.handle()
 async def admin_menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, ADMIN_MENU_MD, ADMIN_MENU_PIC_DATA, args)
