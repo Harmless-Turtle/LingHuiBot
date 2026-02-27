@@ -1,6 +1,5 @@
 from pathlib import Path
-
-from ..utils import ensure_files_exist
+from src.plugins import utils
 
 # 定义Data存放路径并作为全局变量使用
 path_header = Path.cwd() / "data" / "Marry_System"
@@ -8,11 +7,12 @@ path_header = Path.cwd() / "data" / "Marry_System"
 marry_json_path = path_header / 'Marry.json'
 marry_count_path = path_header / 'Marry_Count.json'
 
-ensure_files_exist(
+
+utils.ensure_files_exist(
     [
         marry_json_path,
         marry_count_path,
     ],
     "结婚系统自检",
-    [{}, {}]
+    [{},{}]
 )
