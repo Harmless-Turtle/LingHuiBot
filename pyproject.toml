@@ -15,7 +15,6 @@ dependencies = [
     "nonebot-plugin-localstore>=0.7.4",
     "nonebot_plugin_mc_server_status>=0.4.1",
     "nonebot-plugin-htmlrender>=0.6.7",
-    "nb_cli>=1.7.0",
     "pandas>=2.3.3",
     "pyahocorasick>=2.2.0",
     "zhconv>=1.4.3",
