@@ -19,7 +19,8 @@ dependencies = [
     "pyahocorasick>=2.2.0",
     "zhconv>=1.4.3",
     "emoji==2.15.0",
-    "psutil==7.0.0"
+    "psutil==7.0.0",
+    "pywin32==311"
 ]
 
 [tool.nonebot]
