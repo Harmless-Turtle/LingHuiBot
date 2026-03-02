@@ -51,21 +51,16 @@ def render_text_to_image(text: str, save_path: str):
     img.save(save_path)
 
 
-# 预定义 ctypes 调用
-user32 = ctypes.windll.user32
-
-# --- 新增：处理 DPI 缩放 ---
-try:
-    # 告诉 Windows 这是一个 DPI 感知的应用，避免坐标偏移
-    ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 1 = Process_System_DPI_Aware
-except Exception:
-    # 兼容老版本 Windows
-    ctypes.windll.user32.SetProcessDPIAware()
-
-user32 = ctypes.windll.user32
-
-
 def capture_windows(save_path: Path, keywords: list) -> bool:
+    # --- 新增：处理 DPI 缩放 ---
+    try:
+        # 告诉 Windows 这是一个 DPI 感知的应用，避免坐标偏移
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # 1 = Process_System_DPI_Aware
+    except Exception:
+        # 兼容老版本 Windows
+        ctypes.windll.user32.SetProcessDPIAware()
+
+    user32 = ctypes.windll.user32
     target_hwnd = None
 
     def callback(hwnd, extra):
