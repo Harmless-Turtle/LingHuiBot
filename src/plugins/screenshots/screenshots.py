@@ -7,8 +7,7 @@ from PIL import Image
 
 @screenshot_cmd.handle()
 async def handle_screenshot():
-    # 注意：这里的关键字要匹配你 CMD 窗口标题栏显示的文字
-    # 比如你的 Napcat 窗口标题可能是 "NapCat.Shell"
+    # 需要截取的窗口关键字或 screen 名
     targets = ["napcat", "nonebot"]
     images = []
 
@@ -19,17 +18,17 @@ async def handle_screenshot():
             img = await capture_linux_screen(target)
         images.append(img)
 
-    # 垂直拼接
+    # 垂直拼接多张图
     total_width = max(i.width for i in images)
     total_height = sum(i.height for i in images)
-    combined_img = Image.new("RGB", (total_width, total_height), (50, 50, 50))
+    combined = Image.new("RGB", (total_width, total_height), (40, 40, 40))
 
-    y_offset = 0
+    y = 0
     for img in images:
-        combined_img.paste(img, (0, y_offset))
-        y_offset += img.height
+        combined.paste(img, (0, y))
+        y += img.height
 
-    img_byteArr = io.BytesIO()
-    combined_img.save(img_byteArr, format='PNG')
-
-    await screenshot_cmd.finish(MessageSegment.image(img_byteArr.getvalue()))
+    # 输出到字节流
+    output = io.BytesIO()
+    combined.save(output, format='PNG')
+    await screenshot_cmd.finish(MessageSegment.image(output.getvalue()))
