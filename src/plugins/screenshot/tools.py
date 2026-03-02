@@ -3,9 +3,12 @@ import os
 import win32gui
 import win32ui
 import win32con
+import re
+
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import ctypes
+from nonebot import logger
 
 # 配置需要监控的关键字（窗口名或 screen 名）
 TARGET_KEYWORDS = ["napcat", "nonebot"]
@@ -109,22 +112,42 @@ def capture_windows(save_path: Path, keywords: list) -> bool:
         print(f"截图出错: {e}")
         return False
 
+
 def capture_linux_screen(save_path: Path, screen_names: list) -> bool:
-    """Linux screen 进程文本抓取实现"""
+    """Linux screen 抓取修正版"""
     try:
         combined_text = ""
         for name in screen_names:
-            dump_file = f"/tmp/screen_{name}.txt"
-            # 发送指令让 screen 把当前窗口存入文件
-            subprocess.run(["screen", "-S", name, "-X", "hardcopy", dump_file])
+            dump_file = f"/tmp/screen_{name}_dump.txt"
+
+            # 执行 hardcopy 指令
+            subprocess.run(["screen", "-S", name, "-p", "0", "-X", "hardcopy", dump_file], check=False)
+
+            import time
+            time.sleep(0.3)  # 等待文件写入完成
 
             if os.path.exists(dump_file):
-                with open(dump_file, "r", encoding="utf-8") as f:
-                    combined_text += f"\n[Session: {name}]\n" + "=" * 20 + "\n" + f.read()
+                # 使用 utf-8 读取，忽略非法字符
+                with open(dump_file, "r", encoding="utf-8", errors="ignore") as f:
+                    raw_content = f.read()
+                    # 关键：清洗掉颜色代码等乱码字符
+                    clean_content = strip_ansi_codes(raw_content).strip()
+
+                    if clean_content:
+                        combined_text += f"\n[Session: {name}]\n" + "=" * 30 + "\n" + clean_content + "\n"
                 os.remove(dump_file)
 
-        if not combined_text: return False
+        if not combined_text:
+            return False
+
         render_text_to_image(combined_text, str(save_path))
         return True
-    except Exception:
+    except Exception as e:
+        logger.error(f"Linux 截图处理乱码失败: {e}")
         return False
+
+def strip_ansi_codes(text: str) -> str:
+    """清除字符串中的 ANSI 转义序列（控制乱码的核心）"""
+    # 匹配以 ESC [ 开头的颜色和样式控制字符
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
