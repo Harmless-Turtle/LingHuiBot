@@ -1,13 +1,24 @@
 import subprocess
-import win32gui
-import win32ui
-import win32con
 import re
+import sys
 
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import ctypes
 from nonebot import logger
+
+if sys.platform == "win32":
+    try:
+        import win32gui
+        import win32ui
+        import win32con
+        import pygetwindow as gw
+    except ImportError:
+        logger.warning("Windows 环境下缺少 pywin32 或 pygetwindow 库")
+        win32gui = win32ui = win32con = gw = None
+else:
+    # Linux 环境下将这些变量设为 None，防止后面函数引用报错
+    win32gui = win32ui = win32con = gw = None
 
 # 配置需要监控的关键字（窗口名或 screen 名）
 TARGET_KEYWORDS = ["napcat", "nonebot"]
