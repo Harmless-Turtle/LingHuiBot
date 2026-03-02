@@ -20,7 +20,7 @@ dependencies = [
     "zhconv>=1.4.3",
     "emoji==2.15.0",
     "psutil==7.0.0",
-    "pywin32==311"
+    "pywin32==311; sys_platform == 'win32'"
 ]
 
 [tool.nonebot]
