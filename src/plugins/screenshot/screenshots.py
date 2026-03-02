@@ -10,39 +10,40 @@ from .tools import *
 
 
 @screenshot_cmd.handle()
-async def handle_screenshot(event:MessageEvent):
+async def handle_screenshot(event: MessageEvent):
     system = platform.system()
-    # 确保使用绝对路径
-    temp_img = Path("cache_console.png").absolute()
+    # 建议保存到 data 目录下，避免权限问题
+    temp_img = Path("data/cache_console.png").absolute()
 
-    logger.info(f"正在尝试截屏，保存路径: {temp_img}")
+    logger.info(f"收到截屏请求，系统: {system}")
 
-    success = False
-    if system == "Windows":
-        success = capture_windows(temp_img, TARGET_KEYWORDS)
-    elif system == "Linux":
-        success = capture_linux_screen(temp_img, TARGET_KEYWORDS)
+    try:
+        success = False
+        if system == "Windows":
+            success = capture_windows(temp_img, TARGET_KEYWORDS)
+        elif system == "Linux":
+            success = capture_linux_screen(temp_img, TARGET_KEYWORDS)
 
-    if success and temp_img.exists():
-        file_size = temp_img.stat().st_size
-        logger.info(f"截图成功，文件大小: {file_size} bytes")
+        if success and temp_img.exists() and temp_img.stat().st_size > 0:
+            with open(temp_img, "rb") as f:
+                img_data = f.read()
+                base64_str = base64.b64encode(img_data).decode()
 
-        if file_size > 0:
-            # --- 核心改进：将图片转为 Base64 发送 ---
-            try:
-                with open(temp_img, "rb") as f:
-                    img_data = f.read()
-                    base64_str = base64.b64encode(img_data).decode()
-
-                # 使用 base64 协议头发送
-                await screenshot_cmd.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(f"base64://{base64_str}"))
-            except FinishedException:
-                pass
-            except Exception as e:
-                logger.error(f"发送图片失败: {e}")
-                await screenshot_cmd.finish(f"发送图片出错: {e}")
+            # 发送图片
+            await screenshot_cmd.send(
+                MessageSegment.reply(event.message_id) +
+                MessageSegment.image(f"base64://{base64_str}")
+            )
+            logger.info("截屏发送成功")
         else:
-            await screenshot_cmd.finish("截屏失败：截取到的图片内容为空。")
-    else:
-        logger.error("截屏失败，未生成文件或捕获函数返回 False")
-        await screenshot_cmd.finish("截屏失败：无法获取窗口，请检查窗口标题是否匹配。")
+            await screenshot_cmd.send("截屏失败：未能抓取到内容，请检查进程名是否匹配。")
+
+    except FinishedException:
+        raise  # NoneBot 内部正常结束异常，必须抛出
+    except Exception as e:
+        logger.exception("截屏插件运行崩溃")
+        await screenshot_cmd.send(f"运行出错: {type(e).__name__}")
+    finally:
+        # 无论成功失败，尝试清理缓存
+        if temp_img.exists():
+            temp_img.unlink(missing_ok=True)

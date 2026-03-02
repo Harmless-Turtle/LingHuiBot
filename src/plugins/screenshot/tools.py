@@ -114,40 +114,60 @@ def capture_windows(save_path: Path, keywords: list) -> bool:
 
 
 def capture_linux_screen(save_path: Path, screen_names: list) -> bool:
-    """Linux screen 抓取修正版"""
     try:
         combined_text = ""
         for name in screen_names:
-            dump_file = f"/tmp/screen_{name}_dump.txt"
+            # 必须使用 Bot 拥有写权限的绝对路径
+            dump_file = Path(f"/tmp/screen_{name}_dump.txt").absolute()
 
-            # 执行 hardcopy 指令
-            subprocess.run(["screen", "-S", name, "-p", "0", "-X", "hardcopy", dump_file], check=False)
+            # 执行命令：强制指定第 0 号窗口并抓取
+            # 增加超时处理，防止 screen 进程挂起导致 Bot 无响应
+            try:
+                subprocess.run(
+                    ["screen", "-S", name, "-p", "0", "-X", "hardcopy", str(dump_file)],
+                    capture_output=True,
+                    timeout=5
+                )
+            except subprocess.TimeoutExpired:
+                logger.error(f"抓取 screen {name} 超时")
+                continue
 
             import time
-            time.sleep(0.3)  # 等待文件写入完成
+            time.sleep(0.3)  # 给磁盘写入留一点缓冲
 
-            if os.path.exists(dump_file):
-                # 使用 utf-8 读取，忽略非法字符
-                with open(dump_file, "r", encoding="utf-8", errors="ignore") as f:
-                    raw_content = f.read()
-                    # 关键：清洗掉颜色代码等乱码字符
-                    clean_content = strip_ansi_codes(raw_content).strip()
+            if dump_file.exists():
+                # 尝试多种编码读取，解决“乱码”导致的读取失败
+                content = ""
+                for enc in ['utf-8', 'gbk', 'latin-1']:
+                    try:
+                        with open(dump_file, "r", encoding=enc, errors="ignore") as f:
+                            content = f.read()
+                        break
+                    except:
+                        continue
 
-                    if clean_content:
-                        combined_text += f"\n[Session: {name}]\n" + "=" * 30 + "\n" + clean_content + "\n"
-                os.remove(dump_file)
+                clean_content = strip_ansi_codes(content).strip()
+                if clean_content:
+                    combined_text += f"\n[Session: {name}]\n" + "=" * 30 + "\n" + clean_content + "\n"
+
+                dump_file.unlink(missing_ok=True)  # 删除临时文件
 
         if not combined_text:
+            logger.warning("所有 screen 会话均未抓取到有效内容")
             return False
 
+        # 确保目录存在
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         render_text_to_image(combined_text, str(save_path))
         return True
     except Exception as e:
-        logger.error(f"Linux 截图处理乱码失败: {e}")
+        logger.error(f"Linux 截图核心逻辑出错: {e}")
         return False
 
 def strip_ansi_codes(text: str) -> str:
-    """清除字符串中的 ANSI 转义序列（控制乱码的核心）"""
-    # 匹配以 ESC [ 开头的颜色和样式控制字符
+    """过滤终端颜色代码和特殊控制符"""
+    # 匹配 ANSI 转义序列
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub('', text)
+    # 剔除不可见控制字符（保留换行和制表符）
+    text = ansi_escape.sub('', text)
+    return "".join(ch for ch in text if ch.isprintable() or ch in '\n\r\t')
