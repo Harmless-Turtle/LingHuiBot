@@ -17,6 +17,7 @@ require("nonebot_plugin_localstore")
 require("nonebot_plugin_mc_server_status")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_kawaii_status")
+require("nonebot_plugin_logpile")
 nonebot.load_plugins("src/plugins")
 
 if __name__ == "__main__":
