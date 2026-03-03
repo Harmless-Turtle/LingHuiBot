@@ -42,12 +42,15 @@ def text_to_image(text: str, title: str = "") -> Image.Image:
         raw_lines = ["(No Output / Session Empty)"]
 
     for line in raw_lines:
-        # 去除非打印字符
-        clean_line = "".join(c for c in line if c.isprintable() or c == '\t').replace('\t', '    ')
-        if clean_line.strip() == "":
-            wrapped_lines.append("")
+        # 增强版过滤：只保留中文字符、字母、数字和常用标点
+        # 这样可以剔除 screen 导出的乱码控制符
+        import re
+        clean_line = re.sub(r'[^\u4e00-\u9fa5\u0020-\u007e\u3000-\u303f\uff00-\uffef]', '', line)
+
+        if clean_line.strip() == "" and line.strip() != "":
+            # 如果整行都被过滤掉了但原行不为空，说明这行全是乱码，可以留个空白或跳过
             continue
-        # 使用 textwrap 将长行切分成多行
+
         wrapped_lines.extend(textwrap.wrap(clean_line, width=char_width_limit))
 
     # 2. 动态计算高度
@@ -89,26 +92,30 @@ def text_to_image(text: str, title: str = "") -> Image.Image:
 
 
 async def capture_linux_screen(keyword: str) -> Image.Image:
-    """
-    改进版 Linux 捕获：先尝试扩大虚拟终端宽度，再截取
-    """
     txt_path = os.path.join(LINUX_LOG_DIR, f"{keyword}.txt")
     if os.path.exists(txt_path): os.remove(txt_path)
 
-    # 技巧：在 hardcopy 前尝试发送指令让 screen 调整宽度 (可选)
-    # subprocess.run(["screen", "-S", keyword, "-X", "width", "120"])
+    # --- 新增：强制设置该 screen 会话为 utf8 模式 ---
+    subprocess.run(["screen", "-S", keyword, "-X", "utf8", "on"])
 
+    # 执行原有的截取命令
     cmd = ["screen", "-S", keyword, "-p", "0", "-X", "hardcopy", txt_path]
     subprocess.run(cmd)
 
-    await asyncio.sleep(0.4)
+    await asyncio.sleep(0.5)
 
     if os.path.exists(txt_path):
-        with open(txt_path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
+        # 尝试使用 utf-8 读取，如果失败则尝试 gbk (针对某些 Windows 导出的环境)
+        try:
+            with open(txt_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(txt_path, "r", encoding="gbk", errors="ignore") as f:
+                content = f.read()
+
         return text_to_image(content, title=keyword)
 
-    return text_to_image(f"Error: 无法找到 Session {keyword} 的输出文件。", title=keyword)
+    return text_to_image(f"Error: 无法获取 {keyword} 内容", title=keyword)
 
 
 async def capture_windows_window(keyword: str) -> Image.Image:
