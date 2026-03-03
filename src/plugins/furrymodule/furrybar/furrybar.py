@@ -150,6 +150,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
 
 
 @reset_furrybar.handle()
+@handle_errors
 async def reset_function(matcher: Matcher, event: MessageEvent):
     user = event.user_id
     main_path = forward_path / f"{user}" / f"{user}.json"
@@ -159,6 +160,7 @@ async def reset_function(matcher: Matcher, event: MessageEvent):
 
 
 @change_config.handle()
+@handle_errors
 async def change_config_function(matcher:Matcher,event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     args_list = args.split(" ")
@@ -172,7 +174,7 @@ async def change_config_function(matcher:Matcher,event: MessageEvent, args: Mess
     main_data = handle_json(main_path, 'r')
     self_data = main_data['messages']
     if len(self_data) >= 3:
-        if self_data['messages'][-2].get("content") in "你知道我是谁吗":
+        if self_data[-2].get("content") in "你知道我是谁吗":
             del self_data[-1], self_data[-2]
     temp_dict_1, temp_dict_2 = {
         "role": "user",
