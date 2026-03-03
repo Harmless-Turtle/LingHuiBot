@@ -78,6 +78,10 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     user_json_data = handle_json(user_json_path, 'r')
     user_normal_json_data = handle_json(user_normal_path, 'r')
     user_model_data = handle_json(user_model_path, 'r')
+    # 如果用户json数据为空，则新建messages键值对
+    if not user_json_data:
+        user_json_data['model'] = user_model_data['model']
+        user_json_data['messages'] = []
     # 构建用户对话json
     user_message_data = {
         "role": "user",
@@ -91,7 +95,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     # 将用户对话添加进data
     user_json_data['messages'].append(user_message_data)
     # 将用户的模型数据写入
-    user_model_data['model'] = user_model_data.get("model", "deepseek-reasoner")
+    user_json_data['model'] = user_model_data.get("model", "deepseek-reasoner")
     # Async httpx Request to API
     async with httpx.AsyncClient(
             http2=True,
@@ -101,8 +105,13 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
         response = await client.post(BASE_URL, headers=headers, json=user_json_data)
         # 请求未返回200 OK，输出错误内容
         if response.status_code != 200:
+            text = ""
+            try:
+                text = response.json()["error"]["message"]
+            except:
+                pass
             await matcher.finish(MessageSegment.reply(
-                event.message_id) + f"请求失败，API未返回正确的错误码。[HTTP {response.status_code}]")
+                event.message_id) + f"请求失败，API未返回正确的错误码。[HTTP {response.status_code}]\n错误文本：{text}")
         # 请求返回空值，模型异常
         if response == "":
             await matcher.finish(
@@ -150,21 +159,21 @@ async def reset_function(matcher: Matcher, event: MessageEvent):
 
 
 @change_config.handle()
-async def change_config_function(event: MessageEvent, args: Message = CommandArg()):
+async def change_config_function(matcher:Matcher,event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     args_list = args.split(" ")
     logger.info(args)
     logger.info(args_list)
-    # await change_config.finish()
     user = event.user_id
-    main_path = forward_path / f"{user}" / f"{user}_Normal.json"
     main_path_temp = forward_path / f"{user}"
+    main_path = main_path_temp / f"{user}_Normal.json"
     if not os.path.exists(main_path_temp):
-        os.mkdir(main_path_temp)
-    normal_dict = handle_json(normal_path, 'r')
-    for i in range(0, len(normal_dict) - 1):
-        if normal_dict[i].get("你知道我是谁吗") is not None:
-            del normal_dict[i], normal_dict[i + 1]
+        await matcher.finish(MessageSegment.reply(event.message_id)+"似乎没有找到你的聊天信息，请先至少进行一次聊天后再定义自己的个人信息。")
+    main_data = handle_json(main_path, 'r')
+    self_data = main_data['messages']
+    if len(self_data) >= 3:
+        if self_data['messages'][-2].get("content") in "你知道我是谁吗":
+            del self_data[-1], self_data[-2]
     temp_dict_1, temp_dict_2 = {
         "role": "user",
         "content": "你知道我是谁吗"
@@ -172,9 +181,10 @@ async def change_config_function(event: MessageEvent, args: Message = CommandArg
         "role": "assistant",
         "content": f"当然知道呀~你是{args_list[0]}，{args_list[1]}"
     }
-    normal_dict.append(temp_dict_1)
-    normal_dict.append(temp_dict_2)
-    handle_json(main_path, 'w', normal_dict)
+    self_data.append(temp_dict_1)
+    self_data.append(temp_dict_2)
+    main_data['messages'] = self_data
+    handle_json(main_path, 'w', main_data)
     temp = temp_dict_2['content']
     await change_config.finish(MessageSegment.reply(
         event.message_id) + f"已记录个人设定，内容如下：\nUser：你知道我是谁吗\nAssistant：{temp}\n注：如需改动立即生效，请发送“重置模型”命令")

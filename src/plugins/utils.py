@@ -70,7 +70,7 @@ def handle_errors(func):
                 error_image.save(buffer_image, format="PNG")
                 buffer_image.seek(0)
                 error_response = create_error_reply(error, event, buffer_image)
-                await matcher.finish(error_response)
+                await matcher.finish(error_response + "\n可以使用命令”bug反馈“来告知开发者以便于修复。")
             else:
                 logger.warning(
                     f"{__name__}捕获到错误，但由于被装饰的函数没有填写 matcher 和 event 参数，无法告知用户")
