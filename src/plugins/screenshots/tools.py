@@ -66,8 +66,9 @@ def text_to_image(text: str, title: str = "") -> Image.Image:
 
     # 尝试加载等宽字体 (等宽字体对对齐至关重要)
     try:
-        # Linux 路径示例
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", font_size)
+        from pathlib import Path
+        font_path = Path.cwd() / "data" / "MiSans-Demibold.ttf"
+        font = ImageFont.truetype(font_path, font_size)
     except:
         font = ImageFont.load_default()
 
