@@ -22,6 +22,7 @@ dependencies = [
     "psutil==7.0.0",
     "pywin32==311; sys_platform == 'win32'",
     "nb_cli>=1.7.0",
+    "nonebot-plugin-kawaii-status>=0.2.0",
 ]
 
 [tool.nonebot]
@@ -38,6 +39,7 @@ nonebot-plugin-datastore = ["nonebot_plugin_datastore"]
 nonebot-plugin-localstore = ["nonebot_plugin_localstore"]
 nonebot_plugin_mc_server_status = ["nonebot_plugin_mc_server_status"]
 nonebot-plugin-htmlrender = ["nonebot_plugin_htmlrender"]
+nonebot-plugin-kawaii-status = ["nonebot_plugin_kawaii_status"]
 
 
 [tool.nonebot.adapters]
