@@ -2,8 +2,7 @@ import os
 import platform
 import subprocess
 import asyncio
-import re
-import io
+import textwrap
 from PIL import Image, ImageDraw, ImageFont
 
 SYSTEM = platform.system()
