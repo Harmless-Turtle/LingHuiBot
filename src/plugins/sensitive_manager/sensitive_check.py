@@ -1,13 +1,10 @@
-# 标准库导入
 import json
 from datetime import datetime as dt
 from pathlib import Path
 from typing import Dict, Set
 
-# 第三方库导入
 import ahocorasick
-# NoneBot相关导入
-from nonebot import get_driver, on_command, on_message
+from nonebot import get_driver, on_message
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     Bot,
@@ -19,7 +16,7 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.rule import Rule
 
-# 本地模块导入
+from .command import cmd_add, cmd_del, cmd_list, cmd_group
 from ..utils import handle_json
 
 # 配置文件路径
@@ -227,13 +224,6 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     if not action_taken:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"检测到敏感词，请文明发言！（累计违规次数：{violations['count']}）")
-
-
-# 敏感词管理
-cmd_add = on_command("添加敏感词", aliases={"敏感词添加"})
-cmd_del = on_command("删除敏感词", aliases={"敏感词删除"})
-cmd_list = on_command("敏感词列表", aliases={"list_words"})
-cmd_group = on_command("敏感词检测", aliases={"敏感词开关"})
 
 
 @cmd_add.handle()
