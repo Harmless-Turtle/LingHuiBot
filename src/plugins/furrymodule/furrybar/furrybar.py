@@ -7,13 +7,13 @@ import httpx
 import zhconv
 from nonebot import get_driver
 from nonebot import logger
+from nonebot.adapters.onebot.v11 import Bot
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     MessageSegment,
     MessageEvent,
     Message
 )
-from nonebot.adapters.onebot.v11 import Bot
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
@@ -39,6 +39,7 @@ try:
     logger.success("✅已成功加载FurryBar的相关配置！")
 except AttributeError:
     logger.warning("请在配置文件中设置FURRY_AIKEY、FURRY_AI_BASEURL以及FURRY_AI_MODELLIST！")
+
 
 @furrybar.handle()
 @handle_errors
@@ -106,7 +107,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
             text = ""
             try:
                 text = response.json()["error"]["message"]
-            except:
+            except KeyError:
                 pass
             await matcher.finish(MessageSegment.reply(
                 event.message_id) + f"请求失败，API未返回正确的错误码。[HTTP {response.status_code}]\n错误文本：{text}")
@@ -160,7 +161,7 @@ async def reset_function(matcher: Matcher, event: MessageEvent):
 
 @change_config.handle()
 @handle_errors
-async def change_config_function(matcher:Matcher,event: MessageEvent, args: Message = CommandArg()):
+async def change_config_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     args_list = args.split(" ")
     logger.info(args)
@@ -169,7 +170,8 @@ async def change_config_function(matcher:Matcher,event: MessageEvent, args: Mess
     main_path_temp = forward_path / f"{user}"
     main_path = main_path_temp / f"{user}_Normal.json"
     if not os.path.exists(main_path_temp):
-        await matcher.finish(MessageSegment.reply(event.message_id)+"似乎没有找到你的聊天信息，请先至少进行一次聊天后再定义自己的个人信息。")
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + "似乎没有找到你的聊天信息，请先至少进行一次聊天后再定义自己的个人信息。")
     main_data = handle_json(main_path, 'r')
     self_data = main_data['messages']
     if len(self_data) >= 3:
@@ -217,13 +219,14 @@ async def latest_talk(matcher: Matcher, event: MessageEvent):
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"用户：{user}\n模型回复：{text}\n\n为防止刷屏，已经去除思考内容。请注意辨别！")
 
+
 @fb_model_list.handle()
-async def _fb_model_list(matcher: Matcher,bot:Bot, event: MessageEvent):
+async def _fb_model_list(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     # 获取模型列表
     async with httpx.AsyncClient(timeout=None) as client:
         data = await client.get(config.furry_ai_modellist)
         if data.status_code != 200:
-            await matcher.finish(MessageSegment.reply(event.message_id)+f"API 返回了错误码：[HTTP {data.status_code}]")
+            await matcher.finish(MessageSegment.reply(event.message_id) + f"API 返回了错误码：[HTTP {data.status_code}]")
     # 将获取的数据转化为json格式
     data = data.json()
     # 获取用户组
@@ -231,8 +234,8 @@ async def _fb_model_list(matcher: Matcher,bot:Bot, event: MessageEvent):
     # 获取模型数据
     model_dict = data['data']
     # 构建默认列表
-    model_list,vendor_list = [],[]
-    temp = await batch_get(f"用户组类型：{user_groups[0]}",None,event.self_id,"FurryBar 模型列表")
+    model_list, vendor_list = [], []
+    temp = await batch_get(f"用户组类型：{user_groups[0]}", None, event.self_id, "FurryBar 模型列表")
     # 获取供应商名称
     for vendors in data['vendors']:
         vendor_list.append(vendors['name'])
@@ -242,7 +245,7 @@ async def _fb_model_list(matcher: Matcher,bot:Bot, event: MessageEvent):
     for model_data in model_dict:
         supported_text = ""
         model_name = model_data['model_name']
-        vendor_id = model_data.get('vendor_id',len(vendor_list))
+        vendor_id = model_data.get('vendor_id', len(vendor_list))
         model_ratio = model_data['model_ratio']
         for supported_list in model_data['supported_endpoint_types']:
             supported_text += f"{supported_list}、"
@@ -258,42 +261,47 @@ async def _fb_model_list(matcher: Matcher,bot:Bot, event: MessageEvent):
             f"支持的断点类型：{supported_text}\n"
             f"该模型在当前用户组的可用性为：{is_enable}"
         )
-        make_text = await batch_get(text,None,event.self_id,"FurryBar 模型列表")
+        make_text = await batch_get(text, None, event.self_id, "FurryBar 模型列表")
         final_list.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
     await matcher.finish()
 
+
 @user_model_switch.handle()
 @handle_errors
-async def _model_switch(bot:Bot,matcher: Matcher, event: MessageEvent,args:Message = CommandArg()):
+async def _model_switch(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     user = event.user_id
     args = str(args)
     user_normal_path = forward_path / f"{user}" / f"{user}_Normal.json"
     if not os.path.exists(user_normal_path):
-        await matcher.finish(MessageSegment.reply(event.message_id)+"未找到用户文件，请先使用一次FurryAI功能生成默认文件后重试此功能")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + "未找到用户文件，请先使用一次FurryAI功能生成默认文件后重试此功能")
     data = handle_json(user_normal_path, 'r')
-    await matcher.send(MessageSegment.reply(event.message_id)+f"获取到模型：{args}，正在验证模型是否存在")
+    await matcher.send(MessageSegment.reply(event.message_id) + f"获取到模型：{args}，正在验证模型是否存在")
     async with httpx.AsyncClient(timeout=None) as client:
         response = await client.get(config.furry_ai_modellist)
     if response.status_code != 200:
-        await matcher.finish(MessageSegment.reply(event.message_id)+f"API 返回了错误码：[HTTP {data.status_code}]")
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"API 返回了错误码：[HTTP {data.status_code}]")
     response = response.json()
     model_dict = response['data']
     model_list = []
     for model_name in model_dict:
         model_list.append(model_name['model_name'])
     if args not in model_list:
-        await matcher.finish(MessageSegment.reply(event.message_id)+"未检索到此模型，请使用”模型列表“命令来查找可用模型")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + "未检索到此模型，请使用”模型列表“命令来查找可用模型")
     data['model'] = args
-    handle_json(user_normal_path, 'w',data)
-    await matcher.finish(MessageSegment.reply(event.message_id)+"模型已切换。若要立即生效，请发送命令”重置模型“")
+    handle_json(user_normal_path, 'w', data)
+    await matcher.finish(MessageSegment.reply(event.message_id) + "模型已切换。若要立即生效，请发送命令”重置模型“")
+
 
 @check_model.handle()
 @handle_errors
-async def _check_model(event: MessageEvent,matcher: Matcher):
+async def _check_model(event: MessageEvent, matcher: Matcher):
     user = event.user_id
     user_normal_path = forward_path / f"{user}" / f"{user}_Normal.json"
     if not os.path.exists(user_normal_path):
-        await matcher.finish(MessageSegment.reply(event.message_id)+"未找到你的用户配置文件，请先使用过一次FurryAI生成默认文件后再试")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + "未找到你的用户配置文件，请先使用过一次FurryAI生成默认文件后再试")
     data = handle_json(user_normal_path, 'r')
-    await matcher.finish(MessageSegment.reply(event.message_id)+f"当前的模型是：{data['model']}")
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"当前的模型是：{data['model']}")
