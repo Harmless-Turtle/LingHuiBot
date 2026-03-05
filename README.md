@@ -1,12 +1,12 @@
-<p align="center">
-  <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
+<p style="text-align:center;">
+  <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="https://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
 </p>
 
-<h1 align="center">LingHuiBot</h1>
+<h1 style="text-align:center;">LingHuiBot</h1>
 
 _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
-<p align="center">
+<p style="text-align:center;">
   <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
@@ -24,9 +24,10 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
 详见 [用户协议](markdown/user_agreement.md)
 
-
 <h2><em>凌辉Bot是什么?</em></h2>
-凌辉Bot是一个<em>Tencent QQ</em>的Q群Robot，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>Furry服务</em>，它使用OneBot V11标准、NoneBot作为Robot框架、NapCat作为监听客户端、使用Python语言进行功能开发。使用了部分<em>NoneBot商店功能</em>以改进凌辉Bot的部分功能。
+凌辉Bot是一个<em>Tencent QQ</em>的Q群Robot，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>
+Furry服务</em>，它使用OneBot V11标准、NoneBot作为Robot框架、NapCat作为监听客户端、使用Python语言进行功能开发。使用了部分<em>
+NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 
 <h2><em>凌辉Bot可以做什么?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
@@ -61,7 +62,8 @@ SWAP：<code>≥2GB</code><br>
 
 若您的设备性能已满足如上最低条件，请开始部署您的软件部分：<br>
 Windows操作系统安装教程：<br>
-> 注意！以下安装教程建立在你已经部署完毕NapCatQQ或任意反向WebSocket端，且配置好协议对应端口。如果您没有配置好协议端，在此处是无法连接的<br>
+>
+注意！以下安装教程建立在你已经部署完毕NapCatQQ或任意反向WebSocket端，且配置好协议对应端口。如果您没有配置好协议端，在此处是无法连接的<br>
 
 1. 安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境 `uv sync`
 
@@ -73,7 +75,8 @@ Windows操作系统安装教程：<br>
 
 > 01-31 01:24:18 [INFO] nonebot | OneBot V11 | Bot <此处应该是你Bot的QQ号> connected
 
-若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws://localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
+若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws:
+//localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
 
 Linux操作系统安装流程：<br>
 

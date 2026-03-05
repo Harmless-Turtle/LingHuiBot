@@ -54,6 +54,10 @@ def ensure_file_exists(file_path: Path, default_content: dict = None):
     return file_path
 
 
+def is_admin(user_id: str) -> bool:
+    return user_id in sensitive_admins
+
+
 class SensitiveManager:
     def __init__(self):
         self.ac_dict: Dict[str, ahocorasick.Automaton] = {}
@@ -111,9 +115,6 @@ class SensitiveManager:
     def get_group_words(self, group_id: str) -> Set[str]:
         return self.sensitive_words.get(group_id, {}).get("words", set())
 
-    def is_admin(self, user_id: str) -> bool:
-        return user_id in sensitive_admins
-
 
 manager = SensitiveManager()
 
@@ -133,7 +134,7 @@ sensitive_matcher = on_message(
 @sensitive_matcher.handle()
 async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     # 跳过管理员的消息
-    if manager.is_admin(str(event.user_id)):
+    if is_admin(str(event.user_id)):
         return
 
     text = event.get_plaintext()
@@ -228,7 +229,7 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
 
 @cmd_add.handle()
 async def handle_add(event: GroupMessageEvent, args: Message = CommandArg()):
-    if not manager.is_admin(str(event.user_id)):
+    if not is_admin(str(event.user_id)):
         await cmd_add.finish(MessageSegment.reply(event.message_id) + "权限不足")
     word = args.extract_plain_text().strip()
     if not word:
@@ -271,7 +272,7 @@ async def handle_add(event: GroupMessageEvent, args: Message = CommandArg()):
 
 @cmd_del.handle()
 async def handle_del(event: GroupMessageEvent, args: Message = CommandArg()):
-    if not manager.is_admin(str(event.user_id)):
+    if not is_admin(str(event.user_id)):
         await cmd_del.finish(MessageSegment.reply(event.message_id) + "权限不足")
     word = args.extract_plain_text().strip()
     if not word:
@@ -330,7 +331,7 @@ async def handle_toggle(event: GroupMessageEvent, args: Message = CommandArg()):
         await cmd_group.finish(MessageSegment.reply(event.message_id) + f"当前群聊的敏感词检测状态：{current_status}")
         return
 
-    if not manager.is_admin(user_id):
+    if not is_admin(user_id):
         await cmd_group.finish(MessageSegment.reply(event.message_id) + "权限不足，只有敏感词管理员可以操作开关")
 
     logger.info(f"敏感词检测开关操作：{action}")
