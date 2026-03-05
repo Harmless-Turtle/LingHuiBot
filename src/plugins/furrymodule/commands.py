@@ -69,3 +69,5 @@ reset_furrybar = on_command("Reset", aliases={"重置对话", "重置模型"})
 clear = on_command("删除信息", aliases={"重置fb", "清空数据"})
 # 上次对话
 latest = on_command("上次对话", aliases={"上次聊天", "最后对话", "最后记录"})
+# 模型列表
+fb_model_list = on_command("模型列表",permission=SUPERUSER)

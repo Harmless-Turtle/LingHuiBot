@@ -13,21 +13,22 @@ from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     Message
 )
+from nonebot.adapters.onebot.v11 import Bot
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
 from ..check_file import (
-    forward_path,
-    normal_path
+    forward_path
 )
 from ..commands import (
     furrybar,
     change_config,
     reset_furrybar,
     clear,
-    latest
+    latest,
+    fb_model_list
 )
-from ...utils import handle_json, handle_errors
+from ...utils import handle_json, handle_errors, batch_get
 
 config = get_driver().config
 try:
@@ -35,7 +36,7 @@ try:
     BASE_URL = config.furry_ai_baseurl
     logger.success("✅已成功加载FurryBar的相关配置！")
 except ValueError:
-    logger.warning("请在配置文件中设置FURRY_AIKEY以及FURRY_AI_BASEURL！")
+    logger.warning("请在配置文件中设置FURRY_AIKEY、FURRY_AI_BASEURL以及FURRY_AI_MODELLIST！")
 
 
 # Model_Path = opendata / "data/furry_system/FurryBar/model.json"
@@ -217,3 +218,49 @@ async def latest_talk(matcher: Matcher, event: MessageEvent):
     text = re.sub(r'.*?(<think.*?>|</think>|<think/>)', '', text, flags=re.DOTALL).strip()
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"用户：{user}\n模型回复：{text}\n\n为防止刷屏，已经去除思考内容。请注意辨别！")
+
+@fb_model_list.handle()
+async def _fb_model_list(matcher: Matcher,bot:Bot, event: MessageEvent):
+    # 获取模型列表
+    async with httpx.AsyncClient(timeout=None) as client:
+        data = await client.get(config.furry_ai_modellist)
+        if data.status_code != 200:
+            await matcher.finish(MessageSegment.reply(event.message_id)+f"API 返回了错误码：[HTTP {data.status_code}]")
+    # 将获取的数据转化为json格式
+    data = data.json()
+    # 获取用户组
+    user_groups = data['auto_groups']
+    # 获取模型数据
+    model_dict = data['data']
+    # 构建默认列表
+    model_list,vendor_list = [],[]
+    temp = await batch_get(f"用户组类型：{user_groups[0]}",None,event.self_id,"FurryBar 模型列表")
+    # 获取供应商名称
+    for vendors in data['vendors']:
+        vendor_list.append(vendors['name'])
+    vendor_list.append("Unknown")
+    final_list = [temp]
+    # 循环取出信息
+    for model_data in model_dict:
+        supported_text = ""
+        model_name = model_data['model_name']
+        vendor_id = model_data.get('vendor_id',len(vendor_list))
+        model_ratio = model_data['model_ratio']
+        for supported_list in model_data['supported_endpoint_types']:
+            supported_text += f"{supported_list}、"
+        enable_user_list = model_data['enable_groups']
+        is_enable = "模型不可用：不在该模型支持的用户组"
+        if enable_user_list:
+            is_enable = "模型可用"
+        model_list.append(model_name)
+        text = (
+            f"模型名称：{model_name}\n"
+            f"供应商：{vendor_list[vendor_id - 1]}\n"
+            f"模型比例：{model_ratio}\n"
+            f"支持的断点类型：{supported_text}\n"
+            f"该模型在当前用户组的可用性为：{is_enable}"
+        )
+        make_text = await batch_get(text,None,event.self_id,"FurryBar 模型列表")
+        final_list.append(make_text)
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
+    await matcher.finish()

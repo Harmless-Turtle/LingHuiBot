@@ -10,7 +10,6 @@ batch_path = DATA_PATH / "batch"
 temp_image_path = OPENDATA / 'data' / 'furry_system' / 'temp.jpg'
 allin_pic_prerequisite_path = OPENDATA / 'data' / 'furry_system' / 'processed_images'
 forward_path = OPENDATA / "data" / "furry_system" / "furrybar"
-normal_path = forward_path / "furrybar_normal.json"
 
 # 校验文件
 ensure_files_exist(
@@ -21,9 +20,8 @@ ensure_files_exist(
         batch_path,
         temp_image_path,
         allin_pic_prerequisite_path,
-        forward_path,
-        normal_path,
+        forward_path
     ],
     description="furrymodule模块 自检",
-    normal_data=[None, None, [], None, None, None, None, {}]
+    normal_data=[None, None, [], None, None, None, None]
 )
