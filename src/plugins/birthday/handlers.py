@@ -6,9 +6,8 @@ from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, Depends
 from nonebot.plugin.on import on_command, on_message
-from nonebot.rule import is_type, startswith
+from nonebot.rule import is_type
 
-from .. import utils
 from .models import (
     UserBirthday,
     GroupSettings,
@@ -18,11 +17,12 @@ from .models import (
     get_or_create_group_settings,
     inc_user_group_usage_today,
 )
+from .. import utils
 
 toggle_birthday_feature = on_command("生日祝贺", priority=5, block=True)
 set_birthday = on_command("我的生日是", priority=5, block=True)
 delete_birthday = on_command("删除我的生日", priority=5, block=True)
-birthday_greeting_responder = on_message(rule=startswith("生日快乐", False), priority=5, block=True)
+birthday_greeting_responder = on_command("生日快乐", priority=5, block=True)
 track_user_group_usage = on_message(is_type(GroupMessageEvent), priority=5, block=False)
 
 
@@ -84,4 +84,3 @@ async def _birthday_greeting_responder(
 @track_user_group_usage.handle()
 async def _track_user_group_usage(_user_group_usage: Annotated[UserGroupUsage, Depends(inc_user_group_usage_today)]):
     pass
-
