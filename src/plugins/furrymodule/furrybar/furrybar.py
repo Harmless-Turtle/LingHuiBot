@@ -26,7 +26,9 @@ from ..commands import (
     reset_furrybar,
     clear,
     latest,
-    fb_model_list
+    fb_model_list,
+    user_model_switch,
+    check_model
 )
 from ...utils import handle_json, handle_errors, batch_get
 
@@ -35,11 +37,8 @@ try:
     APIKEY = config.furry_aikey
     BASE_URL = config.furry_ai_baseurl
     logger.success("✅已成功加载FurryBar的相关配置！")
-except ValueError:
+except AttributeError:
     logger.warning("请在配置文件中设置FURRY_AIKEY、FURRY_AI_BASEURL以及FURRY_AI_MODELLIST！")
-
-
-# Model_Path = opendata / "data/furry_system/FurryBar/model.json"
 
 @furrybar.handle()
 @handle_errors
@@ -49,7 +48,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     if content == "" or "reply" in str(reply.get_event_description()) or str(
             event.user_id) == "2854196310" or "at" not in str(event.original_message):
         await matcher.finish()
-    if len(content) > 100:
+    if len(content) >= 100:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：超出请求字数上限（100字符）。")
     # 将用户输入信息强制转换为简体中文，防止繁体中文以及其他莫名其妙的语言被传入模型
     user_message = zhconv.convert(content, 'zh-hans')
@@ -64,7 +63,6 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     user_data_directory = forward_path / f"{user}"
     user_json_path = user_data_directory / f"{user}.json"
     user_normal_path = user_data_directory / f"{user}_Normal.json"
-    user_model_path = user_data_directory / f"model.json"
     # 如果父目录不存在，则新建
     if not os.path.exists(user_data_directory):
         os.mkdir(user_data_directory)
@@ -74,14 +72,13 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
             "未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息")
         handle_json(user_normal_path, 'w', normal_data)
         handle_json(user_json_path, 'w', normal_data)
-        handle_json(user_model_path, 'w', {"model": "deepseek-reasoner"})
     # 读取用户文件
     user_json_data = handle_json(user_json_path, 'r')
     user_normal_json_data = handle_json(user_normal_path, 'r')
-    user_model_data = handle_json(user_model_path, 'r')
+    user_model = user_json_data.get("model", "deepseek-reasoner")
     # 如果用户json数据为空，则新建messages键值对
     if not user_json_data:
-        user_json_data['model'] = user_model_data['model']
+        user_json_data['model'] = user_model
         user_json_data['messages'] = []
     # 构建用户对话json
     user_message_data = {
@@ -96,7 +93,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     # 将用户对话添加进data
     user_json_data['messages'].append(user_message_data)
     # 将用户的模型数据写入
-    user_json_data['model'] = user_model_data.get("model", "deepseek-reasoner")
+    user_json_data['model'] = user_model
     # Async httpx Request to API
     async with httpx.AsyncClient(
             http2=True,
@@ -135,6 +132,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
                 f"凌辉Bot已经自动清空了对话记录以尝试修复，请在稍后重试命令以验证是否已解决问题"
             )
         # 模型正确访问，返回数据
+        # logger.debug(f"Reason：{result['choices'][0]['message']['reasoning_content']}")
         return_data = result['choices'][0]['message']['content']
         # 清除回答中的换行符号
         text = return_data.replace("\n", "")
@@ -264,3 +262,38 @@ async def _fb_model_list(matcher: Matcher,bot:Bot, event: MessageEvent):
         final_list.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
     await matcher.finish()
+
+@user_model_switch.handle()
+@handle_errors
+async def _model_switch(bot:Bot,matcher: Matcher, event: MessageEvent,args:Message = CommandArg()):
+    user = event.user_id
+    args = str(args)
+    user_normal_path = forward_path / f"{user}" / f"{user}_Normal.json"
+    if not os.path.exists(user_normal_path):
+        await matcher.finish(MessageSegment.reply(event.message_id)+"未找到用户文件，请先使用一次FurryAI功能生成默认文件后重试此功能")
+    data = handle_json(user_normal_path, 'r')
+    await matcher.send(MessageSegment.reply(event.message_id)+f"获取到模型：{args}，正在验证模型是否存在")
+    async with httpx.AsyncClient(timeout=None) as client:
+        response = await client.get(config.furry_ai_modellist)
+    if response.status_code != 200:
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"API 返回了错误码：[HTTP {data.status_code}]")
+    response = response.json()
+    model_dict = response['data']
+    model_list = []
+    for model_name in model_dict:
+        model_list.append(model_name['model_name'])
+    if args not in model_list:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"未检索到此模型，请使用”模型列表“命令来查找可用模型")
+    data['model'] = args
+    handle_json(user_normal_path, 'w',data)
+    await matcher.finish(MessageSegment.reply(event.message_id)+"模型已切换。若要立即生效，请发送命令”重置模型“")
+
+@check_model.handle()
+@handle_errors
+async def _check_model(event: MessageEvent,matcher: Matcher):
+    user = event.user_id
+    user_normal_path = forward_path / f"{user}" / f"{user}_Normal.json"
+    if not os.path.exists(user_normal_path):
+        await matcher.finish(MessageSegment.reply(event.message_id)+"未找到你的用户配置文件，请先使用过一次FurryAI生成默认文件后再试")
+    data = handle_json(user_normal_path, 'r')
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"当前的模型是：{data['model']}")

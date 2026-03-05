@@ -61,10 +61,14 @@ furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, b
 # ================= FurryBar =================
 # AI对话（@机器人触发）
 furrybar = on_message(rule=to_me(), priority=99, block=True)
+# 模型切换
+user_model_switch = on_command("更改模型",aliases={"更换模型","模型切换","切换模型"},block=True)
 # 更改/创建用户信息
 change_config = on_command("更改用户信息", aliases={"创建用户信息", "定义个人信息"}, block=False)
 # 重置对话
 reset_furrybar = on_command("Reset", aliases={"重置对话", "重置模型"})
+# 查询当前的用户模型
+check_model = on_command("当前模型",aliases={"我的模型"},block=True)
 # 删除/清空信息
 clear = on_command("删除信息", aliases={"重置fb", "清空数据"})
 # 上次对话
