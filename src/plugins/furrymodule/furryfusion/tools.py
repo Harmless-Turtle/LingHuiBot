@@ -79,6 +79,46 @@ def group_by_year_month(events):
     return groups
 
 
+def add_custom_footer(img: Image.Image) -> Image.Image:
+    """
+    联动函数：在生成图片的底部正中央添加指定文本
+    """
+    FOOTER_TEXT = ("                       信息来源：FurryFusion.net\n"
+                   "排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
+                   f"             合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
+                   f"数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
+                   )
+
+    # 2. 配置参数
+    footer_height = 120  # 底部留白的高度
+    bg_color = (22, 22, 28)  # 保持与主图背景色一致
+    text_color = (100, 100, 110)  # 建议使用较暗的灰色，避免抢戏
+
+    # 3. 创建新画布（宽度不变，高度增加）
+    width, height = img.size
+    new_height = height + footer_height
+    final_img = Image.new("RGB", (width, new_height), bg_color)
+
+    # 4. 将原图粘贴上去
+    final_img.paste(img, (0, 0))
+
+    # 5. 绘制文字
+    draw = ImageDraw.Draw(final_img)
+    try:
+        # 使用与小字相同的字体大小
+        font = ImageFont.truetype(FONT_PATH, 20)
+    except:
+        font = ImageFont.load_default()
+
+    # 获取文字锚点，确保绝对居中
+    # anchor="mm" 表示文本的中心点对齐到指定的坐标
+    text_x = width // 2
+    text_y = height + (footer_height // 2)
+
+    draw.text((text_x, text_y), FOOTER_TEXT, font=font, fill=text_color, anchor="mm")
+
+    return final_img
+
 # ========= 图片生成 =========
 def render_schedule_image(groups: dict):
     width = 1080

@@ -15,6 +15,7 @@ from .tools import (
     render_schedule_image,
     group_by_year_month,
     get_event_list,
+    add_custom_footer
 )
 from ..commands import (
     furryfusion_list,
@@ -33,6 +34,7 @@ async def furry_fusion_list_handler(matcher: Matcher):
         await matcher.finish("无法获取活动列表，请稍后再试。")
     groups = group_by_year_month(events)
     img = render_schedule_image(groups)
+    img = add_custom_footer(img)
 
     # 保存临时文件
     file_path = Path.cwd() / "schedule.png"
