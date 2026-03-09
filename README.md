@@ -1,17 +1,21 @@
-<p>
-  <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
-</p>
+<div style="display: flex; justify-content: center;">
+  <a href="https://github.com/Harmless-Turtle/LingHuiBot">
+    <img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot">
+  </a>
+</div>
 
-<h1 align="center">LingHuiBot</h1>
+<div style="display: flex; justify-content: center;">
+  <h1>LingHuiBot</h1>
+</div>
 
-_✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
+<p style="text-align: center;">✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨</p>
 
-<p align="center">
+<div style="display: flex; justify-content: center; gap: 8px;">
   <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
   <img src="https://img.shields.io/badge/python-3.13.5-blue.svg" alt="python">
-</p>
+</div>
 
 ## 写在前面
 
