@@ -1,12 +1,12 @@
-<p style="text-align:center;">
-  <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="https://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
+<p>
+  <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
 </p>
 
-<h1 style="text-align:center;">LingHuiBot</h1>
+<h1 align="center">LingHuiBot</h1>
 
 _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
-<p style="text-align:center;">
+<p align="center">
   <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
@@ -88,7 +88,9 @@ Linux操作系统安装流程：<br>
 
 
 <h2>联系开发组</h2>
-[一只无害的py海龟](https://qm.qq.com/q/rCmn3awLsY)（项目创始人）
-[bool听后摇了摇头](https://github.com/BoolCox)（特邀程序员）
+
+（项目创始人） [一只无害的py海龟](https://qm.qq.com/q/rCmn3awLsY)
+
+（特邀程序员） [bool听后摇了摇头](https://github.com/BoolCox)
 
 <h6>十分感谢bool愿意给这托shift添砖加瓦（</h6>
