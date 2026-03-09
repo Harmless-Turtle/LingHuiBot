@@ -1,21 +1,17 @@
-<div style="display: flex; justify-content: center;">
-  <a href="https://github.com/Harmless-Turtle/LingHuiBot">
-    <img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot">
-  </a>
-</div>
+<p align="center">
+  <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="http://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
+</p>
 
-<div style="display: flex; justify-content: center;">
-  <h1>LingHuiBot</h1>
-</div>
+<h1 align="center">LingHuiBot</h1>
 
-<p style="text-align: center;">✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨</p>
+_✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
-<div style="display: flex; justify-content: center; gap: 8px;">
+<p align="center">
   <a href="./LICENSE">
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
   <img src="https://img.shields.io/badge/python-3.13.5-blue.svg" alt="python">
-</div>
+</p>
 
 ## 写在前面
 
@@ -93,8 +89,8 @@ Linux操作系统安装流程：<br>
 
 <h2>联系开发组</h2>
 
-（项目创始人） [一只无害的py海龟](https://qm.qq.com/q/rCmn3awLsY)
+（项目创始人）[一只无害的py海龟](https://qm.qq.com/q/rCmn3awLsY)
 
-（特邀程序员） [bool听后摇了摇头](https://github.com/BoolCox)
+（特邀程序员）[bool听后摇了摇头](https://github.com/BoolCox)
 
 <h6>十分感谢bool愿意给这托shift添砖加瓦（</h6>
