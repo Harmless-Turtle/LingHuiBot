@@ -34,8 +34,10 @@ NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 
 | 系统名称                                             | 系统介绍        |
 |--------------------------------------------------|-------------|
-| <a href="./Markdown/Main_System.md">主要系统</a>     | 基本的QRobot功能 |
-| <a href="./Markdown/Furry_System.md">furry系统</a> | furry功能     |
+| <a href="./Markdown/main_system.md">主要系统</a>     | 基本的QRobot功能 |
+| <a href="./Markdown/furry_system.md">furry系统</a> | furry功能     |
+| <a href="./Markdown/marry_system.md">结婚系统</a>    | (娱乐)结婚系统    |
+| <a href="./Markdown/admin_system.md">结婚系统</a>    | (SU)凌辉管理员菜单 |
 
 <h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
@@ -77,6 +79,8 @@ Windows操作系统安装教程：<br>
 
 若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws:
 //localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
+
+> 注意：如果您的NoneBot2启动失败，请修改.env文件的<code>PORT=9090</code>为你系统中任一未被占用的端口，并在上述所说的WebSocket服务端中将<code>localhost:9090</code>中的9090更换为你自己配置的端口
 
 Linux操作系统安装流程：<br>
 
