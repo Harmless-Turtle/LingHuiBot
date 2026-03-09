@@ -1,8 +1,8 @@
-<p style="text-align:center;">
+<p align="center">
   <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="https://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="LingHuiBot"></a>
 </p>
 
-<h1 style="text-align:center;">凌辉 Bot 用户协议</h1>
+<h1 align="center">凌辉 Bot 用户协议</h1>
 
 <b>协议自2025年2月20日起生效，并于2026年1月26日更新</b>
 

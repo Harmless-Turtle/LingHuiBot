@@ -1,8 +1,8 @@
-<p style="text-align:center;">
+<p align="center">
   <a href="https://github.com/Harmless-Turtle/LingHuiBot"><img src="https://q.qlogo.cn/headimg_dl?dst_uin=3806419216&spec=640&img_type=jpg" width="200" height="200" alt="nonebot"></a>
 </p>
 
-<h1 style="text-align:center;"><em>凌辉Bot Furry系统功能列表</em></h1>
+<h1 align="center"><em>凌辉Bot Furry系统功能列表</em></h1>
 
 此系统功能代码位于 <a href="../src/plugins/Furry.py">Furry.py</a> 中
 
