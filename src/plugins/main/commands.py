@@ -35,7 +35,7 @@ async def check_bt(event: GroupMessageEvent):
 
 async def chek_add_welcome(event: GroupIncreaseNoticeEvent):
     welcome_data = handle_json(welcome_path, 'r')
-    group_id = event.group_id
+    group_id = str(event.group_id)
     logger.info(f"检查群 {group_id} 的欢迎配置，当前数据：{welcome_data.get(group_id)}")
     if welcome_data.get(group_id, False):
         welcome_settings = welcome_data[group_id]
