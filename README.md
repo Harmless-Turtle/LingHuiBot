@@ -34,10 +34,10 @@ NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 
 | 系统名称                                             | 系统介绍        |
 |--------------------------------------------------|-------------|
-| <a href="./Markdown/main_system.md">主要系统</a>     | 基本的QRobot功能 |
-| <a href="./Markdown/furry_system.md">furry系统</a> | furry功能     |
-| <a href="./Markdown/marry_system.md">结婚系统</a>    | (娱乐)结婚系统    |
-| <a href="./Markdown/admin_system.md">管理系统</a>    | (SU)凌辉管理员菜单 |
+| <a href="./markdown/main_system.md">主要系统</a>     | 基本的QRobot功能 |
+| <a href="./markdown/furry_system.md">furry系统</a> | furry功能     |
+| <a href="./markdown/marry_system.md">结婚系统</a>    | (娱乐)结婚系统    |
+| <a href="./markdown/admin_system.md">管理系统</a>    | (SU)凌辉管理员菜单 |
 
 <h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
