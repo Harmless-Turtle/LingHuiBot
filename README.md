@@ -32,11 +32,11 @@ NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 <h2><em>凌辉Bot可以做什么?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
 
-| 系统名称                                             | 系统介绍        |
-|--------------------------------------------------|-------------|
+| 系统名称                                             | 系统介绍    |
+|--------------------------------------------------|---------|
 | <a href="./markdown/main_system.md">主要系统</a>     | 基本的QRobot功能 |
-| <a href="./markdown/furry_system.md">furry系统</a> | furry功能     |
-| <a href="./markdown/marry_system.md">结婚系统</a>    | (娱乐)结婚系统    |
+| <a href="./markdown/furry_system.md">furry系统</a> | furry功能 |
+| <a href="./markdown/entertainment_system.md">娱乐系统</a>    | 娱乐系统    |
 | <a href="./markdown/admin_system.md">管理系统</a>    | (SU)凌辉管理员菜单 |
 
 <h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>

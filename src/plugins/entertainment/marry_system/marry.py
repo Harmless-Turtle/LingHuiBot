@@ -12,9 +12,19 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from .check_files import *
-from .commands import *
-from plugins.utils import handle_errors, handle_json, time_handle
+from src.plugins.entertainment.check_files import (
+    marry_json_path
+)
+from src.plugins.entertainment.commands import (
+    marry_random,
+    finish_marry,
+    marry_propose,
+    marry_time_check,
+    marry_select,
+    marry_check,
+    marry_switch
+)
+from src.plugins.utils import handle_errors, handle_json, time_handle
 
 
 @marry_random.handle()
