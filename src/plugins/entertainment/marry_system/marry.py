@@ -14,7 +14,7 @@ from nonebot.params import CommandArg
 
 from .check_files import *
 from .commands import *
-from ..utils import handle_errors, handle_json, time_handle
+from plugins.utils import handle_errors, handle_json, time_handle
 
 
 @marry_random.handle()

@@ -83,9 +83,9 @@ def add_custom_footer(img: Image.Image) -> Image.Image:
     """
     联动函数：在生成图片的底部正中央添加指定文本
     """
-    FOOTER_TEXT = ("                       信息来源：FurryFusion.net\n"
+    FOOTER_TEXT = ("                          信息来源：FurryFusion.net\n"
                    "排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
-                   f"             合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
+                   f"                        合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
                    f"数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
                    )
 
