@@ -80,7 +80,9 @@ async def chek_friend(event: PrivateMessageEvent):
         return True
 
 
-# 基础功能
+##################
+#     基础功能     #
+##################
 sign_in = on_command("签到", aliases={"好久不见"}, priority=2, block=True)
 poke_check = on_type(PokeNotifyEvent, to_me())
 tarot = on_command("塔罗牌", priority=4, block=True)
@@ -89,7 +91,14 @@ btfrk = on_command("我是", rule=check_bt)
 like = on_command("点赞", aliases={"赞我"}, block=True)
 eat_what = on_command("今天吃什么")
 
+
+#####################
+#     入/退群检查     #
+#####################
 # 入群检查
+# 加群请求同意
+handle_group = on_command("允许加群", aliases={"拒绝加群"}, block=True)
+# 入群检测开关监听器
 add_group = on_request(rule=add_group_switch)
 switch_add_group = on_command("入群检测", permission=SUPERUSER, block=True)
 # 入群欢迎
@@ -103,15 +112,16 @@ GroupExitMember = on_notice(
     priority=1,
     block=True
 )
+#####################
+#      其他功能       #
+#####################
 # 被点赞事件监测
 like_friend = on_notice(rule=is_type(NoticeEvent) & chek_friend_like)
 # 加好友事件请求
 add_friend = on_request(rule=is_type(FriendRequestEvent), priority=1, block=True)
 # 处理是否同意加好友
 choice_friend = on_command("同意", rule=chek_friend, permission=SUPERUSER, aliases={"拒绝"}, block=True)
-
-handle_group = on_command("允许加群", aliases={"拒绝加群"}, block=True)
-
+# 入群欢迎
 add_welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_welcome), priority=1, block=True)
-
+# 自己被加进群的监听器
 SelfJoinGroupWelcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent), priority=1, block=True)
