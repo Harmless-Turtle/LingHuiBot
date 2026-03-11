@@ -21,3 +21,4 @@ marry_switch = on_command("换老婆")
 #########################
 add_battle = on_command("扔漂流瓶",aliases={"丢漂流瓶","bottle"})
 pick_battle = on_command("捡漂流瓶")
+auto_switch_battle = on_command("漂流模式")

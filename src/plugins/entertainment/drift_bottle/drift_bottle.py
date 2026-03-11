@@ -1,19 +1,21 @@
 import random as rd
 from pathlib import Path
 
-from nonebot import logger
+from nonebot import logger,get_driver
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     MessageSegment,
     Bot
 )
 from nonebot.internal.matcher import Matcher
+from nonebot.permission import SUPERUSER
 
 from src.plugins.entertainment.commands import (
     add_battle,
-    pick_battle
+    pick_battle,
+    auto_switch_battle
 )
-from src.plugins.entertainment.check_files import bottle_path
+from src.plugins.entertainment.check_files import bottle_path,auto_path
 from src.plugins.utils import handle_json
 
 
@@ -52,7 +54,7 @@ async def _pick_battle(matcher: Matcher, bot: Bot, event: MessageEvent):
     # 删除这个数据
     data[random_user].remove(result)
 
-    # 如果该用户瓶子被捡光了，删除该 Key（保持 data 简洁）
+    # 如果该用户瓶子被捡光了，删除该 Key
     if not data[random_user]:
         del data[random_user]
     handle_json(bottle_path, 'w', data)
@@ -61,3 +63,17 @@ async def _pick_battle(matcher: Matcher, bot: Bot, event: MessageEvent):
 
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n署名是：“{nickname}”")
+
+@auto_switch_battle.handle()
+async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: MessageEvent):
+    group_member = await bot.get_group_member_info(user_id=event.user_id, group_id=event.group_id)
+    group_admin = group_member['role']
+    superusers = get_driver().config.superusers
+    if str(event.user_id) not in superusers and "member" == group_admin:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"唔...你不是凌辉su用户或者群管理员，没办法操控这个开关呢xwx")
+    switch_data = handle_json(auto_path, 'r')
+    mode = switch_data.get(str(event.group_id),{f"{event.group_id}":False})
+    switch_data[str(event.group_id)] = not mode
+    handle_json(auto_path, 'w', switch_data)
+    text = "已开启随机漂流功能，漂流瓶会在随机的时间里被送到本群呢w" if not mode else "已关闭随机漂流功能"
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"{text}")
