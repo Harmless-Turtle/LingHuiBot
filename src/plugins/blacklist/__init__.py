@@ -1,1 +1,1 @@
-from . import handler
+from . import handler,__main__
