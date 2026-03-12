@@ -1,16 +1,33 @@
 from datetime import datetime as dt
 from nonebot.adapters.onebot.v11 import (
+    GroupDecreaseNoticeEvent,
+    GroupMessageEvent,
+    GroupRequestEvent,
     MessageSegment,
     Message,
-    Bot,
+    Bot
 )
+from nonebot import logger
 from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from src.plugins.main.check_file import *
-from src.plugins.main.commands import *
-from src.plugins.utils import handle_errors
+from src.plugins.main.check_file import (
+    group_join_flag_path,
+    check_group_member_path,
+    welcome_path,
+    add_group_check_path,
+)
+from src.plugins.main.commands import (
+    change_welcome_text,
+    GroupExitMember,
+    change_welcome,
+    switch_add_group,
+    exit_change,
+    handle_group,
+    add_group,
+)
+from src.plugins.utils import handle_errors,handle_json
 
 @GroupExitMember.handle()
 @handle_errors
@@ -161,6 +178,11 @@ async def change_welcome_function(matcher: Matcher, event: GroupMessageEvent):
 @handle_errors
 async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent):
     user = await bot.get_stranger_info(user_id=event.user_id)
+    data = handle_json(group_join_flag_path,'r')
+    if not data.get(str(event.group_id), False):
+        data[str(event.group_id)] = []
+    data[str(event.group_id)].append(event.flag)
+    handle_json(group_join_flag_path, 'w', data)
     user = user["nick"]
     comment = event.comment
     if comment == "":
@@ -190,7 +212,7 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
         f"申请人信息：{user}[{event.user_id}]\n"
         f"进群理由:{event.comment}\n"
         f"要同意此人入群嘛awa？\n"
-        f"可以通过“允许加群{event.flag}”或“拒绝加群{event.flag}”来处理此请求（请在Bot为群管理员时进行操作~"
+        f"可以通过“允许加群{len(data[str(event.group_id)])}”或“拒绝加群{len(data[str(event.group_id)])}”来处理此请求（请在Bot为群管理员时进行操作~"
     )
 
 @switch_add_group.handle()
@@ -225,10 +247,12 @@ async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, arg
 
 @handle_group.handle()
 async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
-    user = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
-    logger.info(user)
-    if user['role'] == 'member':
+    self_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
+    if self_is_admin['role'] == 'member':
         await matcher.finish(MessageSegment.reply(event.message_id) + "请先将Bot设置为管理员哦~")
+    user_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
+    if user_is_admin['role'] == 'member':
+        await matcher.finish(MessageSegment.reply(event.message_id)+"你不是群管理组，不允许进行这个操作呢qwq")
     if "允许" in str(event.get_message):
         select = True
     elif "拒绝" in str(event.get_message):
@@ -236,9 +260,21 @@ async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
     else:
         await matcher.finish(MessageSegment.reply(event.message_id) + "命令不正确")
         return
+    flag_list = handle_json(group_join_flag_path,'r')
+    group_flag_list = flag_list[f"{event.group_id}"]
+    if len(group_flag_list) == 0:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"这个群的待审列表是空的qwq")
+    select_flag = 1
+    try:
+        select_flag = int(str(args))
+    except ValueError:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"输入不正确。请确认输入了纯数字")
+    select_flag = group_flag_list[select_flag-1]
+    del group_flag_list[int(str(args))-1]
+    handle_json(group_join_flag_path, 'w', flag_list)
     try:
         await bot.set_group_add_request(
-            flag=str(args),
+            flag=str(select_flag),
             sub_type="add",
             approve=select,
             reason="管理员拒绝通过。"
