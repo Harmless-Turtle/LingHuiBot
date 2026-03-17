@@ -1,6 +1,16 @@
+from nonebot import get_driver
+from nonebot.adapters.onebot.v11 import GroupMessageEvent,Bot
+from nonebot.internal.rule import Rule
 from nonebot.plugin import on_command  # 导入事件响应器
 
 
+
+async def is_admin(bot:Bot,event:GroupMessageEvent):
+    user_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
+    superusers = get_driver().config.superusers
+    if user_is_admin['role'] == 'member' or event.user_id in superusers:
+        return False
+    return True
 
 
 #########################
@@ -22,3 +32,14 @@ marry_switch = on_command("换老婆")
 add_battle = on_command("扔漂流瓶",aliases={"丢漂流瓶","bottle"})
 pick_battle = on_command("捡漂流瓶")
 auto_switch_battle = on_command("漂流模式")
+
+#########################
+#      狼人杀 触发器       #
+#########################
+
+wolf_kill_new = on_command("创建狼人杀", rule=Rule(is_admin))
+wolf_kill_join = on_command("加入狼人杀")
+wolf_kill_start = on_command("开始狼人杀")
+wolf_kill_over = on_command("结束狼人杀",aliases={"强制结束"})
+wolf_kill_up_people = on_command("狼人杀房间人数上限",aliases={"房间上限"},rule=Rule(is_admin))
+wolf_kill_down_people = on_command("狼人杀房间人数下限",aliases={"房间下限"},rule=Rule(is_admin))

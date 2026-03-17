@@ -8,7 +8,6 @@ from nonebot.adapters.onebot.v11 import (
     Bot
 )
 from nonebot.internal.matcher import Matcher
-from nonebot.permission import SUPERUSER
 
 from src.plugins.entertainment.commands import (
     add_battle,

@@ -1,7 +1,7 @@
 from typing import Annotated
 import datetime
 
-from nonebot.adapters.onebot.v11 import MessageSegment, MessageEvent,Message
+from nonebot.adapters.onebot.v11 import MessageSegment, MessageEvent,Message,GroupMessageEvent
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, Depends
 from nonebot_plugin_orm import async_scoped_session
@@ -31,15 +31,21 @@ async def _toggle_birthday_feature(
 async def _birthday_add(
         matcher: Matcher,
         session:async_scoped_session,
-        event: MessageEvent,
+        event: GroupMessageEvent,
         args:Message = CommandArg()
 ):
     group_id = event.group_id
     group_obj = await session.get(GroupSettings, group_id)
     user_id = event.user_id
-    user_obj = await session.get(UserBirthdayData, user_id)
+    user_obj = await session.get(UserBirthdayData, (str(user_id), str(group_id)))
+    if not group_obj:
+        group_obj = GroupSettings(group_id=str(group_id), enable=False)
+        session.add(group_obj)
+    if not user_obj:
+        user_obj = UserBirthdayData(user_id=str(user_id))
+        session.add(user_obj)
     text = args.extract_plain_text().strip()
-    text_len = len(text.strip("-"))
+    text_len = len(text.split("-"))
     if text_len < 2:
         await matcher.finish(MessageSegment.reply(event.message_id)+"唔...格式不正确，请按格式发送。例如：我的生日是 01-01或2008-01-01")
     date_format = "%Y-%m-%d"
@@ -48,9 +54,11 @@ async def _birthday_add(
     try:
         parsed_birthday = datetime.datetime.strptime(text, date_format)
         user_obj.birthday_date = parsed_birthday.date()
+        user_obj.group_id = group_id
         group_enable_text = ""
         if not group_obj.enable:
             group_enable_text = "（思考）唔...这个群似乎还没有打开全局生日祝贺，只有在联系群管理组打开全局生日祝贺之后这个功能才会生效呢TAT...\n（发送”生日祝贺“四个字就可以打开啦~）\n"
+        await session.commit()
         await matcher.send(MessageSegment.reply(event.message_id)+f"{group_enable_text}你的生日已设置为 {parsed_birthday.strftime(date_format)}")
     except ValueError:
         await matcher.finish(MessageSegment.reply(event.message_id)+"请按格式发送，例如：我的生日是 01-01 或者 我的生日是 2008-01-01\n请注意：只接受空格间隔，无间隔或换行都将驳回请求。")

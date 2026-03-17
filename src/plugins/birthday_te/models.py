@@ -12,6 +12,7 @@ class UserBirthdayData(Model):
     __tablename__ = "birthday_data"
     user_id: Mapped[str] = mapped_column(ForeignKey(Users.id), primary_key=True)
     birthday_date: Mapped[date | str |None] = mapped_column(Date(), nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey(Groups.id), nullable=True,primary_key=True)
 
 class GroupSettings(Model):
     __tablename__ = "group_settings"
