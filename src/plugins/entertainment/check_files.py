@@ -33,3 +33,12 @@ utils.ensure_files_exist(
     "漂流瓶文件自检",
     [{},{}]
 )
+
+wolf_kill_path = Path.cwd() / "data" / "entertainment" / "wolfkill"
+utils.ensure_files_exist(
+    [
+        wolf_kill_path,
+    ],
+    "狼人杀文件自检",
+    [{}]
+)

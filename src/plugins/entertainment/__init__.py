@@ -1,4 +1,5 @@
 from . import (
     marry_system,
-    drift_bottle
+    drift_bottle,
+    wolfkill
 )

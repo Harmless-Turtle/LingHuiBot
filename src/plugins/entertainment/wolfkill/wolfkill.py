@@ -6,6 +6,7 @@ from nonebot.adapters.onebot.v11 import (
     MessageSegment,
 )
 from nonebot.internal.matcher import Matcher
+from nonebot.params import Depends
 
 from ..commands import (
     wolf_kill_new,
@@ -15,7 +16,7 @@ from ..commands import (
     wolf_kill_up_people,
     wolf_kill_down_people
 )
-from .check_rule import *
+from .check_rule import require_room_not_exists, require_room_exists, require_waiting, require_not_full
 from src.plugins import utils
 
 # 获取系统配置
@@ -32,11 +33,12 @@ except AttributeError:
     logger.warning("未从dotEnv文件中获取到配置文件，将导入默认配置的人数上下限。")
     logger.warning(f"人数范围：{min_player}~{max_player}")
 
+
 @wolf_kill_new.handle()
 async def _wolf_kill_new(
         matcher: Matcher,
-        event:GroupMessageEvent,
-        room_file:Path = Depends(require_no_room),
+        event: GroupMessageEvent,
+        room_file: Path = Depends(require_room_not_exists),
 ):
     args = str(event.get_plaintext()).strip().split()
     # 解析自定义人数
@@ -67,32 +69,62 @@ async def _wolf_kill_new(
         f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，"
         f"未达到人数或未达到最低开始人数（{min_player}人）前无法开始游戏。\n通过“加入狼人杀”来加入游戏\n"
         f"通过“开始狼人杀”可以开始游戏。\n通过“删除狼人杀房间”可以删除当前房间。"
+        f"因为客户端暂不支持发起群临时会话，要正常发起私聊，请先添加机器人好友。"
     )
+
 
 @wolf_kill_join.handle()
 async def _wolf_kill_join(
         matcher: Matcher,
-        event:GroupMessageEvent,
-        room_file:Path = Depends(require_room),
-        _ = Depends(require_room)
+        event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_not_full),
 ):
-    pass
+    room_file, data = room_data
+    if event.user_id in data['players']:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "你已经在游戏房间里了，不可以重复进入呢")
+
+    data['players'].append(event.user_id)
+    utils.handle_json(room_file, 'w', data)
+    await matcher.finish(
+        MessageSegment.reply(event.message_id) + f"加入成功！当前人数：{len(data['players'])}/{data['max_players']}")
+
 
 @wolf_kill_start.handle()
 async def _wolf_kill_start(
         matcher: Matcher,
         event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_waiting),
 ):
-    pass
+    room_file, data = room_data
+    if event.user_id != data['owner']:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "只有房主才能开始游戏！")
+
+    if len(data['players']) < min_player:
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"当前人数不足，最低需要 {min_player} 人。")
+
+    data['status'] = 'gaming'
+    utils.handle_json(room_file, 'w', data)
+    await matcher.finish(MessageSegment.reply(event.message_id) + "pass")
 
 
 @wolf_kill_over.handle()
-async def _wolf_kill_over():
-    pass
+async def _wolf_kill_over(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_room_exists),
+):
+    room_file, data = room_data
+    if event.user_id != data['owner']:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "只有房主才能解散房间！")
+
+    room_file.unlink(missing_ok=True)
+    await matcher.finish(MessageSegment.reply(event.message_id) + "游戏房间已解散！")
+
 
 @wolf_kill_up_people.handle()
 async def _wolf_kill_up_people():
     pass
+
 
 @wolf_kill_down_people.handle()
 async def _wolf_kill_down_people():
