@@ -1,3 +1,36 @@
+from nonebot.adapters.onebot.v11 import Message
+from nonebot import on_command
+wolf_kill_help = on_command("狼人杀帮助", aliases={"狼人杀说明", "狼人杀指南"})
+# 狼人杀帮助指令
+@wolf_kill_help.handle()
+async def _wolf_kill_help(matcher: Matcher):
+    guide_path = Path(__file__).parent / "wolfkill_guide.md"
+    if guide_path.exists():
+        with open(guide_path, encoding="utf-8") as f:
+            content = f.read()
+        await matcher.finish(Message(content))
+    else:
+        await matcher.finish("未找到狼人杀用户指南。")
+# 自动判定胜负指令
+from nonebot import on_command
+wolf_kill_auto_check = on_command("自动判定胜负")
+
+@wolf_kill_auto_check.handle()
+async def _wolf_kill_auto_check(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_room_exists),
+):
+    room_file, data = room_data
+    from .wolfkill_game import WolfKillGame
+    game = WolfKillGame(room_file, data)
+    winner = game.auto_check_and_finish()
+    if winner == '狼人':
+        await matcher.finish("狼人阵营胜利！游戏结束。")
+    elif winner == '好人':
+        await matcher.finish("好人阵营胜利！游戏结束。")
+    else:
+        await matcher.finish("游戏尚未结束，无胜负。")
 from pathlib import Path
 
 from nonebot import get_driver, logger
@@ -14,9 +47,67 @@ from ..commands import (
     wolf_kill_start,
     wolf_kill_over,
     wolf_kill_up_people,
-    wolf_kill_down_people
+    wolf_kill_down_people,
+    wolf_kill_vote,
+    wolf_kill_tally,
+    wolf_kill_check_win
 )
+
+# 白天投票指令
+@wolf_kill_vote.handle()
+async def _wolf_kill_vote(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_room_exists),
+):
+    room_file, data = room_data
+    from .wolfkill_game import WolfKillGame
+    game = WolfKillGame(room_file, data)
+    args = str(event.get_plaintext()).strip().split()
+    if len(args) < 2:
+        await matcher.finish("请指定你要投票的玩家ID，如：投票狼人杀 123456")
+    try:
+        target_id = int(args[1])
+    except ValueError:
+        await matcher.finish("请输入有效的玩家ID")
+    game.cast_vote(event.user_id, target_id)
+    await matcher.finish(f"你已投票给玩家{target_id}")
+
+# 票数结算指令
+@wolf_kill_tally.handle()
+async def _wolf_kill_tally(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_room_exists),
+):
+    room_file, data = room_data
+    from .wolfkill_game import WolfKillGame
+    game = WolfKillGame(room_file, data)
+    out = game.tally_vote()
+    if out is None:
+        await matcher.finish("平票，没有玩家被淘汰。")
+    else:
+        await matcher.finish(f"玩家{out}被淘汰出局！")
+
+# 胜负判定指令
+@wolf_kill_check_win.handle()
+async def _wolf_kill_check_win(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        room_data: tuple[Path, dict] = Depends(require_room_exists),
+):
+    room_file, data = room_data
+    from .wolfkill_game import WolfKillGame
+    game = WolfKillGame(room_file, data)
+    winner = game.check_win()
+    if winner == '狼人':
+        await matcher.finish("狼人阵营胜利！")
+    elif winner == '好人':
+        await matcher.finish("好人阵营胜利！")
+    else:
+        await matcher.finish("游戏尚未结束。")
 from .check_rule import require_room_not_exists, require_room_exists, require_waiting, require_not_full
+from .wolfkill_game import WolfKillGame
 from src.plugins import utils
 
 # 获取系统配置
@@ -102,9 +193,16 @@ async def _wolf_kill_start(
     if len(data['players']) < min_player:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"当前人数不足，最低需要 {min_player} 人。")
 
+    # 分配角色
+    game = WolfKillGame(room_file, data)
+    role_map = game.assign_roles()
     data['status'] = 'gaming'
-    utils.handle_json(room_file, 'w', data)
-    await matcher.finish(MessageSegment.reply(event.message_id) + "pass")
+    game.save()
+    # 通知房主分配结果（实际应私聊通知每位玩家自己的身份，这里仅示例）
+    msg = "游戏开始！已分配角色。\n"
+    for pid, role in role_map.items():
+        msg += f"玩家{pid}: {role}\n"
+    await matcher.finish(MessageSegment.reply(event.message_id) + msg)
 
 
 @wolf_kill_over.handle()
