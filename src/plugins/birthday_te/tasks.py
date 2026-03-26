@@ -17,9 +17,9 @@ async def setup_birthday_scheduler():
     _ = scheduler.add_job(
         _init_birthday_jobs,
         "cron",
-        hour=21,
-        minute=53,
-        second=30,
+        hour=7,
+        minute=1,
+        second=0,
         id="birthday:init",
         misfire_grace_time=120,
         coalesce=True,
@@ -55,16 +55,19 @@ async def _init_birthday_jobs():
 
             if group_settings and group_settings.enable:
                 try:
+                    group_user_list = await bot.get_group_member_list(group_id=str(group_settings.group_id))
+                    if int(user_id) not in [member['user_id'] for member in group_user_list]:
+                        continue  # 不在群内，直接跳过当前用户，不发消息
                     # 获取昵称
                     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
                     nickname = stranger_info.get('nickname', '小寿星')
 
                     # 计算年龄（如果是1900年则不显示岁数）
-                    age_text = f"今天是群里小寿星 {nickname} 的生日嗷呜！"
+                    age_text = f"今天是群里 {nickname} 的生日嗷呜！"
                     if b_date.year != 1900:
                         age = today.year - b_date.year
                         if age > 0:
-                            age_text = f"今天是小寿星 {nickname} 的 {age} 岁生日！"
+                            age_text = f"今天是 {nickname} 的 {age} 岁生日！"
 
                     # 发送群消息
                     await bot.send_group_msg(
