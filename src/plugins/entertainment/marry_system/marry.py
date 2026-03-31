@@ -1,7 +1,6 @@
 import random as rd
 import time
 from datetime import datetime
-from typing import Optional
 
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
@@ -99,12 +98,10 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     group_id = str(event.group_id)
     # 获取数据
     data = handle_json(marry_json_path, 'r')
-    self_data: Optional[dict, None] = data.get(self_qq, False)
+    self_data = data.get(self_qq, {}).get(group_id, {})
     # 异常处理
-    if not data.get(self_qq,{}).get(group_id,{}) or self_data[group_id].get("cp_qq", 114514) == 114514:
+    if not self_data or self_data.get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎还没有对象吧xwx")
-    # 确定用户存在对象后，读取其对象的值
-    self_data = self_data[group_id]
     # 获取对象的QQ号
     cp_qq = str(self_data['cp_qq'])
     stranger_info = await bot.get_stranger_info(user_id=int(cp_qq))
@@ -129,11 +126,11 @@ async def marry_propose_func(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     for msg_seg in text:
         if msg_seg.type == 'at':
             logger.info(msg_seg.data)
-            user_id = str(msg_seg.data['qq'])
+            user_id = msg_seg.data['qq']
             break
     logger.info(user_id)
     is_robot = await bot.get_group_member_info(group_id=event.group_id, user_id=user_id)
-    if int(user_id) == int(self_qq) or int(user_id) == int(bot_qq) or is_robot['is_robot']:
+    if user_id == self_qq or user_id == bot_qq or is_robot['is_robot']:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你你...你不可以向自己或者机器人求婚呢xwx")
     # 判断是否为非法请求
     # 获取请求值是否为tx机器人
@@ -144,18 +141,20 @@ async def marry_propose_func(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     if "CQ" not in temp and "求婚" in temp:
         await matcher.finish()
     data = handle_json(marry_json_path, 'r')
-    if data.get(user_id, False) and data[user_id].get(group_id, False) and data[user_id][group_id].get("cp_qq", False):
+    target_data = data.get(str(user_id), {}).get(group_id, {})
+    if target_data.get("cp_qq", 0) != 0:
         text = "凌辉Bot小声提醒您：您请求的用户似乎已经有对象了awa"
-        if data[user_id][group_id].get("request", False) != 0:
+        if target_data.get("request", 0) != 0:
             text = "凌辉Bot小声提醒您：您请求的用户似乎正在被求婚或者求婚其他人呢awa"
         await matcher.finish(MessageSegment.reply(event.message_id) + text)
-    if data.get(str(self_qq), {}).get(group_id, {}).get("cp_qq", 114514) != 114514:
+    self_data_check = data.get(str(self_qq), {}).get(group_id, {})
+    if self_data_check.get("cp_qq", 114514) not in (0, 114514):
         await matcher.finish(MessageSegment.reply(event.message_id) + "你已经有对象了啦qwq怎么可以一夫多妻呢/_ \\")
-    if data.get(str(self_qq), {}).get(group_id, {}).get("request", 0) != 0:
-        response = data[str(self_qq)][group_id]['request']
+    if self_data_check.get("request", 0) != 0:
+        response = self_data_check['request']
         stranger_info = await bot.get_stranger_info(user_id=response)
-        request_text = [f"向{stranger_info["nick"]}求婚中", f"被{stranger_info["nick"]}求婚中"]
-        request_mode = data[str(self_qq)][group_id]['request_mode']
+        request_text = [f"向{stranger_info['nickname']}求婚中", f"被{stranger_info['nickname']}求婚中"]
+        request_mode = self_data_check['request_mode']
         await matcher.finish(MessageSegment.reply(event.message_id) + f"你似乎正在{request_text[request_mode]}呢owo")
     # 获取或创建用户数据字典
     self_data = data.setdefault(str(self_qq), {})
@@ -194,12 +193,13 @@ async def marry_select_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     text, self_qq, group_id = str(event.get_message()), str(event.user_id), str(event.group_id)
     data = handle_json(marry_json_path, 'r')
-    if data.get(self_qq, {}).get(group_id, {}).get("request", 0) == 0:
+    self_data = data.get(self_qq, {}).get(group_id, {})
+    if self_data.get("request", 0) == 0:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎没有被求婚或正在向他人求婚呢owo")
-    if data.get(self_qq).get(group_id).get('cp_qq', 0) != 114514 and data.get(self_qq).get(group_id).get('cp_qq',0) != 0:
+    if self_data.get('cp_qq', 0) not in (0, 114514):
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎已经有对象了吧...？")
-    request = data[self_qq][group_id]['request']
-    mode = data[self_qq][group_id]["request_mode"]
+    request = self_data['request']
+    mode = self_data["request_mode"]
     stranger_info = await bot.get_stranger_info(user_id=request)
     nickname = stranger_info.get('nickname', '昵称获取失败')
     if "拒绝" in text or "取消" in text:
@@ -254,13 +254,13 @@ async def marry_time_check_func(matcher: Matcher, event: GroupMessageEvent, bot:
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     data = handle_json(marry_json_path, 'r')
     self_qq, group_id = str(event.user_id), str(event.group_id)
-    if not (data.get(self_qq, False) and data[self_qq].get(group_id, False)) or data[self_qq].get(group_id, {}).get(
-            "cp_qq", 114514) == 114514:
+    self_data = data.get(self_qq, {}).get(group_id, {})
+    if not self_data or self_data.get("cp_qq", 114514) == 114514:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎还没有对象吧xwx")
-    user_id = data[self_qq][group_id]['cp_qq']
+    user_id = self_data['cp_qq']
     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
     nickname = stranger_info.get('nickname', '昵称获取失败')
-    time_text = time_handle(data[self_qq][group_id]['time'])
+    time_text = time_handle(self_data['time'])
     await matcher.finish(
         MessageSegment.reply(event.message_id) + f"你和群友“{nickname}”[{int(user_id)}]已经在一起{time_text}了呢~")
 
@@ -313,17 +313,23 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     data = handle_json(marry_json_path, 'r')
     self_qq = str(event.user_id)
     group_id = str(event.group_id)
-    if data.get(self_qq, {}).get(group_id, {}).get("cp_qq", 0) != 0:
-        # 获取对象的QQ号并删除两者的绑定关系
-        cp_qq = str(data[self_qq][group_id]['cp_qq'])
-        del data[cp_qq][group_id]["cp_qq"], data[cp_qq][group_id]["time"], data[self_qq][group_id]["cp_qq"], \
-            data[self_qq][group_id]["time"]
-        if data.get(self_qq, {}).get(group_id, {}).get("cp_qq", 0) == 114514:
-            request = data[self_qq][group_id]['request']
-            del data[request][group_id]["request"], data[request][group_id]["request_mode"], data[self_qq][group_id][
-                "request"], data[self_qq][group_id]["request_mode"]
-    # 若消息后存在其他消息则不响应
-    if args.extract_plain_text(): await matcher.finish()
+    user_data = data.get(self_qq, {}).get(group_id, {})
+    cp_qq_val = user_data.get("cp_qq", 0)
+    if cp_qq_val != 0:
+        cp_qq_str = str(cp_qq_val)
+        if cp_qq_val == 114514:
+            request = str(user_data.get('request', 0))
+            if request in data and group_id in data[request]:
+                data[request][group_id].pop("request", None)
+                data[request][group_id].pop("request_mode", None)
+            user_data.pop("request", None)
+            user_data.pop("request_mode", None)
+        else:
+            if cp_qq_str in data and group_id in data[cp_qq_str]:
+                data[cp_qq_str][group_id].pop("cp_qq", None)
+                data[cp_qq_str][group_id].pop("time", None)
+        user_data.pop("cp_qq", None)
+        user_data.pop("time", None)
     # 读取json数据
     data = handle_json(marry_json_path, 'r')
     # 将自己的QQ号转为str格式，方便后续判断

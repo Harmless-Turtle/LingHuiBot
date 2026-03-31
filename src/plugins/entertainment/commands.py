@@ -1,5 +1,3 @@
-from encodings.aliases import aliases
-
 from nonebot import get_driver
 from nonebot.adapters.onebot.v11 import GroupMessageEvent,Bot
 from nonebot.internal.rule import Rule
