@@ -9,7 +9,7 @@ from nonebot.message import run_postprocessor
 
 # --- 配置 ---
 EXCLUDE_COMMANDS = {"bug反馈", "报告bug"}
-MAX_HISTORY = 30  # 适当增加历史容量以应对高频交互
+MAX_HISTORY = 5  # 适当增加历史容量以应对高频交互
 
 
 RATE_LIMIT_WINDOW = 60

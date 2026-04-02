@@ -339,7 +339,6 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     switch = False
     count = 0
     if data.get(self_qq):
-        master_dict = data[self_qq]
         # 读取计数器信息，并进行次数限制判断
         count_json = data[self_qq].get(group_id, False)
         logger.info(count_json)
@@ -365,8 +364,6 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
                 await matcher.finish(MessageSegment.reply(
                     event.message_id) + "你已经结婚太多次了啦！第二天再结~\n（免打扰模式已开启，您在重置时间前只会看到此消息1次）")
             await matcher.finish()
-    else:
-        master_dict = {}
 
     # 初步生成排除列表，将已存在的key（即已经有对象的人）和bot以及用户加入到排除列表中，并转化为整数方便进行判断
     exclusion_list = [int(key) for key in data.keys() if
@@ -383,14 +380,10 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     random_select = data_list[rd.randint(0, len(data_list) - 1)]
     # 生成时间戳
     timestamp = int(time.time())
-    # 构建Json文件，预备写入
-    random_dict = {}
     logger.info(f"Debug:计数器：{count}")
-    master_dict[group_id] = {"cp_qq": random_select, "time": timestamp, "count": count + 1, "switch": True}
-    random_dict[group_id] = {"cp_qq": event.user_id, "time": timestamp}
-    # 将构建好的Json内容直接增加至上文中获取的Data和计数器Data中
-    data[f"{random_select}"] = random_dict
-    data[f"{self_qq}"] = master_dict
+    # 安全写入，避免覆盖其他群组数据
+    data.setdefault(str(random_select), {})[group_id] = {"cp_qq": event.user_id, "time": timestamp}
+    data.setdefault(str(self_qq), {})[group_id] = {"cp_qq": random_select, "time": timestamp, "count": count + 1, "switch": True}
     # 写入文件
     handle_json(marry_json_path, 'w', data)
     # 获取结束事件处理所必要的讯息
