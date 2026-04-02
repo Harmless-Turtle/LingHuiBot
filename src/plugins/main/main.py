@@ -350,3 +350,10 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
     random_number = rd.randint(1, 2)
     select = a[f'meal{random_number}']
     await matcher.finish(MessageSegment.reply(event.message_id) + f"{a['mealwhat']}\n要不{select}吧！")
+
+@nc_version_info.handle()
+async def _version_info(bot:Bot,matcher:Matcher,event:MessageEvent):
+    data = await bot.get_version_info()
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"当前使用的客户端实例：{data["app_name"]}\n"
+                                                                  f"客户端实例版本号：{data['app_version']}\n"
+                                                                  f"子模块版本号：{data['protocol_version']}\n")

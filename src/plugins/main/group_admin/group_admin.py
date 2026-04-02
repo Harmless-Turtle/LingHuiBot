@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime as dt
 from nonebot.adapters.onebot.v11 import (
     GroupDecreaseNoticeEvent,
@@ -26,6 +27,7 @@ from src.plugins.main.commands import (
     exit_change,
     handle_group,
     add_group,
+    restart_nc
 )
 from src.plugins.utils import handle_errors,handle_json
 
@@ -282,3 +284,14 @@ async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
         await matcher.finish(MessageSegment.reply(event.message_id) + "已经处理了此请求。")
     except ActionFailed:
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到对应的flag，请检查flag是否正确。")
+
+
+@restart_nc.handle()
+async def restart_nc_function(bot:Bot,matcher: Matcher, event: GroupMessageEvent):
+    await bot.send_msg(
+        group_id=event.group_id,
+        message=MessageSegment.reply(event.message_id) + "正在重启凌辉Bot的核心组件（可能会持续几秒钟）..."
+    )
+    await bot.set_restart()
+    await asyncio.sleep(30)
+    await matcher.finish(MessageSegment.reply(event.message_id)+"重启完毕。")
