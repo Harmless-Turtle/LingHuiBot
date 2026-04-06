@@ -4,7 +4,6 @@ import shutil
 
 import emoji
 import httpx
-import zhconv
 from nonebot import get_driver
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import Bot
@@ -16,6 +15,8 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
+# import zhconv
+from opencc import OpenCC
 
 from ..check_file import (
     forward_path
@@ -52,7 +53,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     if len(content) >= 100:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：超出请求字数上限（100字符）。")
     # 将用户输入信息强制转换为简体中文，防止繁体中文以及其他莫名其妙的语言被传入模型
-    user_message = zhconv.convert(content, 'zh-hans')
+    user_message = OpenCC('t2s').convert(content)
     # 驳回emoji
     if emoji.emoji_count(content) != 0:
         await matcher.finish(MessageSegment.reply(event.message_id) + "请求被驳回：检测到emoji表情。")
