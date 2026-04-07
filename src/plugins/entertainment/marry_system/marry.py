@@ -317,7 +317,7 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     cp_qq_val = user_data.get("cp_qq", 0)
     if cp_qq_val != 0:
         cp_qq_str = str(cp_qq_val)
-        if cp_qq_val == 114514:
+        if cp_qq_val == "114514":
             request = str(user_data.get('request', 0))
             if request in data and group_id in data[request]:
                 data[request][group_id].pop("request", None)
@@ -376,7 +376,7 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     data_list = [x['user_id'] for x in group_user_list if x['user_id'] not in exclusion_list and not x['is_robot']]
     # 生成随机数，并获取对应的QQ号
     if len(data_list) - 1 == 0:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "这个群好像没有其他人了呢...？")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "这个群好像没有其他人了呢...")
     random_select = data_list[rd.randint(0, len(data_list) - 1)]
     # 生成时间戳
     timestamp = int(time.time())

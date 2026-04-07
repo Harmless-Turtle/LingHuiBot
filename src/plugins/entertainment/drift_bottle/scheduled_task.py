@@ -1,7 +1,9 @@
 import random as rd
+from pathlib import Path
 
 # 导入调度器
 from nonebot import require, get_bot, logger
+from nonebot.adapters.onebot.v11 import message
 
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
@@ -23,6 +25,12 @@ async def bottle_run():
     bot = get_bot()
     # 过滤出所有真正有内容的用户 ID (排除空列表)
     valid_users = [uid for uid, bottles in data.items() if bottles]
+    if not valid_users:
+        aword_path = Path.cwd() / 'data' / 'main' / "aword.json"
+        word_list = handle_json(aword_path, 'r')
+        result = word_list[rd.randint(0, len(word_list) - 1)]
+        for open_group in open_group_list:
+            await bot.send_group_msg(group_id=open_group,message=f"大海里一眼望不到头，但就是没有看到漂流瓶呢awa\n但是~凌辉有一句一言哦w~\n“{result}”")
     # 检测到有数据，随机取一个值
     user = rd.choice(valid_users)
     result = rd.choice(data[user])

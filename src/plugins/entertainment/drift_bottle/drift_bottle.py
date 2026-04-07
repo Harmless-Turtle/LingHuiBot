@@ -5,7 +5,7 @@ from nonebot import logger,get_driver
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     MessageSegment,
-    Bot
+    Bot, GroupMessageEvent
 )
 from nonebot.internal.matcher import Matcher
 
@@ -64,7 +64,7 @@ async def _pick_battle(matcher: Matcher, bot: Bot, event: MessageEvent):
         event.message_id) + f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n署名是：“{nickname}”")
 
 @auto_switch_battle.handle()
-async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: MessageEvent):
+async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: GroupMessageEvent):
     group_member = await bot.get_group_member_info(user_id=event.user_id, group_id=event.group_id)
     group_admin = group_member['role']
     superusers = get_driver().config.superusers
