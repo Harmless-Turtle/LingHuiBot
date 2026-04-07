@@ -71,7 +71,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
     # 如果未读取到用户文件，则写默认文件
     if not os.path.exists(user_normal_path):
         await matcher.send(
-            "未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息")
+            "未找到用户信息，发送创建用户信息<空格><这里输入称呼><空格><这里输入文字设定或介绍>即可定义个人信息\n现在您可以使用“模型列表”来选择可用的模型了。")
         handle_json(user_normal_path, 'w', normal_data)
         handle_json(user_json_path, 'w', normal_data)
     # 读取用户文件
@@ -147,7 +147,7 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
         user_json_data['messages'].append(assistant_data)
         # 写入用户文件进行保存
         handle_json(user_json_path, 'w', user_json_data)
-        await matcher.finish(MessageSegment.reply(event.message_id) + text)
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}\n*AI也可能会犯错。其答案未必准确无误。")
 
 
 @reset_furrybar.handle()
@@ -218,7 +218,7 @@ async def latest_talk(matcher: Matcher, event: MessageEvent):
     text = text[-1]['content']
     text = re.sub(r'.*?(<think.*?>|</think>|<think/>)', '', text, flags=re.DOTALL).strip()
     await matcher.finish(MessageSegment.reply(
-        event.message_id) + f"用户：{user}\n模型回复：{text}\n\n为防止刷屏，已经去除思考内容。请注意辨别！")
+        event.message_id) + f"用户：{user}\n模型回复：{text}\n\n为防止刷屏，已经去除思考内容。\n该内容由AI生成.请注意辨别！")
 
 
 @fb_model_list.handle()
@@ -244,12 +244,10 @@ async def _fb_model_list(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     final_list = [temp]
     # 循环取出信息
     for model_data in model_dict:
-        supported_text = ""
         model_name = model_data['model_name']
         vendor_id = model_data.get('vendor_id', len(vendor_list))
         model_ratio = model_data['model_ratio']
-        for supported_list in model_data['supported_endpoint_types']:
-            supported_text += f"{supported_list}、"
+        supported_text = "、".join(model_data['supported_endpoint_types'])
         enable_user_list = model_data['enable_groups']
         is_enable = "模型不可用：不在该模型支持的用户组"
         if enable_user_list:
