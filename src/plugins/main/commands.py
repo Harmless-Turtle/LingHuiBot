@@ -127,4 +127,3 @@ add_welcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent) & Rule(chek_add_w
 SelfJoinGroupWelcome = on_notice(rule=is_type(GroupIncreaseNoticeEvent), priority=1, block=True)
 
 nc_version_info = on_command("版本", aliases={"版本信息"}, block=True)
-restart_nc = on_command("重启nc",permission=SUPERUSER, block=True)
