@@ -286,12 +286,14 @@ async def _model_switch(matcher: Matcher, event: MessageEvent, args: Message = C
     model_list = []
     for model_name in model_dict:
         model_list.append(model_name['model_name'])
+    if args.isdigit():
+        args = model_list[int(args) - 1]
     if args not in model_list:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "未检索到此模型，请使用”模型列表“命令来查找可用模型")
     data['model'] = args
     handle_json(user_normal_path, 'w', data)
-    await matcher.finish(MessageSegment.reply(event.message_id) + "模型已切换。若要立即生效，请发送命令”重置模型“")
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"模型已切换为{args}。若要立即生效，请发送命令”重置模型“")
 
 
 @check_model.handle()
