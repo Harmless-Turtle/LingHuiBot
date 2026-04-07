@@ -30,7 +30,9 @@ async def bottle_run():
         word_list = handle_json(aword_path, 'r')
         result = word_list[rd.randint(0, len(word_list) - 1)]
         for open_group in open_group_list:
-            await bot.send_group_msg(group_id=open_group,message=f"大海里一眼望不到头，但就是没有看到漂流瓶呢awa\n但是~凌辉有一句一言哦w~\n“{result}”")
+            await bot.send_group_msg(group_id=open_group,message=f"大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
+                                                                 f"但是有一个一言的瓶子，送给群友捏w\n"
+                                                                 f"“{result}”")
     # 检测到有数据，随机取一个值
     user = rd.choice(valid_users)
     result = rd.choice(data[user])
