@@ -104,6 +104,7 @@ Bot，则视为您已阅读并同意本协议的全部条款。</b>
 
 感谢所有使用凌辉 Bot 的用户，正是因为有了你们的支持和反馈，凌辉 Bot 才能不断完善和成长。<br>
 感谢所有参与凌辉 Bot 开发和维护的开发者们，你们的辛勤付出和技术贡献是凌辉 Bot 能够持续发展的基石。<br>
+
 感谢以下群聊（部分使用较多的）为凌辉 Bot 提供了测试环境和宝贵的反馈意见：<br>
 - 中山的兽窝（1063931724）
 - Located in 中山兽群（690980692）
@@ -115,8 +116,13 @@ Bot，则视为您已阅读并同意本协议的全部条款。</b>
 - bool听后摇了摇头（634823896）（提供云服务器支持、代码规范化、功能测试）
 
 感谢以下网站提供API接口支持：
-- Furry图床：兽云祭API（https://cloud.foxtail.cn）
-- FurryFusion 兽聚汇总（https://www.furryfusion.net）
-- FurryAI聊天：FurryBar（https://www.furrybar.com）
-- 塔罗牌：OIAPI（https://oiapi.net）
+
+| 功能名称             | API提供商      | API URL                     |
+|------------------|-------------|-----------------------------|
+| Furry图床          | 兽云祭API      | https://cloud.foxtail.cn    |
+| FurryFusion 兽聚汇总 | FurryFusion | https://www.furryfusion.net |
+| FurryAI聊天        | FurryBar    | https://www.furrybar.com    |
+| 塔罗牌              | OIAPI       | https://oiapi.net           |
+
+
 - 以及其他提供API接口支持的网站。
