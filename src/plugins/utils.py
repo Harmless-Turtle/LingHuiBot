@@ -74,6 +74,7 @@ def handle_errors(func):
             else:
                 logger.warning(
                     f"{__name__}捕获到错误，但由于被装饰的函数没有填写 matcher 和 event 参数，无法告知用户")
+                logger.error(error_msg)
 
     return wrapper
 

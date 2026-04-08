@@ -43,3 +43,11 @@ wolf_kill_start = on_command("开始狼人杀",aliases={'lrsstart'})
 wolf_kill_over = on_command("结束狼人杀",aliases={"强制结束","解散房间"})
 wolf_kill_up_people = on_command("狼人杀房间人数上限",aliases={"房间上限"})
 wolf_kill_down_people = on_command("狼人杀房间人数下限",aliases={"房间下限"})
+
+#########################
+#      货币 触发器        #
+#########################
+
+add_coin = on_command("添加货币",aliases={"加钱"},block=True,permission=is_admin)
+check_coin = on_command("查询货币",aliases={"查钱"},block=True)
+del_coin_sys = on_command("注销账户")

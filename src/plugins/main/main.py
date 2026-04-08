@@ -13,10 +13,12 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
+from nonebot_plugin_orm import async_scoped_session
 
 from .check_file import *
 from .commands import *
 from ..utils import handle_errors
+from src.plugins.entertainment.currency.models import modify_user_coin,get_user_coin
 
 # 获取机器人的名字
 config = get_driver().config
@@ -126,7 +128,14 @@ async def a_word_function(matcher: Matcher, event: MessageEvent, args: Message =
 # 签到触发器与实现
 @sign_in.handle()
 @handle_errors
-async def sign_in_function(matcher: Matcher, event: GroupMessageEvent):
+async def sign_in_function(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args:Message = CommandArg()
+):
+    # 若签到文本后有文本，则直接结束任务
+    if args.extract_plain_text(): await matcher.finish()
     # 打开文件并写入Sign_Dict字典
     sign_dict = handle_json(sign_in_path, 'r')
     # 获取触发人QQ号和群聊号
@@ -199,9 +208,15 @@ async def sign_in_function(matcher: Matcher, event: GroupMessageEvent):
             pic) + f"{text}签到成功。本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位~\n"
                    f"——————\n"
                    f"“{result}”")
+    # 判断随机给墨辉币的数量
+    rd_coins = rd.randint(50, 300)
+    operate_coins = user_count * 2 + rd_coins
+    new_balance = await modify_user_coin(session, str(event.user_id), operate_coins)
+    balance = await get_user_coin(session, str(event.user_id))
     # 输出
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"{text}签到成功。您本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位。\n"
+                            f"您获得了{new_balance}个墨辉币！您现在有{balance}个墨辉币。\n"
                             f"——————\n"
                             f"“{result}”")
 
