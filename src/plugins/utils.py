@@ -49,7 +49,7 @@ def handle_errors(func):
                 f"脚本：{error_script}\n"
                 f"在“{times('%Y-%m-%d %a %H:%M:%S')}”时返回了异常错误。内容如下：\n\n"
                 f"{traceback.format_exc()}\n"
-                "---------------------异常错误截止---------------------"
+                "---------------------异常错误截止---------------------\n"
             )
 
             # 追加到工作目录的 ERROR_DIR/error.log

@@ -216,7 +216,7 @@ async def sign_in_function(
     # 输出
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"{text}签到成功。您本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位。\n"
-                            f"您获得了{new_balance}个墨辉币！您现在有{balance}个墨辉币。\n"
+                            f"您获得了{operate_coins}个墨辉币！您现在有{balance}个墨辉币。\n"
                             f"——————\n"
                             f"“{result}”")
 

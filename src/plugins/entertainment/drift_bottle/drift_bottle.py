@@ -7,6 +7,7 @@ from nonebot.adapters.onebot.v11 import (
     MessageSegment,
     Bot, GroupMessageEvent
 )
+from nonebot_plugin_orm import async_scoped_session
 from nonebot.internal.matcher import Matcher
 
 from src.plugins.entertainment.commands import (
@@ -16,10 +17,14 @@ from src.plugins.entertainment.commands import (
 )
 from src.plugins.entertainment.check_files import bottle_path,auto_path
 from src.plugins.utils import handle_json
-
+from .models import add_drift_bottle
 
 @add_battle.handle()
-async def _add_battle(matcher: Matcher, event: MessageEvent):
+async def _add_battle(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session:async_scoped_session
+):
     data = handle_json(bottle_path, 'r')
     text = str(event.raw_message)
     text = text.split(" ")
@@ -28,10 +33,13 @@ async def _add_battle(matcher: Matcher, event: MessageEvent):
         await matcher.finish(MessageSegment.reply(event.message_id) + "唔...切片失败了，请检查是否按照“bottle <这里输入你想说的话>”的格式使用呢")
     text_list = data.get(str(event.user_id),[])
     text = "\n".join(text)
+    if len(text) >= 150:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "唔...你输入的内容太长了哦，请限制在150字以内呢xwx")
     text_list.append(text)
     logger.info(text)
     data[str(event.user_id)] = text_list
     handle_json(bottle_path, 'w', data)
+    await add_drift_bottle(session, str(event.user_id),str(event.group_id), text)
     await matcher.finish(MessageSegment.reply(event.message_id)+"你的漂流瓶已经投进了大海...\n让我们猜一下它会飘向何处吧~")
 
 
@@ -61,7 +69,9 @@ async def _pick_battle(matcher: Matcher, bot: Bot, event: MessageEvent):
     nickname = stranger_info.get('nickname', '来自远方的旅人')
 
     await matcher.finish(MessageSegment.reply(
-        event.message_id) + f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n署名是：“{nickname}”")
+        event.message_id) + f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n署名是：“{nickname}”\n"
+                            f"Tip：如果您发现了违规的漂流瓶内容，请发送“bug反馈”将本次使用记录反馈给管理员。管理员会酌情对违规用户进行处罚\n"
+                            f"十分感谢您的配合。")
 
 @auto_switch_battle.handle()
 async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: GroupMessageEvent):
