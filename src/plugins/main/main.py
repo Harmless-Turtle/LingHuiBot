@@ -194,6 +194,11 @@ async def sign_in_function(
     handle_json(sign_in_path, 'w', sign_dict)
     a_word_list = handle_json(aword_path, 'r')
     result = a_word_list[rd.randint(0, len(a_word_list) - 1)]
+    # 判断随机给墨辉币的数量
+    rd_coins = rd.randint(50, 300)
+    operate_coins = user_count * 2 + rd_coins
+    await modify_user_coin(session, str(event.user_id), operate_coins)
+    balance = await get_user_coin(session, str(event.user_id))
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         # 生成检测到“好久不见”字样的默认值
@@ -206,13 +211,9 @@ async def sign_in_function(
         # 输出
         await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(
             pic) + f"{text}签到成功。本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位~\n"
+                   f"您获得了{operate_coins}个墨辉币！您现在有{balance}个墨辉币。\n"
                    f"——————\n"
                    f"“{result}”")
-    # 判断随机给墨辉币的数量
-    rd_coins = rd.randint(50, 300)
-    operate_coins = user_count * 2 + rd_coins
-    new_balance = await modify_user_coin(session, str(event.user_id), operate_coins)
-    balance = await get_user_coin(session, str(event.user_id))
     # 输出
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"{text}签到成功。您本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位。\n"

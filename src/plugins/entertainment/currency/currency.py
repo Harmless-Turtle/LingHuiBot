@@ -21,12 +21,13 @@ from .models import (
 @add_coin.handle()
 @handle_errors
 async def _add_coin(
+    matcher: Matcher,
     event: GroupMessageEvent, session: async_scoped_session
 ):
     raw_info = str(event.raw_message).split(" ")
     operate_coins = int(raw_info[1])
     new_balance = await modify_user_coin(session, str(event.user_id), operate_coins)
-    await add_coin.finish(f"操作完成，添加了{operate_coins}个墨辉币，当前墨辉币总额：{new_balance}")
+    await matcher.finish(f"操作完成，添加了{operate_coins}个墨辉币，当前墨辉币总额：{new_balance}")
 
 
 @check_coin.handle()
@@ -75,7 +76,7 @@ async def _robbery(
     stranger_info = await bot.get_stranger_info(user_id=int(target_id))
     nickname_obj = stranger_info.get('nickname', '来自远方的旅人')
     # 随机数用以判断是否打劫成功
-    correct = rd.randint(1,3)
+    correct = rd.randint(1,5)
     # 获取本次打劫的墨辉币数量
     operate_coins = rd.randint(100, 500)
     # 获取自己和对方的墨辉币数量
