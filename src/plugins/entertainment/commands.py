@@ -1,6 +1,5 @@
 from nonebot import get_driver
 from nonebot.adapters.onebot.v11 import GroupMessageEvent,Bot
-from nonebot.internal.rule import Rule
 from nonebot.plugin import on_command  # 导入事件响应器
 
 

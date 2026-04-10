@@ -23,8 +23,8 @@ utils.ensure_files_exist(
 #      漂流瓶自检        #
 ########################
 # 定义路径变量
-bottle_path = path_header / "entertainment"/ "drify_bottle" / 'bottle.json'
-auto_path = path_header / "entertainment"/ "drify_bottle" / "auto_switch.json"
+bottle_path = path_header / "entertainment"/ "drift_bottle" / 'bottle.json'
+auto_path = path_header / "entertainment"/ "drift_bottle" / "auto_switch.json"
 utils.ensure_files_exist(
     [
         bottle_path,
