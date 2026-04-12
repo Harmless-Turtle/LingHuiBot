@@ -32,12 +32,12 @@ NoneBot商店功能</em>以改进凌辉Bot的部分功能。
 <h2><em>凌辉Bot可以做什么?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
 
-| 系统名称                                             | 系统介绍    |
-|--------------------------------------------------|---------|
-| <a href="./markdown/main_system.md">主要系统</a>     | 基本的QRobot功能 |
-| <a href="./markdown/furry_system.md">furry系统</a> | furry功能 |
-| <a href="./markdown/entertainment_system.md">娱乐系统</a>    | 娱乐系统    |
-| <a href="./markdown/admin_system.md">管理系统</a>    | (SU)凌辉管理员菜单 |
+| 系统名称                                                  | 系统介绍        |
+|-------------------------------------------------------|-------------|
+| <a href="./markdown/main_system.md">主要系统</a>          | 基本的QRobot功能 |
+| <a href="./markdown/furry_system.md">furry系统</a>      | furry功能     |
+| <a href="./markdown/entertainment_system.md">娱乐系统</a> | 娱乐系统        |
+| <a href="./markdown/admin_system.md">管理系统</a>         | (SU)凌辉管理员菜单 |
 
 <h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
@@ -55,7 +55,7 @@ QQ：1097740481<br>
 
 ---
 
-CPU：<code>Intel(R) Xeon(R) CPU E5-2680 v4 2.34GHz(4 Core)</code><br>
+CPU：<code>Intel® Xeon® CPU E5-2680 v4 2.34GHz(4 Core)</code><br>
 GPU：<code>可选的</code><br>
 RAM：<code>≥8GB</code><br>
 SWAP：<code>≥2GB</code><br>
@@ -65,7 +65,7 @@ SWAP：<code>≥2GB</code><br>
 若您的设备性能已满足如上最低条件，请开始部署您的软件部分：<br>
 Windows操作系统安装教程：<br>
 >
-注意！以下安装教程建立在你已经部署完毕NapCatQQ或任意反向WebSocket端，且配置好协议对应端口。如果您没有配置好协议端，在此处是无法连接的<br>
+注意！以下安装教程建立在你已经部署完毕NapCatQQ或任意反向WebSocket端，且配置好协议对应端口的前提。如果您没有配置好协议端，在此处是无法连接的<br>
 
 1. 安装 <a href="https://github.com/astral-sh/uv">uv</a> ，然后同步项目环境 `uv sync`
 
@@ -86,6 +86,12 @@ Linux操作系统安装流程：<br>
 
 <s>既然都用Linux了，安装流程就不必教了，和Windows操作系统安装流程差不太多，换个命令而已</s>
 
+文件依赖：<br>
+凌辉 Bot 要求您至少应该准备如下ttf字体文件包在data目录下：
+- <code>SarasaFixedSlabJ-SemiBoldItalic.ttf</code><br>
+下载链接：[SarasaFixedSlabJ-SemiBoldItalic](https://mirror.nju.edu.cn/github-release/be5invis/Sarasa-Gothic/LatestRelease/Sarasa-TTC-Unhinted-1.0.37.7z)
+
+> 这个下载链接将会直接下载一个7z压缩包，解压后请将其中的<code>SarasaFixedSlabJ-SemiBoldItalic.ttf</code>文件放入凌辉Bot的data目录下。
 
 <h2>联系开发组</h2>
 

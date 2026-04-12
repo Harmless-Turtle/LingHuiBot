@@ -16,10 +16,16 @@ from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
-FONT_PATH = Path() / 'data' / 'MiSans-Demibold.ttf'
-FURRY_FUSION_BG_PATH = Path() / 'data' / 'Furry_System' / 'bg.png'
+FONT_PATH = Path() / 'data' / 'SarasaFixedSlabJ-SemiBoldItalic.ttf'
+FURRY_FUSION_BG_PATH = Path() / 'data' / 'furry_system' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
+# 验证字体包是否存在
+if os.path.exists(FONT_PATH):
+    logger.info(f"已找到字体文件: {FONT_PATH}")
+else:
+    FONT_PATH = None
+    logger.warning(f"未找到字体文件: {FONT_PATH}，将使用默认字体，可能导致错误日志图片显示异常。请确保 {FONT_PATH} 存在以获得最佳体验。")
 
 # 捕获并处理函数执行中的异常，生成错误日志并构造用户友好的反馈
 def handle_errors(func):

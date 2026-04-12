@@ -84,15 +84,15 @@ def add_custom_footer(img: Image.Image) -> Image.Image:
     联动函数：在生成图片的底部正中央添加指定文本
     """
     FOOTER_TEXT = ("                          信息来源：FurryFusion.net\n"
-                   "排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
                    f"                        合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
-                   f"数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
+                   "        排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
+                   f"      数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
                    )
 
     # 2. 配置参数
     footer_height = 120  # 底部留白的高度
     bg_color = (22, 22, 28)  # 保持与主图背景色一致
-    text_color = (100, 100, 110)  # 建议使用较暗的灰色，避免抢戏
+    text_color = (100, 100, 110)  # 使用较暗的灰色
 
     # 3. 创建新画布（宽度不变，高度增加）
     width, height = img.size
@@ -128,7 +128,6 @@ def render_schedule_image(groups: dict):
     gap = 30
 
     # 字体路径
-    # FONT_PATH = str(Path(__file__).parents[2] / 'MiSans-Demibold.ttf')
     font_title = ImageFont.truetype(FONT_PATH, 30)
     font_small = ImageFont.truetype(FONT_PATH, 20)
 

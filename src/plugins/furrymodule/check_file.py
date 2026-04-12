@@ -4,7 +4,7 @@ from ..utils import ensure_files_exist
 
 OPENDATA = Path.cwd()
 DATA_PATH = OPENDATA / "data" / "furry_system" / "upload"
-FONT_PATH = OPENDATA / "data" / "MiSans-Demibold.ttf"
+FONT_PATH = Path() / 'data' / 'SarasaFixedSlabJ-SemiBoldItalic.ttf'
 json_path = DATA_PATH / "upload_data.json"
 batch_path = DATA_PATH / "batch"
 temp_image_path = OPENDATA / 'data' / 'furry_system' / 'temp.jpg'
