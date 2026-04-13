@@ -1,7 +1,8 @@
 import random as rd
 
-from nonebot.adapters.onebot.v11 import Bot,GroupMessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot,GroupMessageEvent, MessageSegment,Message
 from nonebot.internal.matcher import Matcher
+from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
 from src.plugins.utils import handle_errors
@@ -20,8 +21,10 @@ async def _robbery(
         bot:Bot,
         matcher: Matcher,
         session: async_scoped_session,
-        event: GroupMessageEvent
+        event: GroupMessageEvent,
+        args:Message = CommandArg()
 ):
+    if not args.extract_plain_text(): await matcher.finish()
     target_id = None
     # 获取at的用户
     for msg_seg in event.original_message:
@@ -29,7 +32,7 @@ async def _robbery(
             target_id = msg_seg.data['qq']
             break
     # 检查是否存在 at
-    if not target_id:
+    if not target_id and "@" in (str(event.raw_message)):
         await matcher.finish(
             MessageSegment.reply(event.message_id) +
             "唔...没有获取到你要打劫的人xwx\n请不要复制别人的指令，一定要自己at呢"

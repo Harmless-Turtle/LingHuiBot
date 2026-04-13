@@ -4,6 +4,8 @@ import time
 from pathlib import Path
 
 import httpx
+import requests
+import jwt
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,

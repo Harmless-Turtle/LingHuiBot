@@ -42,3 +42,12 @@ utils.ensure_files_exist(
     "狼人杀文件自检",
     [{}]
 )
+
+guess_number_path = Path.cwd() / "data" / "entertainment" / "guess_number"
+utils.ensure_files_exist(
+    [
+        guess_number_path,
+    ],
+    "猜数字文件自检",
+    [None]
+)
