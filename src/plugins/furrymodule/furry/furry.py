@@ -5,9 +5,7 @@ from pathlib import Path
 import random as rd
 
 import httpx
-import requests
 import jwt
-from aiohttp import payload
 from httpx import NetworkError
 from nonebot import logger, get_driver
 from nonebot.adapters.onebot.v11 import (
@@ -27,7 +25,6 @@ from ..check_file import (
 )
 from ..commands import (
     see_furry,
-    see_furry_health,
     furry_random,
     furry_picture,
     furry_list,
@@ -61,14 +58,14 @@ except AttributeError:
 @furry_random.handle()
 @handle_errors
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
-    args = str(args)
-    if args == "":
+    user_message = str(args)
+    if user_message == "":
         data = await get_api_httpx("function/random", service="furry")
     else:
         try:
-            data = await get_api_httpx(f"function/pictures?picture={int(args)}&model=1", service="furry")
+            data = await get_api_httpx(f"function/pictures?picture={int(user_message)}&model=1", service="furry")
         except ValueError:
-            data = await get_api_httpx(f"function/random?name={args}", service="furry")
+            data = await get_api_httpx(f"function/random?name={user_message}", service="furry")
     code = data["code"]  # 获取数据中的code变量，即状态码
     msg = data["msg"]  # 获取数据中的msg变量，即信息
     if code == "20600":
@@ -177,8 +174,8 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
 @furry_status.handle()
 @handle_errors
 async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
-    args = str(args)
-    get_resp = await get_api_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
+    data = str(args)
+    get_resp = await get_api_httpx(f"function/pictures?picture={data}&model=1", service="furry", request_mode="get")
     examine_number, type_number = get_resp['examine'], get_resp['power']
     examine_name_list, type_name_list = [
         "待审核", "已通过审核", "已被审核拒绝"], ['设定', '毛图', '插画']
@@ -217,47 +214,45 @@ async def service_furry_status(matcher: Matcher, event: MessageEvent):
 @handle_errors
 async def see_furry_function(
         matcher:Matcher,
-        bot:Bot,
         event: MessageEvent,
         args:Message = CommandArg()):
-    logger.info(args)
-    input_data = None
+    if "#" not in str(args) and str(args) != "":
+        await matcher.finish()
     params_data = {"all":"1"}
     try:
         input_data = str(args).split("#")
         input_data = input_data[1]
-        splice_URL = "search"
+        splice_url = "search"
         params_data['name'] = f"{input_data}"
         if input_data.isdigit():
             params_data.pop('name')
             params_data['qishu'] = f"{input_data}"
-            splice_URL = "qishu"
-        logger.info(args)
-    except Exception as e:
-        splice_URL = "random"
+            splice_url = "qishu"
+    except IndexError:
+        splice_url = "random"
     # 生成 JWT
     payload = {
         "qq": "1097740481",  # 用户唯一标识
         "timestamp": int(time.time())  # 当前时间戳
     }
     token = jwt.encode(payload, secret_key, algorithm="HS256")
-    logger.info(f"生成的 JWT: {token}")
-    logger.info(f"最终生成的params数据：{params_data}")
+    logger.debug(f"生成的 JWT: {token}")
+    logger.debug(f"最终生成的params数据：{params_data}")
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.post(f"{see_furry_baseURL}/{splice_URL}",
+            response = await client.post(f"{see_furry_baseURL}/{splice_url}",
                                          json={"qq": payload["qq"],"token": token},
                                          params=params_data,
                                          timeout=timeout)
     except NetworkError:
         await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常，无法访问鉴毛API，请稍后再试。")
     data = response.json()
-    logger.info(data)
     if response.status_code != 200:
         text = data['message']
         await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回：{text}[HTTP {response.status_code}]，请稍后再试。")
+    data = data['data']
     select = rd.randint(0,len(data)-1)
-    data = data['data'][0]
+    data = data[select]
     qishu = data['qishu']
     name = data['name']
     city = data['city']
@@ -274,30 +269,12 @@ async def see_furry_function(
                                                                 f"工作室：{studio}\n"
                                                                 f"图片制作：{by}"+MessageSegment.image(image_url))
 
-@see_furry_health.handle()
-@handle_errors
-async def see_furry_health_function(matcher:Matcher,event:GroupMessageEvent,bot: Bot):
-    url = see_furry_baseURL.split("/furry_will")[0]
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        try:
-            response = await client.get(f"{url}/health",
-                                        timeout=timeout)
-            logger.info(f"{url}/health")
-            data = response.json()
-            logger.info(data)
-            await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API健康状态：\n"
-                                                                          f"状态: {data['status']}\n"
-                                                                          f"数据库: {data['db']}\n"
-                                                                          f"Redis: {data['redis']}")
-        except NetworkError:
-            await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常，无法访问鉴毛API，请稍后再试。")
-
 @check_upload.handle()
 @handle_errors
 async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
     data_list, items = [], []
     data_list = handle_json(Path(DATA_PATH) / "upload_data.json", 'r')
-    if data_list == []:
+    if not data_list:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前投图待审核列表是空的")
     data_len = len(data_list)
     type_text = ['设定', '毛图', '插画']
@@ -330,19 +307,19 @@ async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot
 async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     await matcher.send("将通过凌辉Bot内置账户进行处理")
     data_message = event.get_message()
-    args = str(args)
-    args = args.split("#")
-    temp_args = args
-    args = int(args[0])
+    user_message = str(args)
+    user_message = user_message.split("#")
+    temp_args = user_message
+    user_message = int(user_message[0])
     items = handle_json(Path(DATA_PATH) / "upload_data.json", 'r')
     logger.info(items)
     logger.info(temp_args)
-    if args > len(items):
+    if user_message > len(items):
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "错误：输入的值超出列表项目\n请确认列表项目后重试。")
-    if items == []:
+    if not items:
         await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：似乎没有待审核的图片。")
-    data_normal = items[args - 1]
+    data_normal = items[int(str(user_message)) - 1]
     pic_url = data_normal['picture_url']
     time_wait = data_normal['time']
     upload_time = time.localtime(int(time_wait))
@@ -357,7 +334,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
         suggest = "未填写"
     del data_normal['picture_url'], data_normal['group_id'], data_normal['upload_account'], data_normal['time']
     if "拒绝" in str(data_message):
-        del items[args - 1]
+        del items[int(str(user_message)) - 1]
         handle_json(Path(DATA_PATH) / "upload_data.json", 'w', items)
 
         data_message = str(data_message)
@@ -402,7 +379,7 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
 ======服务器数据=======
 您的数字id：{pic_id}
 您的图片码：{picture}"""
-        del items[args - 1]
+        del items[int(str(user_message)) - 1]
         handle_json(Path(DATA_PATH) / "upload_data.json", 'w', items)
         if event.group_id != group_id:
             await bot.call_api("send_group_msg", group_id=group_id, message=f"""凌辉Bot管理员已经同意了来自{account}的投图请求，请等待兽云祭管理员进行审核
