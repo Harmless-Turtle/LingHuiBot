@@ -11,8 +11,11 @@ furry_picture = on_command("指定", aliases={"指定#"}, priority=10, block=Tru
 furry_list = on_command("查列表", aliases={"查列表#", "查兽兽"}, priority=10, block=True)
 # 兽图状态
 furry_status = on_command("兽图状态", aliases={"兽图状态#"}, priority=10, block=True)
+# 鉴毛
+see_furry = on_command("鉴毛",aliases={"每日鉴毛"},priority=10, block=True)
 # 获取服务器信息
 service_status = on_command("服务器状态", aliases={"兽云祭信息", "兽云祭状态", "服务状态"}, priority=10, block=True)
+see_furry_health = on_command("鉴毛状态",priority=9,block=True)
 
 # ================= 投图审核系统（仅SUPERUSER） =================
 # 获取审核列表

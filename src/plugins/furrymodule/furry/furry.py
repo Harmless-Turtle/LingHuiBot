@@ -2,11 +2,14 @@ import os
 import shutil
 import time
 from pathlib import Path
+import random as rd
 
 import httpx
 import requests
 import jwt
-from nonebot import logger
+from aiohttp import payload
+from httpx import NetworkError
+from nonebot import logger, get_driver
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     MessageSegment,
@@ -23,6 +26,8 @@ from ..check_file import (
     DATA_PATH
 )
 from ..commands import (
+    see_furry,
+    see_furry_health,
     furry_random,
     furry_picture,
     furry_list,
@@ -46,7 +51,12 @@ timeout = None
 count = 0
 set_count = 0
 API_BASE_URL = "https://cloud.foxtail.cn/api"
-
+try:
+    see_furry_baseURL = get_driver().config.furry_see_furry
+    secret_key = get_driver().config.furry_see_furry_key
+except AttributeError:
+    see_furry_baseURL = None
+    logger.warning("未读取到鉴毛API，鉴毛功能可能不可用！")
 
 @furry_random.handle()
 @handle_errors
@@ -203,33 +213,84 @@ async def service_furry_status(matcher: Matcher, event: MessageEvent):
 ========Service Status========""")
 
 
-# @See_Furry.handle()
-# async def See_Furry_Function(matcher:Matcher,bot:Bot,event: MessageEvent,args:Message = CommandArg()):
-#     try:
-#         a = httpx.get(
-#             "https://atlas.foxtail.cn/api/function/obtain",timeout=timeout).json()
-#         if args != None:
-#             if str(args).isdigit():
-#                 a = httpx.get(
-#                 f"https://atlas.foxtail.cn/api/function/obtain?data={int(str(args))}",timeout=timeout).json()
-#             else:
-#                 await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=f"{MessageSegment.reply(event.message_id)}输入类型错误，将随机获取。", time_noend=True)
-#         data = a['Data']
-#         Number = data['Number']
-#         name = data['name']
-#         Atlas = data['Atlas']
-#         await matcher.finish(MessageSegment.reply(event.message_id)+f"获取完成\nid：{Number}\n名字：{name}"+MessageSegment.image(Atlas))
-#     except MatcherException:  # 执行完成，接住抛出的FinishedException异常以结束本次事件执行
-#         # 注：此处必须要接住该异常，否则事件将无法正常结束。
-#         raise  # 什么都不需要做，接住就行
-#     except Exception as e:
-#         e = str(e)
-#         if "NetWorkError" in e:
-#             raise
-#         else:
-#             Error()
-#             await matcher.finish(f"在运行中遇到未知错误。\n错误已添加至错误日志中，请联系管理员进行检查或提供帮助。")
+@see_furry.handle()
+@handle_errors
+async def see_furry_function(
+        matcher:Matcher,
+        bot:Bot,
+        event: MessageEvent,
+        args:Message = CommandArg()):
+    logger.info(args)
+    input_data = None
+    params_data = {"all":"1"}
+    try:
+        input_data = str(args).split("#")
+        input_data = input_data[1]
+        splice_URL = "search"
+        params_data['name'] = f"{input_data}"
+        if input_data.isdigit():
+            params_data.pop('name')
+            params_data['qishu'] = f"{input_data}"
+            splice_URL = "qishu"
+        logger.info(args)
+    except Exception as e:
+        splice_URL = "random"
+    # 生成 JWT
+    payload = {
+        "qq": "1097740481",  # 用户唯一标识
+        "timestamp": int(time.time())  # 当前时间戳
+    }
+    token = jwt.encode(payload, secret_key, algorithm="HS256")
+    logger.info(f"生成的 JWT: {token}")
+    logger.info(f"最终生成的params数据：{params_data}")
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(f"{see_furry_baseURL}/{splice_URL}",
+                                         json={"qq": payload["qq"],"token": token},
+                                         params=params_data,
+                                         timeout=timeout)
+    except NetworkError:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常，无法访问鉴毛API，请稍后再试。")
+    data = response.json()
+    logger.info(data)
+    if response.status_code != 200:
+        text = data['message']
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回：{text}[HTTP {response.status_code}]，请稍后再试。")
+    select = rd.randint(0,len(data)-1)
+    data = data['data'][0]
+    qishu = data['qishu']
+    name = data['name']
+    city = data['city']
+    race = data['race']
+    studio = data['studio']
+    by = data['by']
+    image_url = data['url']
+    if image_url == "":
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回了数据，但似乎没有图片URL，请稍后再试。")
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"期数：{qishu}\n"
+                                                                f"名字：{name}\n"
+                                                                f"城市：{city}\n"
+                                                                f"种族：{race}\n"
+                                                                f"工作室：{studio}\n"
+                                                                f"图片制作：{by}"+MessageSegment.image(image_url))
 
+@see_furry_health.handle()
+@handle_errors
+async def see_furry_health_function(matcher:Matcher,event:GroupMessageEvent,bot: Bot):
+    url = see_furry_baseURL.split("/furry_will")[0]
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        try:
+            response = await client.get(f"{url}/health",
+                                        timeout=timeout)
+            logger.info(f"{url}/health")
+            data = response.json()
+            logger.info(data)
+            await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API健康状态：\n"
+                                                                          f"状态: {data['status']}\n"
+                                                                          f"数据库: {data['db']}\n"
+                                                                          f"Redis: {data['redis']}")
+        except NetworkError:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常，无法访问鉴毛API，请稍后再试。")
 
 @check_upload.handle()
 @handle_errors
