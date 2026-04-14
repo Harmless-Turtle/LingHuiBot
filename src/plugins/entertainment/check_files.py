@@ -43,11 +43,11 @@ utils.ensure_files_exist(
     [{}]
 )
 
-guess_number_path = Path.cwd() / "data" / "entertainment" / "guess_number"
+guess_number_path = Path.cwd() / "data" / "entertainment" / "guess_number" / "guess_number.json"
 utils.ensure_files_exist(
     [
         guess_number_path,
     ],
     "猜数字文件自检",
-    [None]
+    [{}]
 )
