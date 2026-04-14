@@ -26,7 +26,7 @@ async def get_user_coin(session: async_scoped_session, user_id: str) -> int:
         await session.commit()
         await session.refresh(obj)
 
-    return obj.mohui_coin
+    return int(str(obj.mohui_coin))
 
 
 async def modify_user_coin(session: async_scoped_session, user_id: str, amount: int) -> int:

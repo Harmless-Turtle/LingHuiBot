@@ -63,7 +63,7 @@
 
 | 在移动设备中上传                                                             | 在Windows中上传                                                      |
 |----------------------------------------------------------------------|------------------------------------------------------------------|
-| <a href="../Markdown/Example_Picture/mobile_upload.gif">上传示例（手机）</a> | <a href="../Markdown/Example_Picture/PC_upload.gif">上传示例（电脑）</a> |
+| <a href="../markdown/Example_Picture/mobile_upload.gif">上传示例（手机）</a> | <a href="../markdown/Example_Picture/PC_upload.gif">上传示例（电脑）</a> |
 
 <h3>FurryFusion 兽聚汇总功能</h3>
 
@@ -77,9 +77,6 @@
 | ✅  | 兽聚详情<文本 兽聚名字><br>兽聚信息<文本 兽聚名字> | `兽聚详情 你好兽聚`<br>`兽聚信息 你好兽聚` | 输出关于`你好兽聚`的有关信息以及兽聚举办记录                        |
 
 <h3>FurryAI功能</h3>
-
-此系统功能代码位于 <a href="../src/plugins/FurryBar.py">FurryBar.py</a> 中
-
 
 > 模型由FurryBar提供
 
