@@ -24,7 +24,12 @@ async def _robbery(
         event: GroupMessageEvent,
         args:Message = CommandArg()
 ):
-    if not args.extract_plain_text() or not "@" in str(args): await matcher.finish()
+    plain_text = args.extract_plain_text().strip()
+    # 2. 检查消息段中是否包含真实的 AT
+    has_real_at = any(seg.type == "at" for seg in args)
+    # 3. 拦截逻辑：既没有真实 AT，也没有包含 "@" 符号的文本
+    if not (has_real_at or "@" in str(plain_text)):
+        await matcher.finish()
     target_id = None
     # 获取at的用户
     for msg_seg in event.original_message:
