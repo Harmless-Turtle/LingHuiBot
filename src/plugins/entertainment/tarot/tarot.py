@@ -80,7 +80,7 @@ async def _(matcher: Matcher, event: MessageEvent, args: Message = CommandArg())
     buf = BytesIO()
     img.save(buf, format='png')
 
-    await matcher.finish("你翻开了一张塔罗牌...\n" + msg + MessageSegment.image(buf))
+    await matcher.finish(MessageSegment.reply(event.message_id)+"你翻开了一张塔罗牌...\n" + msg + MessageSegment.image(buf))
 
 
 
