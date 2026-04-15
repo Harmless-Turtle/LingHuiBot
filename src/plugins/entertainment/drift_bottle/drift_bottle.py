@@ -5,8 +5,10 @@ from nonebot import logger,get_driver
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     MessageSegment,
+    Message,
     Bot, GroupMessageEvent
 )
+from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 from nonebot.internal.matcher import Matcher
 
@@ -74,7 +76,8 @@ async def _pick_battle(matcher: Matcher, bot: Bot, event: MessageEvent):
                             f"十分感谢您的配合。")
 
 @auto_switch_battle.handle()
-async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: GroupMessageEvent):
+async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: GroupMessageEvent,args:Message = CommandArg()):
+    if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     group_member = await bot.get_group_member_info(user_id=event.user_id, group_id=event.group_id)
     group_admin = group_member['role']
     superusers = get_driver().config.superusers
