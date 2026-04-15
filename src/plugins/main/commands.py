@@ -85,7 +85,6 @@ async def chek_friend(event: PrivateMessageEvent):
 ##################
 sign_in = on_command("签到", aliases={"好久不见"}, priority=2, block=True)
 poke_check = on_type(PokeNotifyEvent, to_me())
-tarot = on_command("塔罗牌", priority=4, block=True)
 a_word = on_command("一言", priority=4, block=True)
 btfrk = on_command("我是", rule=check_bt)
 like = on_command("点赞", aliases={"赞我"}, block=True)

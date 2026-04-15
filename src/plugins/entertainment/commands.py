@@ -60,3 +60,11 @@ guess_number = on_command("猜数字",aliases={"猜数"},block=True)
 #                 表情包制作 触发器                   #
 #########################
 pet_head = on_command("摸",aliases={"摸头"},block=True)
+
+
+
+#########################
+#                 塔罗牌制作 触发器                   #
+#########################
+tarot = on_command("塔罗牌", priority=10, block=True)
+divine = on_command(cmd="占卜", priority=10, block=True)

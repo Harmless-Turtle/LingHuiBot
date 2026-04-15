@@ -58,26 +58,6 @@ async def pc_function(matcher: Matcher):
         random_message = text_list[rd.randint(0, len(text_list) - 1)]
         await matcher.finish(f"{random_message}")
 
-
-@tarot.handle()
-@handle_errors
-async def tarot_function(matcher: Matcher, event: MessageEvent):
-    get = httpx.get("https://oiapi.net/API/Tarot",timeout=None).json()
-    if get['code'] != 1:
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"遇到错误：{get['message']}[{get['code']}]")
-    data = get['data']
-    tarot_send = data[rd.randint(0, len(data) - 1)]
-    meaning = tarot_send['meaning']
-    name_cn = tarot_send['name_cn']
-    position = tarot_send['type']
-    position_meaning = tarot_send[f"{position}"]
-    pic_a_url = tarot_send['pic']
-    await matcher.finish(
-        MessageSegment.reply(event.message_id) + MessageSegment.image(pic_a_url) + f"""你抽到了{name_cn}
-这张牌的意思是：{meaning}，方位是{position}
-这个牌的方位解释为：{position_meaning}""")
-
-
 @add_welcome.handle()
 @handle_errors
 async def welcome(matcher: Matcher, event: GroupIncreaseNoticeEvent):

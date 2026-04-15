@@ -3,5 +3,6 @@ from . import (
     drift_bottle,
     wolfkill,
     currency,
-    make_emoji
+    make_emoji,
+    tarot
 )
