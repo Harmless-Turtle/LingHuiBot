@@ -57,7 +57,7 @@ async def _(
             }
         }
         await bot.send(event, f"这一局猜数字已经开始了捏uwu\n"
-                              f"你对数字{user_guess_number}下注了{mh_coin}个墨辉币捏uwu\n"
+                              f"你对数字{user_guess_number}下注了{bet_amount}个墨辉币捏uwu\n"
                               f"将在60秒后进行结算。")
     else:
         # 如果该用户还没下注过，初始化列表；否则追加下注
