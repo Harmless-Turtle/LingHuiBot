@@ -54,3 +54,9 @@ check_coin = on_command("我的余额",aliases={"余额"},block=True)
 #########################
 robbery = on_command("抢劫",aliases={"打劫"},block=True)
 guess_number = on_command("猜数字",aliases={"猜数"},block=True)
+
+
+#########################
+#                 表情包制作 触发器                   #
+#########################
+pet_head = on_command("摸",aliases={"摸头"},block=True)

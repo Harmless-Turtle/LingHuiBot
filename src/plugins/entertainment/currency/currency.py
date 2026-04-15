@@ -1,6 +1,7 @@
 from nonebot.internal.matcher import Matcher
+from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment,Message
 
 from src.plugins.utils import handle_errors
 from ..commands import (
@@ -31,8 +32,10 @@ async def _add_coin(
 async def _check_coin(
         matcher:Matcher,
         session: async_scoped_session,
-        event: GroupMessageEvent
+        event: GroupMessageEvent,
+        args:Message = CommandArg()
 ):
+    if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     balance = await get_user_coin(session, str(event.user_id))
     await matcher.finish(MessageSegment.reply(event.message_id)+f"您现在一共有{balance}个墨辉币")
 

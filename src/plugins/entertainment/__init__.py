@@ -2,5 +2,6 @@ from . import (
     marry_system,
     drift_bottle,
     wolfkill,
-    currency
+    currency,
+    make_emoji
 )

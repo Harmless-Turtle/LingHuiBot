@@ -62,7 +62,7 @@ async def pc_function(matcher: Matcher):
 @tarot.handle()
 @handle_errors
 async def tarot_function(matcher: Matcher, event: MessageEvent):
-    get = httpx.get("https://oiapi.net/API/Tarot").json()
+    get = httpx.get("https://oiapi.net/API/Tarot",timeout=None).json()
     if get['code'] != 1:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"遇到错误：{get['message']}[{get['code']}]")
     data = get['data']
