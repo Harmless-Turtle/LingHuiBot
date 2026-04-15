@@ -2,8 +2,7 @@ import random as rd
 import asyncio
 from typing import Dict, Any
 
-from nonebot import logger
-from nonebot.adapters.onebot.v11 import Message, GroupMessageEvent, Bot, MessageSegment
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot, MessageSegment
 from nonebot.internal.matcher import Matcher
 from nonebot_plugin_orm import async_scoped_session
 
@@ -37,7 +36,9 @@ async def _(
     mh_coin = await get_user_coin(session, str(user_id))
     if mh_coin < bet_amount:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你的墨辉币不足qwq...")
-
+    if bet_amount <= 0:
+        await bot.send_msg(user_id=1097740481,message=f"在猜数字中发现了非法数据，如有必要请及时处理：\nGroup:{event.group_id}\nUser:{event.user_id}")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "下注金额必须大于0捏uwu...\n非法的请求将上报给管理员处理。")
     # 扣除下注金额
     await modify_user_coin(session, str(user_id), -bet_amount)
 
@@ -97,8 +98,6 @@ async def _(
     # 构建播报文本
     winner_str = "\n".join(winner_messages) if winner_messages else "没有人获奖呢qwq"
     group_correct_number_list = '、'.join([str(number) for number in correct_numbers])
-
-    logger.info(f"群 {group_id} 猜数字开奖，正确数字: {group_correct_number_list}")
 
     await matcher.finish(
         MessageSegment.reply(event.message_id) +

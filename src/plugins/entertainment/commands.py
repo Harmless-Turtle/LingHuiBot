@@ -3,12 +3,11 @@ from nonebot.adapters.onebot.v11 import GroupMessageEvent,Bot
 from nonebot.plugin import on_command  # 导入事件响应器
 
 
-async def is_admin(bot:Bot,event:GroupMessageEvent):
-    user_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
+async def is_admin(bot: Bot, event: GroupMessageEvent) -> bool:
+    member_info = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
     superusers = get_driver().config.superusers
-    if user_is_admin['role'] == 'member' or event.user_id in superusers:
-        return False
-    return True
+    # 角色为 admin 或 owner，或者属于超级用户
+    return member_info['role'] in ('admin', 'owner') or str(event.user_id) in superusers
 
 
 #########################
