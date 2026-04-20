@@ -1,18 +1,18 @@
 from nonebot_plugin_orm import Model, async_scoped_session
-from sqlalchemy import ForeignKey, Integer
+from sqlalchemy import ForeignKey, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.plugins.database.models import Users
 
-
 MAX_MOHUI_COIN = 9223372036854775807
+
+
 class MoHuiCoinData(Model):
     __tablename__ = "MHCoin_data"
     # 外键关联 Users 表，作为主键
     user_id: Mapped[str] = mapped_column(ForeignKey(Users.id), primary_key=True)
     # 金币数量，必须是整数，默认为 0
-    mohui_coin: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-
+    mohui_coin: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
 
 async def get_user_coin(session: async_scoped_session, user_id: str) -> int:
     """
@@ -47,4 +47,4 @@ async def modify_user_coin(session: async_scoped_session, user_id: str, amount: 
 
     await session.commit()
     await session.refresh(obj)
-    return obj.mohui_coin
+    return int(str(obj.mohui_coin))

@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = "==3.12"
+requires-python = "==3.12.0"
 resolution-markers = [
     "sys_platform == 'win32'",
     "sys_platform == 'emscripten'",
@@ -494,6 +494,7 @@ version = "1.6"
 source = { virtual = "." }
 dependencies = [
     { name = "emoji" },
+    { name = "meme-generator" },
     { name = "nb-cli" },
     { name = "nonebot-adapter-onebot" },
     { name = "nonebot-plugin-apscheduler" },
@@ -504,6 +505,7 @@ dependencies = [
     { name = "nonebot-plugin-mcserver-status-check" },
     { name = "nonebot-plugin-multincm" },
     { name = "nonebot-plugin-orm" },
+    { name = "nonebot-plugin-uninfo" },
     { name = "nonebot2", extra = ["fastapi"] },
     { name = "opencc" },
     { name = "pandas" },
@@ -519,6 +521,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "emoji", specifier = "==2.15.0" },
+    { name = "meme-generator", specifier = "==0.2.3" },
     { name = "nb-cli", specifier = ">=1.7.3" },
     { name = "nonebot-adapter-onebot", specifier = ">=2.4.6" },
     { name = "nonebot-plugin-apscheduler", specifier = ">=0.5.0" },
@@ -529,6 +532,7 @@ requires-dist = [
     { name = "nonebot-plugin-mcserver-status-check", specifier = ">=0.1.8" },
     { name = "nonebot-plugin-multincm", specifier = ">=1.3.1.post1" },
     { name = "nonebot-plugin-orm", specifier = ">=0.8.3" },
+    { name = "nonebot-plugin-uninfo", specifier = "==0.11.0" },
     { name = "nonebot2", extras = ["fastapi"], specifier = ">=2.5.0" },
     { name = "opencc", specifier = ">=1.2.0" },
     { name = "pandas", specifier = ">=3.0.2" },
@@ -655,6 +659,18 @@ source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
 sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
 wheels = [
     { url = "https://pypi.tuna.tsinghua.edu.cn/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
+]
+
+[[package]]
+name = "meme-generator"
+version = "0.2.3"
+source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
+wheels = [
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/2c/b9/f94e1f3e65689183aa7acd3267d2879df2fd032c10d6d68739db76441b63/meme_generator-0.2.3-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:5897696131bcc97c253c911a4cd364295846d6b7d3abdcea0653cc94112a9141", size = 13150633, upload-time = "2026-02-27T13:53:49.924Z" },
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/90/76/7b83921e9c8a3c1dae8a63803c5ca4c5efced3c760876d4359c63c04fe94/meme_generator-0.2.3-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:ebf14df9cdfd97ffacf7e4e67c0d3306c656a502ede144a94bf78f0d3f732b78", size = 12936602, upload-time = "2026-02-27T13:53:47.759Z" },
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/65/b7/099d23173083572abfbf9ebe03bf88d2f03ac0e4b07c405ffbe634b5f341/meme_generator-0.2.3-cp310-abi3-manylinux_2_31_aarch64.whl", hash = "sha256:69953a14026805f85d762c05b07e6ecb5a54c419a4a49ff7d3df71c710353065", size = 17295917, upload-time = "2026-02-27T13:53:42.802Z" },
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/49/f7/9a36d96648e02af81b3f1d825d41bdccdc60176f3db2254bb652826d3162/meme_generator-0.2.3-cp310-abi3-manylinux_2_31_x86_64.whl", hash = "sha256:cac7b7a41d144740ad7ea2bdda0032ba8ce9528dbec0d916f00581be26b657e7", size = 16899741, upload-time = "2026-02-27T13:53:45.415Z" },
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/83/6b/6b106aeb23f5b3077da295f9cf696056d6720228f8d1bc35e9dc0d79cf7c/meme_generator-0.2.3-cp310-abi3-win_amd64.whl", hash = "sha256:6a3b269973be1db0c7a121502485442fad23acd999cdadec2132267ad0e167cd", size = 12287553, upload-time = "2026-02-27T13:53:52.157Z" },
 ]
 
 [[package]]
@@ -914,6 +930,19 @@ dependencies = [
 sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/9c/70/06e8fffd9b7f88513507e0455806bc772dfbf150eafee10474dad7f5110f/nonebot_plugin_orm-0.8.3.tar.gz", hash = "sha256:c51918f6d39761c5e78185f58745dec888b95a7795b77c345bf97f08406f878d", size = 26491, upload-time = "2026-01-01T11:40:52.285Z" }
 wheels = [
     { url = "https://pypi.tuna.tsinghua.edu.cn/packages/3d/ce/b14c6b5ced478403b7e7aaab24944e3071ca0bb30f62bb9c150a92800bb6/nonebot_plugin_orm-0.8.3-py3-none-any.whl", hash = "sha256:d64f01500a0eca1e25502347923fa54d0bff3cbe2531720adc1b0f485cd2d701", size = 31770, upload-time = "2026-01-01T11:40:50.854Z" },
+]
+
+[[package]]
+name = "nonebot-plugin-uninfo"
+version = "0.11.0"
+source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
+dependencies = [
+    { name = "importlib-metadata" },
+    { name = "nonebot2" },
+]
+sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/51/99/bb5c2c8a5feaec786c03bbeddf79b07afab4936282ff1fd63d1467154810/nonebot_plugin_uninfo-0.11.0.tar.gz", hash = "sha256:3c1f35b72affa0eab0d27e578157e31c9b15706476fcf98e3437d958c4b573fe", size = 42439, upload-time = "2026-03-13T10:04:05.02Z" }
+wheels = [
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/d7/24/538c4681a5f1d1ede4e9094b07aaec52eb706668caa8235835a259d61c9c/nonebot_plugin_uninfo-0.11.0-py3-none-any.whl", hash = "sha256:6caaa73a4b8403143ab736ff647c5155439915e97997b1416ea6c1c5bd0d3702", size = 68177, upload-time = "2026-03-13T10:04:03.82Z" },
 ]
 
 [[package]]

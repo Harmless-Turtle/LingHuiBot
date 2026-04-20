@@ -54,13 +54,16 @@ check_coin = on_command("我的余额",aliases={"余额"},block=True)
 #########################
 robbery = on_command("抢劫",aliases={"打劫"},block=True)
 guess_number = on_command("猜数字",aliases={"猜数"},block=True)
+bank_transfer = on_command("转账",block=True)
+bank_save = on_command("存钱",block=True)
+bank_remove = on_command("取钱",aliases={"取款"},block=True)
+bank_money = on_command("存款",aliases={"我的存款"},block=True)
 
 
 #########################
 #                 表情包制作 触发器                   #
 #########################
 pet_head = on_command("摸",aliases={"摸头"},block=True)
-
 
 
 #########################

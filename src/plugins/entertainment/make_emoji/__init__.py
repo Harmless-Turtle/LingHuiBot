@@ -1,1 +1,0 @@
-from . import make_emoji
