@@ -422,3 +422,4 @@ async def at_is_true(
     # 检查是否存在 at
     if not target_id and "@" in (str(event.raw_message)):
         return "illegal"
+    return str(target_id)
