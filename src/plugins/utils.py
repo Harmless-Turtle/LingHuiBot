@@ -12,9 +12,10 @@ import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment, GroupMessageEvent
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
+from nonebot.params import CommandArg
 
 FONT_PATH = Path() / 'data' / 'SarasaFixedSlabJ-SemiBoldItalic.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'furry_system' / 'bg.png'
@@ -400,3 +401,24 @@ def ensure_files_exist(file_path: list[Path], description: str, normal_data: lis
                     logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
 
     logger.info(f"[{description}] 所有的文件及路径自检完毕。")
+
+
+async def at_is_true(
+        event: GroupMessageEvent,
+        args:Message = CommandArg()
+):
+    plain_text = args.extract_plain_text().strip()
+    # 检查消息段中是否包含真实的 AT
+    has_real_at = any(seg.type == "at" for seg in args)
+    # 拦截逻辑：既没有真实 AT，也没有包含 "@" 符号的文本
+    if not (has_real_at or "@" in str(plain_text)):
+        return "finish"
+    target_id = None
+    # 获取at的用户
+    for msg_seg in event.original_message:
+        if msg_seg.type == 'at':
+            target_id = msg_seg.data['qq']
+            break
+    # 检查是否存在 at
+    if not target_id and "@" in (str(event.raw_message)):
+        return "illegal"
