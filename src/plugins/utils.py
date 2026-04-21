@@ -407,6 +407,22 @@ async def at_is_true(
         event: GroupMessageEvent,
         args:Message = CommandArg()
 ):
+    """
+
+    Args:
+        event: 注入依赖项：GroupMessageEvent
+        args: 注入依赖项：Message = CommandArg()
+
+    Returns:
+        str:
+         可能的情况：
+
+        返回“finish”[str]：指用户提供的文本既无真实AT消息段，纯文本也没有包含“@”符号 -> 直接结束事件即可。
+
+        返回"illegal"[str]：用户提供的文本中没有真实AT消息段，但纯文本包含了“@”符号 -> 可能是用户复制了别人的AT指令但未正确使用，提示用户指令不合法。
+
+        返回用户id[str]：有效的AT段，返回的是被AT用户的id
+    """
     plain_text = args.extract_plain_text().strip()
     # 检查消息段中是否包含真实的 AT
     has_real_at = any(seg.type == "at" for seg in args)

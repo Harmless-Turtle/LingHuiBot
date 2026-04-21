@@ -3,7 +3,6 @@ import random as rd
 from nonebot.adapters.onebot.v11 import Bot,GroupMessageEvent, MessageSegment,Message
 from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot_plugin_alconna.uniseg.adapters.kook import target
 from nonebot_plugin_orm import async_scoped_session
 
 from src.plugins.utils import handle_errors,at_is_true
