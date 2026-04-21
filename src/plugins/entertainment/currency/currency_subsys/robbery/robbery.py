@@ -5,7 +5,7 @@ from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
-from src.plugins.utils import handle_errors
+from src.plugins.utils import handle_errors,at_is_true
 from src.plugins.entertainment.commands import (
     robbery
 )
@@ -24,25 +24,7 @@ async def _robbery(
         event: GroupMessageEvent,
         args:Message = CommandArg()
 ):
-    plain_text = args.extract_plain_text().strip()
-    # 2. 检查消息段中是否包含真实的 AT
-    has_real_at = any(seg.type == "at" for seg in args)
-    # 3. 拦截逻辑：既没有真实 AT，也没有包含 "@" 符号的文本
-    if not (has_real_at or "@" in str(plain_text)):
-        await matcher.finish()
-    target_id = None
-    # 获取at的用户
-    for msg_seg in event.original_message:
-        if msg_seg.type == 'at':
-            target_id = msg_seg.data['qq']
-            break
-    # 检查是否存在 at
-    if not target_id and "@" in (str(event.raw_message)):
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...没有获取到你要打劫的人xwx\n请不要复制别人的指令，一定要自己at呢"
-        )
-
+    target_id = await  at_is_true(event,args)
     # 判断是否为全体成员
     if target_id == "all":
         await matcher.finish(

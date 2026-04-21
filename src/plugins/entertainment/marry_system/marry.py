@@ -23,7 +23,7 @@ from src.plugins.entertainment.commands import (
     marry_check,
     marry_switch
 )
-from src.plugins.utils import handle_errors, handle_json, time_handle
+from src.plugins.utils import handle_errors, handle_json, time_handle,at_is_true
 
 
 @marry_random.handle()
@@ -117,17 +117,18 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
 
 @marry_propose.handle()
 @handle_errors
-async def marry_propose_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
+async def marry_propose_func(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        bot: Bot,
+        args: Message = CommandArg()
+):
     # 获取数据
     text = event.get_message()
     user_id, bot_qq, self_qq, timestamp, group_id = event.self_id, event.self_id, event.user_id, int(time.time()), str(
         event.group_id)
     # 获取at值
-    for msg_seg in text:
-        if msg_seg.type == 'at':
-            logger.info(msg_seg.data)
-            user_id = msg_seg.data['qq']
-            break
+    user_id = await  at_is_true(event,args)
     logger.info(user_id)
     is_robot = await bot.get_group_member_info(group_id=event.group_id, user_id=user_id)
     if user_id == self_qq or user_id == bot_qq or is_robot['is_robot']:
@@ -267,16 +268,17 @@ async def marry_time_check_func(matcher: Matcher, event: GroupMessageEvent, bot:
 
 @marry_check.handle()
 @handle_errors
-async def marry_check_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
+async def marry_check_func(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        bot: Bot,
+        args: Message = CommandArg()
+):
     # 读取前置数据
     data = handle_json(marry_json_path, 'r')
     self_qq, group_id, user_id = str(event.user_id), str(event.group_id), 0
     # 获取at值
-    text = event.get_message()
-    for msg_seg in text:
-        if hasattr(msg_seg, 'type') and msg_seg.type == 'at':
-            user_id = str(msg_seg.data.get('qq', 0))
-            break
+    user_id = await at_is_true(event,args)
     if user_id != 0:
         self_qq = user_id
     text = "你"
