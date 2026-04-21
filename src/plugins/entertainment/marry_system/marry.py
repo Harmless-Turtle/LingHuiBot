@@ -108,7 +108,8 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     nickname = stranger_info.get('nickname', '昵称获取失败')
     time_text = time_handle(self_data['time'])
     # 直接删除用户和用户对象json
-    del data[self_qq][group_id], data[cp_qq][group_id]
+    data.pop(self_qq, None)
+    data.pop(cp_qq, None)
     # 将处理完的Data写入文件
     handle_json(marry_json_path, 'w', data)
     await matcher.finish(MessageSegment.reply(
@@ -130,7 +131,7 @@ async def marry_propose_func(
     # 获取at值
     user_id = await  at_is_true(event,args)
     logger.info(user_id)
-    is_robot = await bot.get_group_member_info(group_id=event.group_id, user_id=user_id)
+    is_robot = await bot.get_group_member_info(group_id=event.group_id, user_id=int(user_id))
     if user_id == self_qq or user_id == bot_qq or is_robot['is_robot']:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你你...你不可以向自己或者机器人求婚呢xwx")
     # 判断是否为非法请求
