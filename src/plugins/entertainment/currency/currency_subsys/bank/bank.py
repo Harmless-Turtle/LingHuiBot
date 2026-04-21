@@ -130,7 +130,7 @@ async def _bank_robbery(
     # 如果用户状态存在，则进入判断
     if user_data:
         # 确定过期时间：如果是 failure 则为 1 天，否则为 2 天
-        duration = 0.86400 if user_data['robbery_mode'] == "failure" else 0.172800
+        duration = 86400 if user_data['robbery_mode'] == "failure" else 172800
         # 统一判断并删除
         if now_time - user_data['time'] >= duration:
             del time_data[str(event.user_id)]
