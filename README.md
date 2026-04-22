@@ -80,7 +80,7 @@ Windows操作系统安装教程：<br>
 若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws:
 //localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
 
-> 注意：如果您的NoneBot2启动失败，请修改.env文件的<code>PORT=9090</code>为你系统中任一未被占用的端口，并在上述所说的WebSocket服务端中将<code>localhost:9090</code>中的9090更换为你自己配置的端口
+> 注意：如果您的NoneBot2因端口占用导致启动失败，请修改.env文件的<code>PORT=9090</code>为你系统中任一未被占用的端口，并在上述所说的WebSocket服务端中将<code>localhost:9090</code>中的9090更换为你自己配置的端口
 
 Linux操作系统安装流程：<br>
 
@@ -92,6 +92,10 @@ Linux操作系统安装流程：<br>
 下载链接：[SarasaFixedSlabJ-SemiBoldItalic](https://mirror.nju.edu.cn/github-release/be5invis/Sarasa-Gothic/LatestRelease/Sarasa-TTC-Unhinted-1.0.37.7z)
 
 > 这个下载链接将会直接下载一个7z压缩包，解压后请将其中的<code>SarasaFixedSlabJ-SemiBoldItalic.ttf</code>文件放入凌辉Bot的data目录下。
+
+由于凌辉 Bot 的`表情包制作`功能需要使用到外部工具生成，因此请自行前往此工具的GitHub仓库下载资源包及配置：<br>
+[meme-generator-rs](https://github.com/MemeCrafters/meme-generator-rs/releases/tag/v0.2.3)
+
 
 <h2>联系开发组</h2>
 

@@ -7,6 +7,7 @@ from nonebot.params import CommandArg,Depends
 from nonebot_plugin_orm import get_session
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from plugins.utils import at_is_true
 from .models import bank_operation, transfer_money,get_bank_coin
 from src.plugins.entertainment.commands import (
     bank_transfer,
