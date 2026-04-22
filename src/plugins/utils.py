@@ -12,7 +12,8 @@ import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment,GroupMessageEvent
+from nonebot.params import CommandArg
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg

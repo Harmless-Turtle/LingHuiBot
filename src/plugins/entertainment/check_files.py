@@ -21,6 +21,18 @@ utils.ensure_files_exist(
 
 
 ########################
+#      制作表情包自检        #
+########################
+memes_make_path = Path.cwd() / "data" / "entertainment" / "make_memes" / "resources"
+utils.ensure_files_exist(
+    [
+        memes_make_path,
+    ],
+    "表情包制作路径自检",
+    [None]
+)
+
+########################
 #      漂流瓶自检        #
 ########################
 # 定义路径变量
@@ -35,6 +47,10 @@ utils.ensure_files_exist(
     [{},{}]
 )
 
+
+########################
+#      漂流瓶自检        #
+########################
 wolf_kill_path = Path.cwd() / "data" / "entertainment" / "wolfkill"
 utils.ensure_files_exist(
     [
