@@ -1,7 +1,7 @@
 
 [project]
 name = "LingHuiBot"
-version = "1.6"
+version = "1.7"
 description = "LingHuiBot"
 readme = "README.md"
 requires-python = "==3.12.0"
