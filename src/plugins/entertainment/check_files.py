@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from src.plugins import utils
 
 # data路径作为全局变量使用
@@ -56,5 +57,17 @@ utils.ensure_files_exist(
         wolf_kill_path,
     ],
     "狼人杀文件自检",
+    [{}]
+)
+
+########################
+#      抢银行自检        #
+########################
+bank_robbery_time_path = path_header / "entertainment" / "bank" / "bank_robbery.json"
+utils.ensure_files_exist(
+    [
+        bank_robbery_time_path,
+    ],
+    "抢银行计时器文件自检",
     [{}]
 )
