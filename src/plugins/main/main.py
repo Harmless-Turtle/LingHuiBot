@@ -4,21 +4,21 @@ from datetime import datetime as dt
 
 import httpx
 from nonebot import get_driver
-# 导入事件响应器以进行操作
 from nonebot.adapters.onebot.v11 import (
-    GroupIncreaseNoticeEvent,
     MessageSegment,
     MessageEvent,
     Message,
     Bot,
 )
-# 导入异常基类MatcherException，以限制try-except捕获正常finish函数抛出的异常
 from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
+from nonebot_plugin_orm import async_scoped_session
 
 from .check_file import *
 from .commands import *
+from ..utils import handle_errors
+from src.plugins.entertainment.currency.models import modify_user_coin,get_user_coin
 
 # 获取机器人的名字
 config = get_driver().config
@@ -36,7 +36,7 @@ at_time = time.time()
 
 
 @poke_check.handle()
-@utils.handle_errors
+@handle_errors
 async def pc_function(matcher: Matcher):
     global poke_count, time_count, send
     if poke_count >= 3 and time.time() - time_count <= 120:
@@ -51,38 +51,18 @@ async def pc_function(matcher: Matcher):
                 pass
     else:
         send = True
-        text_list = utils.handle_json(poke_path, 'r')
+        text_list = handle_json(poke_path, 'r')
 
         poke_count += 1
         time_count = time.time()
         random_message = text_list[rd.randint(0, len(text_list) - 1)]
         await matcher.finish(f"{random_message}")
 
-
-@tarot.handle()
-@utils.handle_errors
-async def tarot_function(matcher: Matcher, event: MessageEvent):
-    get = httpx.get("https://oiapi.net/API/Tarot").json()
-    if get['code'] != 1:
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"遇到错误：{get['message']}[{get['code']}]")
-    data = get['data']
-    tarot_send = data[rd.randint(0, len(data) - 1)]
-    meaning = tarot_send['meaning']
-    name_cn = tarot_send['name_cn']
-    position = tarot_send['type']
-    position_meaning = tarot_send[f"{position}"]
-    pic_a_url = tarot_send['pic']
-    await matcher.finish(
-        MessageSegment.reply(event.message_id) + MessageSegment.image(pic_a_url) + f"""你抽到了{name_cn}
-这张牌的意思是：{meaning}，方位是{position}
-这个牌的方位解释为：{position_meaning}""")
-
-
 @add_welcome.handle()
-@utils.handle_errors
+@handle_errors
 async def welcome(matcher: Matcher, event: GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id: await matcher.finish()
-    welcome_dict = utils.handle_json(welcome_path, 'r')
+    welcome_dict = handle_json(welcome_path, 'r')
     group_id = str(event.group_id)
     if welcome_dict.get(group_id, False):
         group_dict = welcome_dict[f'{group_id}']
@@ -101,7 +81,7 @@ async def welcome(matcher: Matcher, event: GroupIncreaseNoticeEvent):
 
 
 @SelfJoinGroupWelcome.handle()
-@utils.handle_errors
+@handle_errors
 async def self_join_group_welcome_function(matcher: Matcher, event: GroupIncreaseNoticeEvent):
     if event.user_id == event.self_id:
         await matcher.finish(
@@ -109,78 +89,17 @@ async def self_join_group_welcome_function(matcher: Matcher, event: GroupIncreas
             "如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n"
             "如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n"
             "如果您有任何问题，请随时联系管理员[1097740481]哦~\n"
-            "如果在使用过程中出现了问题，可以通过命令“bug反馈“来直接发送给开发者")
+            "如果在使用过程中出现了问题，可以通过命令“bug反馈“来直接发送给开发者\n"
+            "使用命令“用户协议”可以查看凌辉Bot用户协议")
     else:
         pass
 
 
-@change_welcome.handle()
-@utils.handle_errors
-async def change_welcome_function(matcher: Matcher, event: GroupMessageEvent):
-    welcome_config = utils.handle_json(welcome_path, 'r')
-    group_id = str(event.group_id)
-    args = event.get_message()
-    if "开" in str(args):
-        welcome_config[group_id] = {"mode": None, "Text": None}
-        welcome_config[group_id]['mode'] = True
-        if not welcome_config[group_id].get('Text', False):
-            welcome_config[group_id][
-                'Text'] = "新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~"
-    elif "关" in str(args):
-        if not welcome_config.get(group_id, False):
-            await matcher.finish(MessageSegment.reply(
-                event.message_id) + "本群似乎还没有创建过入群欢迎的任务，请先通过“入群欢迎开”的命令来创建哦w")
-        welcome_config[group_id]["mode"] = False
-    else:
-        mode = None
-        text = "未启动"
-        if welcome_config.get(f"{group_id}", False):
-            mode = welcome_config[group_id]["mode"]
-            if not welcome_config[group_id].get('Text', False):
-                text = "新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~"
-            else:
-                text = welcome_config[group_id]['Text']
-        mode_text = "关闭"
-        if mode:
-            mode_text = "开启"
-        elif mode is None:
-            mode_text = "未启动"
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"当前群聊的入群欢迎状态为：{mode_text}\n新人入群欢迎文本：{text}")
-    utils.handle_json(welcome_path, 'w', welcome_config)
-    await matcher.finish(MessageSegment.reply(event.message_id) + "操作成功完成。")
-
-
-@change_welcome_text.handle()
-@utils.handle_errors
-async def cwt_function(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = str(args)
-    welcome_data = utils.handle_json(welcome_path, 'r')
-    group = str(event.group_id)
-    text = ""
-    if not welcome_data.get(group, False):
-        text = "由于未创建入群欢迎任务，所以本次操作将自动打开本群的入群欢迎提示~\n"
-    new_dict = {
-        f"{group}": {
-            "mode": True,
-            "Text": args
-        }
-    }
-    welcome_data.update(new_dict)
-    text_1 = "入群文本已经成功替换啦~"
-    if args == "":
-        welcome_data[group][
-            'Text'] = "新人记得给群主早上请安晚上侍寝（bushi\n欢迎新成员加入本群！凌辉Bot欢迎您~\nWelcome new members to join this family! Linghui Bot welcomes you~"
-        text_1 = "由于未找到对应的文本，所以本次操作将会使用默认文本来进行入群欢迎~"
-    utils.handle_json(welcome_path, 'w', welcome_data)
-    await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}{text_1}")
-
-
 @a_word.handle()
-@utils.handle_errors
+@handle_errors
 async def a_word_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
-    word_list = utils.handle_json(aword_path, 'r')
+    word_list = handle_json(aword_path, 'r')
 
     result = word_list[rd.randint(0, len(word_list) - 1)]
     await matcher.finish(MessageSegment.reply(event.message_id) + f"“{result}”")
@@ -188,10 +107,17 @@ async def a_word_function(matcher: Matcher, event: MessageEvent, args: Message =
 
 # 签到触发器与实现
 @sign_in.handle()
-@utils.handle_errors
-async def sign_in_function(matcher: Matcher, event: GroupMessageEvent):
+@handle_errors
+async def sign_in_function(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args:Message = CommandArg()
+):
+    # 若签到文本后有文本，则直接结束任务
+    if args.extract_plain_text(): await matcher.finish()
     # 打开文件并写入Sign_Dict字典
-    sign_dict = utils.handle_json(sign_in_path, 'r')
+    sign_dict = handle_json(sign_in_path, 'r')
     # 获取触发人QQ号和群聊号
     user, group = event.user_id, event.group_id
     # 获取触发时间
@@ -245,9 +171,14 @@ async def sign_in_function(matcher: Matcher, event: GroupMessageEvent):
     group_user_list[f"{user}"] = new_sign_user_dict
     sign_dict[f'{group}'] = new_sign_group_dict
     # 将构建完成的信息写入本地json文件进行保存
-    utils.handle_json(sign_in_path, 'w', sign_dict)
-    a_word_list = utils.handle_json(aword_path, 'r')
+    handle_json(sign_in_path, 'w', sign_dict)
+    a_word_list = handle_json(aword_path, 'r')
     result = a_word_list[rd.randint(0, len(a_word_list) - 1)]
+    # 判断随机给墨辉币的数量
+    rd_coins = rd.randint(50, 300)
+    operate_coins = user_count * 2 + rd_coins
+    await modify_user_coin(session, str(event.user_id), operate_coins)
+    balance = await get_user_coin(session, str(event.user_id))
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         # 生成检测到“好久不见”字样的默认值
@@ -260,17 +191,19 @@ async def sign_in_function(matcher: Matcher, event: GroupMessageEvent):
         # 输出
         await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(
             pic) + f"{text}签到成功。本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位~\n"
+                   f"您获得了{operate_coins}个墨辉币！您现在有{balance}个墨辉币。\n"
                    f"——————\n"
                    f"“{result}”")
     # 输出
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"{text}签到成功。您本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位。\n"
+                            f"您获得了{operate_coins}个墨辉币！您现在有{balance}个墨辉币。\n"
                             f"——————\n"
                             f"“{result}”")
 
 
 @btfrk.handle()
-@utils.handle_errors
+@handle_errors
 async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     match = re.search(r"我是(.+)控", event.message.extract_plain_text())
     members = await bot.get_group_member_list(group_id=event.group_id)
@@ -304,99 +237,13 @@ async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     await btfrk.finish(message)
 
 
-@exit_change.handle()
-@utils.handle_errors
-async def change_exit_function(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
-    args = str(args)
-    data = utils.handle_json(check_group_member_path, "r")
-    exit_message, write = "", None
-    if "开" in args:
-        write = True
-        exit_status = "打开"
-        exit_message = "当有人退群时会发出消息提示哦~"
-    elif "关" in args:
-        write = False
-        exit_status = "关闭"
-    else:
-        text = "本群的退群通知是关闭状态捏"
-        if data.get(f"{event.group_id}", False):
-            if data[f'{event.group_id}']:
-                text = "本群的退群通知是打开状态捏"
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"{text}~\n输入“退群提示关”或“退群提示开”来更改功能开关")
-        return
-
-    logger.info(args)
-    data[f'{event.group_id}'] = write
-    utils.handle_json(check_group_member_path, "w", data)
-    await matcher.finish(
-        MessageSegment.reply(event.message_id) + f"好~凌辉Bot已经{exit_status}了本群的退群提示w~{exit_message}")
-
-
-@GroupExitMember.handle()
-@utils.handle_errors
-async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, matcher: Matcher):
-    logger.info(f"触发退群事件：{event.group_id}")
-    # 处理 Bot 自己被踢的情况
-    if event.sub_type == "kick_me":
-        await bot.send_private_msg(
-            user_id=1097740481,
-            message=f"⚠️ Bot被踢出群聊！\n"
-                    f"时间：{dt.fromtimestamp(event.time).strftime('%Y-%m-%d %H:%M:%S')}\n"
-                    f"群号：{event.group_id}"
-        )
-        await matcher.finish()
-    # 获取用户信息
-
-    try:
-        user_info = await bot.get_stranger_info(user_id=event.user_id)
-        user_nickname = user_info.get("nickname", "未知用户")
-    except ActionFailed:
-        user_nickname = "信息获取失败"
-
-    # 处理退群原因
-    if event.sub_type == "kick":
-        operator_id = getattr(event, "operator_id", 0)
-        if operator_id > 0:
-            # 尝试获取操作者信息
-            try:
-                operator_info = await bot.get_group_member_info(
-                    group_id=event.group_id,
-                    user_id=operator_id
-                )
-                operator_name = operator_info.get("nickname", str(operator_id))
-            except ActionFailed:
-                operator_name = str(operator_id)
-            reason = f"被管理员 {operator_name} 移出"
-        else:
-            reason = "被管理员移出"  # 无权限时的通用描述
-    elif event.sub_type == "leave":
-        reason = "主动退群"
-    else:
-        reason = "未知原因"
-
-    # 构造消息
-    message = Message(
-        f"似乎有人离开了我们...？"
-        f"时间：{dt.fromtimestamp(event.time).strftime('%Y-%m-%d %H:%M:%S')}\n"
-        f"用户：{user_nickname} ({event.user_id})\n"
-        f"原因：{reason}"
-    )
-
-    # 发送到群聊
-    await bot.send_group_msg(
-        group_id=event.group_id,
-        message=message
-    )
-
-
 @like_friend.handle()
-@utils.handle_errors
+@handle_errors
 async def lf_function(matcher: Matcher, event: NoticeEvent):
     from nonebot import get_bot
     bot = get_bot()
     data = event.model_dump()
-    user_data = utils.handle_json(friend_like_path, 'r')
+    user_data = handle_json(friend_like_path, 'r')
     user_id = data['operator_id']
     now = dt.now()
     day = now.day
@@ -419,7 +266,7 @@ async def lf_function(matcher: Matcher, event: NoticeEvent):
     text = f"owo？是你给我点赞了嘛~谢谢~\n凌辉也给你点赞哦~（如果已经点过了那就不点了呐~嘻嘻ww）"
     user_data[f"{user_id}"]['Model'] = False
     user_data[f"{user_id}"]['Time'] = day
-    utils.handle_json(friend_like_path, 'w', user_data)
+    handle_json(friend_like_path, 'w', user_data)
     try:
         if user_id != 1097740481:
             await bot.send_private_msg(user_id=user_id, message=text)
@@ -429,7 +276,7 @@ async def lf_function(matcher: Matcher, event: NoticeEvent):
 
 
 @add_friend.handle()
-@utils.handle_errors
+@handle_errors
 async def af_function(bot: Bot, matcher: Matcher, event: FriendRequestEvent):
     request_type, user_id, flag, comment = event.request_type, event.user_id, event.flag, event.comment
     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
@@ -501,95 +348,9 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
     select = a[f'meal{random_number}']
     await matcher.finish(MessageSegment.reply(event.message_id) + f"{a['mealwhat']}\n要不{select}吧！")
 
-
-@add_group.handle()
-@utils.handle_errors
-async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent):
-    user = await bot.get_stranger_info(user_id=event.user_id)
-    user = user["nick"]
-    comment = event.comment
-    if comment == "":
-        comment = "未填写入群理由"
-    ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操你妈"
-    if comment in ban_text:
-        await bot.set_group_add_request(
-            flag=str(event.flag),
-            approve=False,
-            sub_type="add",
-            reason="你的申请存在违禁词库中,请修改后重新申请。"
-        )
-        await matcher.finish(
-            f"似乎有人想要加入我们awa...\n"
-            f"请求类型：{event.request_type}\n"
-            f"子类型：{event.sub_type}\n"
-            f"申请人信息：{user}[{event.user_id}]\n"
-            f"进群理由:\n"
-            f"（思考）...？似乎在凌辉的内置禁止词库中？\n"
-            f"⚠️已满足判决条件；自动处理生效，将主动拒绝此入群消息！\n"
-            f"如果要手动同意，请关闭入群审核功能后让用户重新申请。"
-        )
-    await matcher.finish(
-        f"似乎有人想要加入我们awa...\n"
-        f"请求类型：{event.request_type}\n"
-        f"子类型：{event.sub_type}\n"
-        f"申请人信息：{user}[{event.user_id}]\n"
-        f"进群理由:{event.comment}\n"
-        f"要同意此人入群嘛awa？\n"
-        f"可以通过“允许加群{event.flag}”或“拒绝加群{event.flag}”来处理此请求（请在Bot为群管理员时进行操作~"
-    )
-
-
-@switch_add_group.handle()
-async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
-    arg = args.extract_plain_text()
-
-    data = utils.handle_json(add_group_check_path, 'r')
-    if arg == "开":
-        write = True
-        feature_status = "打开"
-    elif arg == "关":
-        write = False
-        feature_status = "关闭"
-    else:
-        text = "当前Bot的入群检测状态为：关闭"
-        if data.get(str(event.group_id), False):
-            if data[str(event.group_id)]:
-                text = "当前Bot的入群检测状态为：开启"
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            f"{text}~\n"
-            f"输入“入群检测开”或“入群检测关”来更改功能开关"
-        )
-        return
-
-    data[str(event.group_id)] = write
-    utils.handle_json(add_group_check_path, 'w', data)
-    await matcher.finish(
-        MessageSegment.reply(event.message_id) +
-        f"好~凌辉Bot已经{feature_status}了本群的入群检测功能w~"
-    )
-
-
-@handle_group.handle()
-async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
-    user = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
-    logger.info(user)
-    if user['role'] == 'member':
-        await matcher.finish(MessageSegment.reply(event.message_id) + "请先将Bot设置为管理员哦~")
-    if "允许" in str(event.get_message):
-        select = True
-    elif "拒绝" in str(event.get_message):
-        select = False
-    else:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "命令不正确")
-        return
-    try:
-        await bot.set_group_add_request(
-            flag=str(args),
-            sub_type="add",
-            approve=select,
-            reason="管理员拒绝通过。"
-        )
-        await matcher.finish(MessageSegment.reply(event.message_id) + "已经处理了此请求。")
-    except ActionFailed:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "未找到对应的flag，请检查flag是否正确。")
+@nc_version_info.handle()
+async def _version_info(bot:Bot,matcher:Matcher,event:MessageEvent):
+    data = await bot.get_version_info()
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"当前使用的客户端实例：{data["app_name"]}\n"
+                                                                  f"客户端实例版本号：{data['app_version']}\n"
+                                                                  f"子模块版本号：{data['protocol_version']}\n")

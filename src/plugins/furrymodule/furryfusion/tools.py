@@ -1,16 +1,17 @@
-######################################
-# FurryFusion 活动日程工具函数        #
-######################################
-
-# 导入所需模块
 import datetime
+
 from PIL import Image, ImageDraw, ImageFont
-from src.plugins.utils import get_config_item,get_api_httpx
 
 from ..check_file import FONT_PATH
+from ...utils import get_config_item, get_api_httpx
 
 # 导入特殊兽聚列表
-SPECIAL_EVENTS = get_config_item('furry_special_events', default="未获取到数据", required=True, desc="FurryFusion特殊兽聚列表")
+SPECIAL_EVENTS = get_config_item(
+    'furry_special_events',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion特殊兽聚列表"
+)
 
 
 # ========= 工具函数：请求 API =========
@@ -30,12 +31,13 @@ async def get_event_list():
                 "time_end": "9999.01.01"
             },
             {
-                "title":"错误内容",
-                "address":f"{e}",
-                "time_start":"1900.01.01",
-                "time_end":"9999.01.01"
+                "title": "错误内容",
+                "address": f"{e}",
+                "time_start": "1900.01.01",
+                "time_end": "9999.01.01"
             }
         ]
+
 
 # ========= 工具函数：生成倒计时 =========
 def calc_days_remaining(start_date: str):
@@ -43,6 +45,7 @@ def calc_days_remaining(start_date: str):
     start = datetime.datetime.strptime(start_date, "%Y.%m.%d").date()
     days = (start - today).days
     return days
+
 
 def format_remaining_days(days: int) -> tuple:
     """格式化剩余天数显示，返回(文本, 颜色)"""
@@ -74,7 +77,47 @@ def group_by_year_month(events):
 
         groups[year][month].append(e)
     return groups
-    
+
+
+def add_custom_footer(img: Image.Image) -> Image.Image:
+    """
+    联动函数：在生成图片的底部正中央添加指定文本
+    """
+    FOOTER_TEXT = ("                          信息来源：FurryFusion.net\n"
+                   f"                        合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
+                   "        排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
+                   f"      数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
+                   )
+
+    # 2. 配置参数
+    footer_height = 120  # 底部留白的高度
+    bg_color = (22, 22, 28)  # 保持与主图背景色一致
+    text_color = (100, 100, 110)  # 使用较暗的灰色
+
+    # 3. 创建新画布（宽度不变，高度增加）
+    width, height = img.size
+    new_height = height + footer_height
+    final_img = Image.new("RGB", (width, new_height), bg_color)
+
+    # 4. 将原图粘贴上去
+    final_img.paste(img, (0, 0))
+
+    # 5. 绘制文字
+    draw = ImageDraw.Draw(final_img)
+    try:
+        # 使用与小字相同的字体大小
+        font = ImageFont.truetype(FONT_PATH, 20)
+    except:
+        font = ImageFont.load_default()
+
+    # 获取文字锚点，确保绝对居中
+    # anchor="mm" 表示文本的中心点对齐到指定的坐标
+    text_x = width // 2
+    text_y = height + (footer_height // 2)
+
+    draw.text((text_x, text_y), FOOTER_TEXT, font=font, fill=text_color, anchor="mm")
+
+    return final_img
 
 # ========= 图片生成 =========
 def render_schedule_image(groups: dict):
@@ -84,9 +127,7 @@ def render_schedule_image(groups: dict):
     card_h = 150
     gap = 30
 
-
     # 字体路径
-    # FONT_PATH = str(Path(__file__).parents[2] / 'MiSans-Demibold.ttf')
     font_title = ImageFont.truetype(FONT_PATH, 30)
     font_small = ImageFont.truetype(FONT_PATH, 20)
 
@@ -139,7 +180,8 @@ def render_schedule_image(groups: dict):
             draw.line((timeline_x, start_y, timeline_x, end_y), fill=line_color, width=3)
 
         # 年份圆（实心）和文本
-        draw.ellipse((timeline_x - year_r, year_center_y - year_r, timeline_x + year_r, year_center_y + year_r), fill=(255, 255, 255))
+        draw.ellipse((timeline_x - year_r, year_center_y - year_r, timeline_x + year_r, year_center_y + year_r),
+                     fill=(255, 255, 255))
         draw.text((padding, y_offset), year, font=font_title, fill=(255, 255, 255))
         y_offset += year_h + 12
 
@@ -162,7 +204,11 @@ def render_schedule_image(groups: dict):
                 draw.line((timeline_x, start_y, timeline_x, end_y), fill=line_color, width=3)
 
             # 月份空心圆和文本
-            draw.ellipse((timeline_x - month_r, month_center_y - month_r, timeline_x + month_r, month_center_y + month_r), outline=line_color, width=2)
+            draw.ellipse(
+                (timeline_x - month_r, month_center_y - month_r, timeline_x + month_r, month_center_y + month_r),
+                outline=line_color,
+                width=2
+            )
             draw.text((padding + 20, y_offset), month, font=font_small, fill=(200, 200, 200))
             y_offset += month_h + 10
 

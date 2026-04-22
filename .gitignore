@@ -64,8 +64,10 @@ venv.bak/
 # 数据库/日志
 *.log
 local_settings.py
+*.db
 db.sqlite3
 db.sqlite3-journal
+migrations
 
 # Flask
 instance/
@@ -131,5 +133,4 @@ menu_config/
 .vscode/
 *.ttf
 *.png
-/migrations/
 /cache/

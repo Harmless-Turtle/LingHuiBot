@@ -1,1 +1,5 @@
-from . import commands,check_file,furry,furrybar,furryfusion
+from . import (
+    furry,
+    furrybar,
+    furryfusion
+)

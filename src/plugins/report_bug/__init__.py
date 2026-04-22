@@ -1,1 +1,1 @@
-from .report_bug import *
+from . import report_bug

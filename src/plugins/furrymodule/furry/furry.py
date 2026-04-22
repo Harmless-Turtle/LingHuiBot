@@ -2,9 +2,12 @@ import os
 import shutil
 import time
 from pathlib import Path
+import random as rd
 
 import httpx
-from nonebot import logger
+import jwt
+from httpx import NetworkError
+from nonebot import logger, get_driver
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     MessageSegment,
@@ -15,15 +18,13 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from src.plugins import utils
-from src.plugins.utils import get_api_httpx
 from ..check_file import (
     FONT_PATH,
     temp_image_path,
     DATA_PATH
 )
-
 from ..commands import (
+    see_furry,
     furry_random,
     furry_picture,
     furry_list,
@@ -33,6 +34,13 @@ from ..commands import (
     check_upload_decide,
     upload_clear
 )
+from ...utils import (
+    get_api_httpx,
+    batch_get,
+    handle_errors,
+    handle_json,
+    generate_text_image
+)
 
 # 定义全局变量
 login_cookie = {}
@@ -40,19 +48,24 @@ timeout = None
 count = 0
 set_count = 0
 API_BASE_URL = "https://cloud.foxtail.cn/api"
-
+try:
+    see_furry_baseURL = get_driver().config.furry_see_furry
+    secret_key = get_driver().config.furry_see_furry_key
+except AttributeError:
+    see_furry_baseURL = None
+    logger.warning("未读取到鉴毛API，鉴毛功能可能不可用！")
 
 @furry_random.handle()
-@utils.handle_errors
+@handle_errors
 async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
-    args = str(args)
-    if args == "":
+    user_message = str(args)
+    if user_message == "":
         data = await get_api_httpx("function/random", service="furry")
     else:
         try:
-            data = await get_api_httpx(f"function/pictures?picture={int(args)}&model=1", service="furry")
+            data = await get_api_httpx(f"function/pictures?picture={int(user_message)}&model=1", service="furry")
         except ValueError:
-            data = await get_api_httpx(f"function/random?name={args}", service="furry")
+            data = await get_api_httpx(f"function/random?name={user_message}", service="furry")
     code = data["code"]  # 获取数据中的code变量，即状态码
     msg = data["msg"]  # 获取数据中的msg变量，即信息
     if code == "20600":
@@ -84,7 +97,7 @@ async def random_furry_image(matcher: Matcher, event: MessageEvent, args: Messag
 # 使用PicFurry响应器的handle装饰器装饰函数PicFur_handle_function
 
 @furry_picture.handle()
-@utils.handle_errors
+@handle_errors
 async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     sid = str(args)
     if sid == "":
@@ -112,7 +125,7 @@ async def pic_fur_handle_function(matcher: Matcher, event: MessageEvent, args: M
 
 
 @furry_list.handle()
-@utils.handle_errors
+@handle_errors
 async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     name = str(args)
     original_data = await get_api_httpx(f"function/pulllist?type=&name={name}", service="furry", request_mode="get")
@@ -131,7 +144,7 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
         user_qq = event.user_id
         stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
-        items.append(await utils.batch_get(f"共获取到了{list_length}条消息，下面为列表。", None, event.self_id, nickname))
+        items.append(await batch_get(f"共获取到了{list_length}条消息，下面为列表。", None, event.self_id, nickname))
         for i in range(0, list_length):
             now_data = data[i]
             name = now_data['name']
@@ -140,7 +153,7 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
             if suggest == "":
                 suggest = "该图片暂无留言"
             temp = f"名字：{name}\nid：{pic_id}\n留言：{suggest}\n=======================\n"
-            make_text = await utils.batch_get(temp, None, event.self_id, nickname)
+            make_text = await batch_get(temp, None, event.self_id, nickname)
             items.append(make_text)
             text += temp
         if list_length < 100:
@@ -151,7 +164,7 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
                            time_noend=True)
 
         # 优化后的图片生成部分
-        image = utils.generate_text_image(text, FONT_PATH)
+        image = generate_text_image(text, FONT_PATH)
         image.save(temp_image_path)
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"共获取到了{list_length}条消息：" + MessageSegment.image(
@@ -159,10 +172,10 @@ async def furry_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args:
 
 
 @furry_status.handle()
-@utils.handle_errors
+@handle_errors
 async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
-    args = str(args)
-    get_resp = await get_api_httpx(f"function/pictures?picture={args}&model=1", service="furry", request_mode="get")
+    data = str(args)
+    get_resp = await get_api_httpx(f"function/pictures?picture={data}&model=1", service="furry", request_mode="get")
     examine_number, type_number = get_resp['examine'], get_resp['power']
     examine_name_list, type_name_list = [
         "待审核", "已通过审核", "已被审核拒绝"], ['设定', '毛图', '插画']
@@ -177,7 +190,7 @@ async def furry_status_function(matcher: Matcher, event: MessageEvent, args: Mes
 
 
 @service_status.handle()
-@utils.handle_errors
+@handle_errors
 async def service_furry_status(matcher: Matcher, event: MessageEvent):
     response = await get_api_httpx("information/feedback", service="furry", request_mode="get")
     code, msg = response['code'], response['msg']
@@ -197,40 +210,71 @@ async def service_furry_status(matcher: Matcher, event: MessageEvent):
 ========Service Status========""")
 
 
-# @See_Furry.handle()
-# async def See_Furry_Function(matcher:Matcher,bot:Bot,event: MessageEvent,args:Message = CommandArg()):
-#     try:
-#         a = httpx.get(
-#             "https://atlas.foxtail.cn/api/function/obtain",timeout=timeout).json()
-#         if args != None:
-#             if str(args).isdigit():
-#                 a = httpx.get(
-#                 f"https://atlas.foxtail.cn/api/function/obtain?data={int(str(args))}",timeout=timeout).json()
-#             else:
-#                 await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=f"{MessageSegment.reply(event.message_id)}输入类型错误，将随机获取。", time_noend=True)
-#         data = a['Data']
-#         Number = data['Number']
-#         name = data['name']
-#         Atlas = data['Atlas']
-#         await matcher.finish(MessageSegment.reply(event.message_id)+f"获取完成\nid：{Number}\n名字：{name}"+MessageSegment.image(Atlas))
-#     except MatcherException:  # 执行完成，接住抛出的FinishedException异常以结束本次事件执行
-#         # 注：此处必须要接住该异常，否则事件将无法正常结束。
-#         raise  # 什么都不需要做，接住就行
-#     except Exception as e:
-#         e = str(e)
-#         if "NetWorkError" in e:
-#             raise
-#         else:
-#             Error()
-#             await matcher.finish(f"在运行中遇到未知错误。\n错误已添加至错误日志中，请联系管理员进行检查或提供帮助。")
-
+@see_furry.handle()
+@handle_errors
+async def see_furry_function(
+        matcher:Matcher,
+        event: MessageEvent,
+        args:Message = CommandArg()):
+    if "#" not in str(args) and str(args) != "":
+        await matcher.finish()
+    params_data = {"all":"1"}
+    try:
+        input_data = str(args).split("#")
+        input_data = input_data[1]
+        splice_url = "search"
+        params_data['name'] = f"{input_data}"
+        if input_data.isdigit():
+            params_data.pop('name')
+            params_data['qishu'] = f"{input_data}"
+            splice_url = "qishu"
+    except IndexError:
+        splice_url = "random"
+    # 生成 JWT
+    payload = {
+        "qq": "1097740481",  # 用户唯一标识
+        "timestamp": int(time.time())  # 当前时间戳
+    }
+    token = jwt.encode(payload, secret_key, algorithm="HS256")
+    logger.debug(f"生成的 JWT: {token}")
+    logger.debug(f"最终生成的params数据：{params_data}")
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(f"{see_furry_baseURL}/{splice_url}",
+                                         json={"qq": payload["qq"],"token": token},
+                                         params=params_data,
+                                         timeout=timeout)
+    except NetworkError:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常，无法访问鉴毛API，请稍后再试。")
+    data = response.json()
+    if response.status_code != 200:
+        text = data['message']
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回：{text}[HTTP {response.status_code}]，请稍后再试。")
+    data = data['data']
+    select = rd.randint(0,len(data)-1)
+    data = data[select]
+    qishu = data['qishu']
+    name = data['name']
+    city = data['city']
+    race = data['race']
+    studio = data['studio']
+    by = data['by']
+    image_url = data['url']
+    if image_url == "":
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回了数据，但似乎没有图片URL，请稍后再试。")
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"期数：{qishu}\n"
+                                                                f"名字：{name}\n"
+                                                                f"城市：{city}\n"
+                                                                f"种族：{race}\n"
+                                                                f"工作室：{studio}\n"
+                                                                f"图片制作：{by}"+MessageSegment.image(image_url))
 
 @check_upload.handle()
-@utils.handle_errors
+@handle_errors
 async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
     data_list, items = [], []
-    data_list = utils.handle_json(Path(DATA_PATH) / "upload_data.json", 'r')
-    if data_list == []:
+    data_list = handle_json(Path(DATA_PATH) / "upload_data.json", 'r')
+    if not data_list:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前投图待审核列表是空的")
     data_len = len(data_list)
     type_text = ['设定', '毛图', '插画']
@@ -252,30 +296,30 @@ async def check_upload_list(matcher: Matcher, event: GroupMessageEvent, bot: Bot
         user_qq = event.user_id
         stranger_info = await bot.call_api('get_stranger_info', user_id=user_qq, time_noend=True)
         nickname = stranger_info.get('nickname', '昵称获取失败')
-        make_text = await utils.batch_get(text, picture_url, event.self_id, nickname)
+        make_text = await batch_get(text, picture_url, event.self_id, nickname)
         items.append(make_text)
     logger.info(items)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=items, time_noend=True)
 
 
 @check_upload_decide.handle()
-@utils.handle_errors
+@handle_errors
 async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     await matcher.send("将通过凌辉Bot内置账户进行处理")
     data_message = event.get_message()
-    args = str(args)
-    args = args.split("#")
-    temp_args = args
-    args = int(args[0])
-    items = utils.handle_json(Path(DATA_PATH) / "upload_data.json", 'r')
+    user_message = str(args)
+    user_message = user_message.split("#")
+    temp_args = user_message
+    user_message = int(user_message[0])
+    items = handle_json(Path(DATA_PATH) / "upload_data.json", 'r')
     logger.info(items)
     logger.info(temp_args)
-    if args > len(items):
+    if user_message > len(items):
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "错误：输入的值超出列表项目\n请确认列表项目后重试。")
-    if items == []:
+    if not items:
         await matcher.finish(MessageSegment.reply(event.message_id) + "遇到问题：似乎没有待审核的图片。")
-    data_normal = items[args - 1]
+    data_normal = items[int(str(user_message)) - 1]
     pic_url = data_normal['picture_url']
     time_wait = data_normal['time']
     upload_time = time.localtime(int(time_wait))
@@ -290,8 +334,8 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
         suggest = "未填写"
     del data_normal['picture_url'], data_normal['group_id'], data_normal['upload_account'], data_normal['time']
     if "拒绝" in str(data_message):
-        del items[args - 1]
-        utils.handle_json(Path(DATA_PATH) / "upload_data.json", 'w', items)
+        del items[int(str(user_message)) - 1]
+        handle_json(Path(DATA_PATH) / "upload_data.json", 'w', items)
 
         data_message = str(data_message)
         if data_message.count("#") != 2:
@@ -335,8 +379,8 @@ async def check_upload_decision(matcher: Matcher, event: GroupMessageEvent, bot:
 ======服务器数据=======
 您的数字id：{pic_id}
 您的图片码：{picture}"""
-        del items[args - 1]
-        utils.handle_json(Path(DATA_PATH) / "upload_data.json", 'w', items)
+        del items[int(str(user_message)) - 1]
+        handle_json(Path(DATA_PATH) / "upload_data.json", 'w', items)
         if event.group_id != group_id:
             await bot.call_api("send_group_msg", group_id=group_id, message=f"""凌辉Bot管理员已经同意了来自{account}的投图请求，请等待兽云祭管理员进行审核
 上载图片：""" + MessageSegment.image(f"{pic_url}") + f"""数字id：{pic_id}

@@ -1,29 +1,28 @@
-import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
 from nonebot.adapters import Message
 from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.matcher import Matcher
+from nonebot.message import event_postprocessor
 from nonebot.params import CommandArg, Depends
-from nonebot.plugin.on import on_command, on_message
-from nonebot.rule import is_type, startswith
+from nonebot.plugin.on import on_command
 
-from src.plugins import utils
 from .models import (
     UserBirthday,
     GroupSettings,
     UserGroupUsage,
     get_or_create_user_birthday,
-    delete_user_birthday as delete_user_birthday_dep,
+    delete_user_birthday,
     get_or_create_group_settings,
     inc_user_group_usage_today,
 )
+from .. import utils
 
 toggle_birthday_feature = on_command("生日祝贺", priority=5, block=True)
 set_birthday = on_command("我的生日是", priority=5, block=True)
 delete_birthday = on_command("删除我的生日", priority=5, block=True)
-birthday_greeting_responder = on_message(rule=startswith("生日快乐", False), priority=5, block=True)
-track_user_group_usage = on_message(is_type(GroupMessageEvent), priority=5, block=False)
+birthday_greeting_responder = on_command("生日快乐", priority=5, block=True)
 
 
 @set_birthday.handle()
@@ -34,7 +33,7 @@ async def _set_birthday(
 ):
     text = args.extract_plain_text().strip()
     try:
-        parsed_birthday = datetime.datetime.strptime(text, "%m-%d")
+        parsed_birthday = datetime.strptime(text, "%m-%d")
         user_birthday.birthday_date = parsed_birthday.date()
         await matcher.send(f"你的生日已设置为 {parsed_birthday.strftime('%m-%d')}")
     except ValueError:
@@ -42,7 +41,10 @@ async def _set_birthday(
 
 
 @delete_birthday.handle()
-async def _delete_birthday(matcher: Matcher, deleted: Annotated[bool, Depends(delete_user_birthday_dep)]):
+async def _delete_birthday(
+        matcher: Matcher,
+        deleted: Annotated[bool, Depends(delete_user_birthday)]
+):
     if not deleted:
         await matcher.send("你还没有设置生日呢。")
     else:
@@ -69,9 +71,9 @@ async def _birthday_greeting_responder(
     if group_msg != "生日快乐" or not group_settings.enable:
         return
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.now(timezone.utc)
     last_ts = group_settings.last_reply_ts
-    if last_ts is not None and (now - last_ts) < datetime.timedelta(minutes=20):
+    if last_ts is not None and (now - last_ts) < timedelta(minutes=20):
         return
 
     await matcher.send("生日快乐")
@@ -81,7 +83,8 @@ async def _birthday_greeting_responder(
     group_settings.last_reply_ts = now
 
 
-@track_user_group_usage.handle()
-async def _track_user_group_usage(_user_group_usage: Annotated[UserGroupUsage, Depends(inc_user_group_usage_today)]):
+@event_postprocessor
+async def _track_user_group_usage(
+        _user_group_usage: Annotated[UserGroupUsage, Depends(inc_user_group_usage_today)]
+):
     pass
-

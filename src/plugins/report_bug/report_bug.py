@@ -9,7 +9,7 @@ from nonebot.message import run_postprocessor
 
 # --- 配置 ---
 EXCLUDE_COMMANDS = {"bug反馈", "报告bug"}
-MAX_HISTORY = 30  # 适当增加历史容量以应对高频交互
+MAX_HISTORY = 5  # 适当增加历史容量以应对高频交互
 
 
 RATE_LIMIT_WINDOW = 60
@@ -41,7 +41,7 @@ async def record_actual_commands(event: MessageEvent):
 
 # --- 2. 记录 Bot 发送 (Bot 侧) ---
 @BaseBot.on_called_api
-async def handle_api_result(bot: BaseBot, exception: Exception | None, api: str, data: Dict[str, Any]):
+async def handle_api_result(bot: BaseBot, exception: Exception | None, api: str, data: Dict[str, Any], result: Any):
     if api in ["send_msg", "send_group_msg", "send_private_msg"] and exception is None:
         raw_output = data.get("message")
         content = str(Message(raw_output)) if raw_output else ""
