@@ -19,10 +19,9 @@ from src.plugins.entertainment.check_files import memes_make_path
 from src.plugins.utils import handle_errors, at_is_true
 from .tools import check_memes_func, download_avatar
 from .meme_list_tools import build_meme_groups, render_meme_list_image, add_meme_list_footer
+from ..commands import meme_matcher,meme_list_matcher
 
 
-meme_matcher = on_command("制作表情", aliases={"memes"})
-meme_list_matcher = on_command("表情列表", aliases={"meme列表", "memelist"})
 
 
 # ────────────────────────────────────────────────────────────
