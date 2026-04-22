@@ -12,7 +12,8 @@ import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment,GroupMessageEvent
+from nonebot.params import CommandArg
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 
@@ -400,3 +401,41 @@ def ensure_files_exist(file_path: list[Path], description: str, normal_data: lis
                     logger.error(f"[{description}] {path} 创建失败 | Error: {e}")
 
     logger.info(f"[{description}] 所有的文件及路径自检完毕。")
+
+
+async def at_is_true(
+        event: GroupMessageEvent,
+        args:Message = CommandArg()
+):
+    """
+
+    Args:
+        event: 注入依赖项：GroupMessageEvent
+        args: 注入依赖项：Message = CommandArg()
+
+    Returns:
+        str:
+         可能的情况：
+
+        返回“finish”[str]：指用户提供的文本既无真实AT消息段，纯文本也没有包含“@”符号 -> 直接结束事件即可。
+
+        返回"illegal"[str]：用户提供的文本中没有真实AT消息段，但纯文本包含了“@”符号 -> 可能是用户复制了别人的AT指令但未正确使用，提示用户指令不合法。
+
+        返回用户id[str]：有效的AT段，返回的是被AT用户的id
+    """
+    plain_text = args.extract_plain_text().strip()
+    # 检查消息段中是否包含真实的 AT
+    has_real_at = any(seg.type == "at" for seg in args)
+    # 拦截逻辑：既没有真实 AT，也没有包含 "@" 符号的文本
+    if not (has_real_at or "@" in str(plain_text)):
+        return "finish"
+    target_id = None
+    # 获取at的用户
+    for msg_seg in event.original_message:
+        if msg_seg.type == 'at':
+            target_id = msg_seg.data['qq']
+            break
+    # 检查是否存在 at
+    if not target_id and "@" in (str(event.raw_message)):
+        return "illegal"
+    return str(target_id)

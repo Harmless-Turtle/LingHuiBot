@@ -1,22 +1,55 @@
+import io
+from pathlib import Path
+
+import httpx
+
 from nonebot.utils import run_sync
-from meme_generator import Image, get_meme
+from meme_generator import (
+    get_meme,
+    search_memes
+)
+from PIL import Image
 
 
-# 这是一个纯同步的函数，专门负责执行耗时的生成操作
-def _generate_meme_sync(meme_key: str):
+def _generate_meme_sync(meme_key: str, image_bytes: bytes):
     meme = get_meme(meme_key)
     if meme is None:
         raise RuntimeError("meme not found: petpet")
 
-    result = meme.generate_preview({"circle": True})
+    # 将传入的 bytes 数据转换为 meme-generator 可用的 Image 对象
+    img = Image.open(io.BytesIO(image_bytes))
+
+    # 将图片列表传给 generate_preview
+    result = meme.generate_preview()
 
     if isinstance(result, bytes):
-        with open("preview.gif", "wb") as f:
-            f.write(result)
+        return result
     else:
         raise RuntimeError(str(result))
 
-# 这是一个给 NoneBot 调用的异步入口
-async def generate_meme(meme_key: str):
-    # 使用 run_sync 将同步函数放入线程池运行
-    return await run_sync(_generate_meme_sync)(meme_key)
+async def generate_meme(meme_key: str, image_bytes: bytes):
+    return await run_sync(_generate_meme_sync)(meme_key, image_bytes)
+
+async def check_memes_func(meme_key: str):
+    """
+
+    Args:
+        meme_key: 传入要查找的meme标签，接受中文
+
+    Returns:
+        meme.Image对象
+
+    """
+    meme = search_memes(meme_key, True)
+    if meme is None:
+        raise RuntimeError(f"meme not found: {meme}")
+    if len(meme) >= 100:
+        raise RuntimeError(f"No args")
+    return get_meme(f"{meme[0]}")
+
+async def download_avatar(user_id: str,target_dir: Path):
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"http://q.qlogo.cn/headimg_dl?dst_uin={user_id}&spec=640&img_type=jpg")
+    with open(target_dir, 'wb') as f:
+        f.write(resp.content)
+        return
