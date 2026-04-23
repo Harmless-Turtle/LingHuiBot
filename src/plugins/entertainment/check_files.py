@@ -61,13 +61,15 @@ utils.ensure_files_exist(
 )
 
 ########################
-#      抢银行自检        #
+#      抢劫功能自检        #
 ########################
 bank_robbery_time_path = path_header / "entertainment" / "bank" / "bank_robbery.json"
+robbery_time_path = path_header / "entertainment" / "bank" / "robbery_time.json"
 utils.ensure_files_exist(
     [
         bank_robbery_time_path,
+        robbery_time_path
     ],
     "抢银行计时器文件自检",
-    [{}]
+    [{},{}]
 )
