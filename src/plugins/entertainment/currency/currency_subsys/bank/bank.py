@@ -121,7 +121,7 @@ async def _bank_robbery(
     elif user_id == str(event.user_id):
         await matcher.finish(MessageSegment.reply(event.message_id) + "你不能打劫你自己哦！")
     # 生成随机数用来判断是否打劫银行成功
-    correct = rd.randint(3, 3)
+    correct = rd.randint(1, 10)
     # 获取当前时间
     now_time = int(time.time())
     # 获取计数器信息
