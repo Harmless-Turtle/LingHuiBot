@@ -155,19 +155,12 @@ async def _bank_robbery(
         if robbery_user_coin < 100:
             await matcher.finish(MessageSegment.reply(event.message_id)+"对方银行的墨辉币似乎都不够你打劫的awa")
         # 打劫成功，扣除用户的银行存款
-        await bank_operation(
+        await transfer_money(
             session=session,
             user_id=str(user_id),
-            amount=robbery_user_coin,
-            operation="remove"
+            to_user_id=str(event.user_id),
+            amount=robbery_user_coin
         )
-        await bank_operation(
-            session=session,
-            user_id=str(event.user_id),
-            amount=robbery_user_coin,
-            operation="save"
-        )
-        await session.commit()
         self_coin = await get_bank_coin(session=session, user_id=str(event.user_id))
         result_text = f"打劫成功了捏uwu\n你劫走了对方银行的{robbery_user_coin}个墨辉币并存到了你自己的银行uwu\n你的银行现在还有{self_coin}个墨辉币捏~\n您需要等待48小时后才可以继续抢劫别人的银行awa"
     handle_json(bank_robbery_time_path,'w',time_data)

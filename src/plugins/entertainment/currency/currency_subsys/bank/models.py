@@ -104,4 +104,5 @@ async def transfer_money(
         return "你的存款好像不足以转账呢qwq"
     user_obj.bank_coin -= amount
     to_user_obj.bank_coin += amount
+    await session.commit()
     return "转账的操作成功了捏~"
