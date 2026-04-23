@@ -136,7 +136,11 @@ async def _bank_robbery(
         if now_time - user_data['time'] >= duration:
             del time_data[str(event.user_id)]
         else:
-            await matcher.finish(MessageSegment.reply(event.message_id)+f"你还在打劫别人银行的冷却时间内呢，不要这么贪心嘛qwq")
+            if user_data['disturb']:
+                time_data[str(event.user_id)]["disturb"] = False
+                handle_json(bank_robbery_time_path,'w',time_data)
+                await matcher.finish(MessageSegment.reply(event.message_id)+f"你还在打劫别人银行的冷却时间内呢，不要这么贪心嘛qwq\n此消息仅会发送1次，直至时间足够刷新。")
+            await matcher.finish()
     # 匹配到失败的情况
     if correct != 3:
         time_data[f"{event.user_id}"] = {
@@ -148,7 +152,8 @@ async def _bank_robbery(
     else:
         time_data[f"{event.user_id}"] = {
             "time":int(time.time()),
-            "robbery_mode":"success"
+            "robbery_mode":"success",
+            "disturb":True
         }
         # 获取被打劫银行用户的obj事务
         robbery_user_coin = int(await get_bank_coin(session=session, user_id=str(user_id)) * 0.1)
