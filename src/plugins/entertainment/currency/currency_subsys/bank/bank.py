@@ -36,6 +36,7 @@ async def bank_save(
             user_id=str(event.user_id),
             amount=amount,
             operation="save")
+    await session.commit()
     await matcher.finish(MessageSegment.reply(event.message_id)+text)
 
 @bank_remove.handle()
@@ -55,6 +56,7 @@ async def bank_remove(
             user_id=str(event.user_id),
             amount=amount,
             operation="remove")
+    await session.commit()
     await matcher.finish(MessageSegment.reply(event.message_id)+text)
 
 @bank_transfer.handle()
