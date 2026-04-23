@@ -1,6 +1,5 @@
 import random as rd
 import time
-from itertools import count
 
 from nonebot.adapters.onebot.v11 import Bot,GroupMessageEvent, MessageSegment,Message
 from nonebot.internal.matcher import Matcher
@@ -37,6 +36,29 @@ async def _robbery(
         await matcher.finish(MessageSegment.reply(event.message_id) + "你为什么要打劫自己（歪头")
     elif target_id == f"{event.self_id}":
         await matcher.finish(MessageSegment.reply(event.message_id) + "打劫机器人干什么QAQ...")
+    elif target_id == "finish":
+        await matcher.finish()
+    elif target_id == "illegal":
+        await matcher.finish(MessageSegment.reply(event.message_id) + "请输入正确的用户ID或者at对象捏")
+    # 初始化数据
+    count = 0
+    now_time = int(time.time())
+    time_data = handle_json(robbery_time_path,'r')
+    # 尝试获取用户状态
+    user_data = time_data.get(str(event.user_id), {})
+    # 如果用户状态存在，则进入判断
+    if user_data:
+        # 获取计数器
+        count = user_data['count']
+        if count >= 5:
+            if user_data['disturb']:
+                time_data[f'{event.user_id}']['disturb'] = False
+                handle_json(robbery_time_path,'w',time_data)
+                await matcher.finish(MessageSegment.reply(event.message_id) +"你今天已经抢太多次啦，休息一下吧uwu\n此消息仅会发送1次，直至时间足够刷新。")
+            await matcher.finish()
+        # 统一判断并删除
+        if now_time - user_data['time'] >= 86400:
+            del time_data[str(event.user_id)]
     elif target_id == "finish":
         await matcher.finish()
     elif target_id == "illegal":

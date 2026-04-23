@@ -145,7 +145,8 @@ async def _bank_robbery(
     if correct != 3:
         time_data[f"{event.user_id}"] = {
             "time":int(time.time()),
-            "robbery_mode":"failure"
+            "robbery_mode":"failure",
+            "disturb": True
         }
         result_text = "打劫失败了捏qwq\n你需要等待24小时后才可以继续抢劫别人的银行awa"
     # 否则匹配成功的情况。
@@ -153,7 +154,7 @@ async def _bank_robbery(
         time_data[f"{event.user_id}"] = {
             "time":int(time.time()),
             "robbery_mode":"success",
-            "disturb":True
+            "disturb": True
         }
         # 获取被打劫银行用户的obj事务
         robbery_user_coin = int(await get_bank_coin(session=session, user_id=str(user_id)) * 0.1)
