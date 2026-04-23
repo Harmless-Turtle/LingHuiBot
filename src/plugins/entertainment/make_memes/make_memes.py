@@ -1,6 +1,5 @@
 from io import BytesIO
 
-from nonebot import on_command
 from nonebot.adapters.onebot.v11 import MessageSegment, Message, GroupMessageEvent
 from nonebot.params import CommandArg
 from meme_generator import (

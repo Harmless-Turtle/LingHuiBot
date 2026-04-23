@@ -60,7 +60,6 @@ async def bank_operation(
         # 操作用户数据
         work_capital_obj.mohui_coin -= amount
         bank_obj.bank_coin += amount
-        await session.close()
         return f"操作成功完成，存入银行{amount}个墨辉币，目前银行余额为{bank_obj.bank_coin}个墨辉币"
     # 取款操作
     elif operation == "remove":
@@ -70,7 +69,6 @@ async def bank_operation(
         # 操作用户数据
         work_capital_obj.mohui_coin += amount
         bank_obj.bank_coin -= amount
-        await session.close()
         return f"操作成功完成，从银行取出了{amount}个墨辉币，目前银行余额为{bank_obj.bank_coin}个墨辉币。"
     else:
         return "操作失败，未知的操作类型，请使用'save'或'remove'作为操作类型。"
