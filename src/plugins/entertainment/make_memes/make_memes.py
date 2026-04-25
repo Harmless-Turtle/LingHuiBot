@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from nonebot.adapters.onebot.v11 import MessageSegment, Message, GroupMessageEvent
-from nonebot.params import CommandArg
+from nonebot.params import CommandArg,RawCommand
 from meme_generator import (
     Image,
     ImageNumberMismatch,
@@ -18,7 +18,7 @@ from src.plugins.entertainment.check_files import memes_make_path
 from src.plugins.utils import handle_errors, at_is_true
 from .tools import check_memes_func, download_avatar
 from .meme_list_tools import build_meme_groups, render_meme_list_image, add_meme_list_footer
-from ..commands import meme_matcher,meme_list_matcher
+from ..commands import meme_matcher, meme_list_matcher
 
 
 
@@ -47,18 +47,23 @@ async def handle_meme_list(event: GroupMessageEvent):
 @handle_errors
 async def handle_meme(
         event: GroupMessageEvent,
-        args: Message = CommandArg()
+        args: Message = CommandArg(),
+        raw_cmd = RawCommand()
 ):
     plain = args.extract_plain_text().strip()
     tokens = plain.split()
-    if not tokens:
-        await meme_matcher.finish(MessageSegment.reply(event.message_id)+
+    if raw_cmd in ("摸",):
+        meme_key_input = 'petpet'
+        user_texts = []
+    elif not tokens:
+        await meme_matcher.finish(
+            MessageSegment.reply(event.message_id) +
             "用法：制作表情 <表情名> [文字1] [文字2] ...\n"
             "发送\"表情列表\"可查看所有可用表情及其所需参数。"
         )
-
-    meme_key_input = tokens[0]
-    user_texts = tokens[1:]
+    else:
+        meme_key_input = tokens[0]
+        user_texts = tokens[1:]
 
     meme = await check_memes_func(meme_key_input)
     if isinstance(meme, RuntimeError):

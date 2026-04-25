@@ -64,7 +64,7 @@ bank_robbery = on_command("抢银行",block=True)
 #########################
 #                 表情包制作 触发器                   #
 #########################
-meme_matcher = on_command("制作表情", aliases={"表情制作"})
+meme_matcher = on_command("制作表情", aliases={"表情制作","摸"})
 meme_list_matcher = on_command("表情列表", aliases={"meme列表", "memelist"})
 
 
