@@ -1,1 +1,1 @@
-from . import robbery,guess_number,bank
+from . import robbery,guess_number,bank,fishing
