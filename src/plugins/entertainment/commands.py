@@ -51,7 +51,7 @@ ranking_coin = on_command("墨辉币排行")
 
 
 #########################
-#                 货币子系统 触发器                   #
+#             货币子系统<银行> 触发器               #
 #########################
 robbery = on_command("抢劫",aliases={"打劫"},block=True)
 guess_number = on_command("猜数字",aliases={"猜数"},block=True)
@@ -60,6 +60,13 @@ bank_save = on_command("存钱",block=True)
 bank_remove = on_command("取钱",aliases={"取款"},block=True)
 bank_money = on_command("存款",aliases={"我的存款"},block=True)
 bank_robbery = on_command("抢银行",block=True)
+
+#########################
+#             货币子系统<钓鱼> 触发器               #
+#########################
+fishing_downswing = on_command("钓鱼",block=True)
+buy_fishing_hook = on_command("购买鱼钩")
+
 
 #########################
 #                 表情包制作 触发器                   #

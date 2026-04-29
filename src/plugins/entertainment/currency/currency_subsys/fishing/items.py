@@ -1,4 +1,8 @@
 class FishingRod:
+    all_rod = {
+        "name": ["竹竿","碳素杆","竞技杆","凌辉神竿"],
+        "price": ["basic_fishing_rod","intermediate_fishing_rod","advanced_fishing_rod","maximal_fishing_rod"]
+    }
     basic_fishing_rod = {
         "level":1,
         "name":"竹竿",
@@ -29,6 +33,10 @@ class FishingRod:
     }
 
 class FishingHook:
+    all_hook = {
+        "name": ["铁钩", "银钩", "金钩", "幸运钩"],
+        "price": ["basic_fishhook", "intermediate_fishhook", "advanced_fishhook", "maximal_fishhook"]
+    }
     basic_fishhook = {
         "level":1,
         "name":"铁钩",

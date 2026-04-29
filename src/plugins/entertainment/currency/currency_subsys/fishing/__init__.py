@@ -1,1 +1,1 @@
-from . import fishing,models
+from . import fishing
