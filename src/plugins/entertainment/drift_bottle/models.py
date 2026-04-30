@@ -4,8 +4,7 @@ from nonebot_plugin_orm import Model, async_scoped_session
 from sqlalchemy import ForeignKey, Date, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.plugins.database.models import Users,Groups
-
+from src.plugins.database.models import Users, Groups
 
 
 class DriftBottleModel(Model):
@@ -22,7 +21,7 @@ class DriftBottleModel(Model):
     time: Mapped[date | str | None] = mapped_column(Date(), nullable=True)
 
 
-async def add_drift_bottle(session: async_scoped_session, user_id: str,group_id: str,drift_bottle_data: str):
+async def add_drift_bottle(session: async_scoped_session, user_id: str, group_id: str, drift_bottle_data: str):
     """
     添加用户抛出的漂流瓶在数据库中作为备份
     """

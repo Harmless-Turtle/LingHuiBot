@@ -10,6 +10,7 @@ class UserBlacklist(Model):
         UniqueConstraint("user_id", name="user_blacklist_uc"),
     )
 
+
 class GroupBlacklist(Model):
     group_id: Mapped[str] = mapped_column(String(20), primary_key=True)
 

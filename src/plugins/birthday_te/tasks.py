@@ -3,11 +3,10 @@ from datetime import date
 import nonebot
 from nonebot.adapters.onebot.v11 import MessageSegment
 from nonebot_plugin_apscheduler import scheduler
-from sqlalchemy import select
 from nonebot_plugin_orm import get_session
+from sqlalchemy import select
 
 from .models import GroupSettings, UserBirthdayData
-
 
 driver = nonebot.get_driver()
 

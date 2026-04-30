@@ -14,6 +14,7 @@ class MoHuiCoinData(Model):
     # 金币数量，必须是整数，默认为 0
     mohui_coin: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
 
+
 async def get_user_coin(session: async_scoped_session, user_id: str) -> int:
     """
     查询用户的墨辉币余额。如果用户不存在，则自动创建一条余额为 0 的记录。

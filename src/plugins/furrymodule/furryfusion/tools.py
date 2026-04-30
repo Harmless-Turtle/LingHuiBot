@@ -119,6 +119,7 @@ def add_custom_footer(img: Image.Image) -> Image.Image:
 
     return final_img
 
+
 # ========= 图片生成 =========
 def render_schedule_image(groups: dict):
     width = 1080

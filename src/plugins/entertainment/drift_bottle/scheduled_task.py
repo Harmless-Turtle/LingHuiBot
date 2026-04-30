@@ -3,18 +3,18 @@ from pathlib import Path
 
 # 导入调度器
 from nonebot import require, get_bot, logger
-from nonebot.adapters.onebot.v11 import message
 
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 
 from src.plugins.utils import handle_json
-from src.plugins.entertainment.check_files import bottle_path,auto_path
+from src.plugins.entertainment.check_files import bottle_path, auto_path
+
 
 @scheduler.scheduled_job("cron", day="*/1", hour=10, minute=0, id="bottle")
 async def bottle_run():
     # 获取群聊开关数据
-    auto_switch = handle_json(auto_path,'r')
+    auto_switch = handle_json(auto_path, 'r')
     # 筛选出打开的群聊
     open_group_list = [group for group in auto_switch.keys() if auto_switch[group]]
     if not open_group_list:
@@ -30,9 +30,9 @@ async def bottle_run():
         word_list = handle_json(aword_path, 'r')
         result = word_list[rd.randint(0, len(word_list) - 1)]
         for open_group in open_group_list:
-            await bot.send_group_msg(group_id=open_group,message=f"大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
-                                                                 f"但是有一个一言的瓶子，送给群友捏w\n"
-                                                                 f"“{result}”")
+            await bot.send_group_msg(group_id=open_group, message=f"大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
+                                                                  f"但是有一个一言的瓶子，送给群友捏w\n"
+                                                                  f"“{result}”")
     # 检测到有数据，随机取一个值
     user = rd.choice(valid_users)
     result = rd.choice(data[user])
@@ -47,4 +47,5 @@ async def bottle_run():
     handle_json(bottle_path, 'w', data)
     # 循环发送
     for open_group in open_group_list:
-        await bot.send_group_msg(group_id=open_group, message=f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n署名是：“{nickname}”")
+        await bot.send_group_msg(group_id=open_group,
+                                 message=f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n署名是：“{nickname}”")

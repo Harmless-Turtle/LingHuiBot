@@ -15,10 +15,10 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
+from src.plugins.entertainment.currency.models import modify_user_coin, get_user_coin
 from .check_file import *
 from .commands import *
 from ..utils import handle_errors
-from src.plugins.entertainment.currency.models import modify_user_coin,get_user_coin
 
 # 获取机器人的名字
 config = get_driver().config
@@ -57,6 +57,7 @@ async def pc_function(matcher: Matcher):
         time_count = time.time()
         random_message = text_list[rd.randint(0, len(text_list) - 1)]
         await matcher.finish(f"{random_message}")
+
 
 @add_welcome.handle()
 @handle_errors
@@ -112,7 +113,7 @@ async def sign_in_function(
         matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
-        args:Message = CommandArg()
+        args: Message = CommandArg()
 ):
     # 若签到文本后有文本，则直接结束任务
     if args.extract_plain_text(): await matcher.finish()
@@ -348,8 +349,9 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
     select = a[f'meal{random_number}']
     await matcher.finish(MessageSegment.reply(event.message_id) + f"{a['mealwhat']}\n要不{select}吧！")
 
+
 @nc_version_info.handle()
-async def _version_info(bot:Bot,matcher:Matcher,event:MessageEvent):
+async def _version_info(bot: Bot, matcher: Matcher, event: MessageEvent):
     data = await bot.get_version_info()
     await matcher.finish(MessageSegment.reply(event.message_id) + f"当前使用的客户端实例：{data["app_name"]}\n"
                                                                   f"客户端实例版本号：{data['app_version']}\n"

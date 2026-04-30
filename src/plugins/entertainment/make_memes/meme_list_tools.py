@@ -82,18 +82,18 @@ def build_meme_groups() -> dict:
 # ────────────────────────────────────────────────────────────
 
 # 配色（与兽聚风格保持一致）
-_BG        = (22, 22, 28)
-_CARD_BG   = (35, 38, 48)
-_LINE_CLR  = (100, 100, 110)
-_WHITE     = (255, 255, 255)
-_GREY      = (180, 180, 180)
-_DIM       = (130, 130, 140)
+_BG = (22, 22, 28)
+_CARD_BG = (35, 38, 48)
+_LINE_CLR = (100, 100, 110)
+_WHITE = (255, 255, 255)
+_GREY = (180, 180, 180)
+_DIM = (130, 130, 140)
 
 # 卡片类型色
-_CLR_IMG   = (79, 129, 199)   # 需要图片 → 蓝色（与兽聚活动名一致）
-_CLR_TXT   = (120, 195, 140)  # 有文字    → 绿色
-_CLR_PURE  = (160, 120, 200)  # 纯文字表情 → 紫色
-_CLR_DFLT  = (243, 213, 22)   # 有默认文本 → 金色（与兽聚特殊聚会一致）
+_CLR_IMG = (79, 129, 199)  # 需要图片 → 蓝色（与兽聚活动名一致）
+_CLR_TXT = (120, 195, 140)  # 有文字    → 绿色
+_CLR_PURE = (160, 120, 200)  # 纯文字表情 → 紫色
+_CLR_DFLT = (243, 213, 22)  # 有默认文本 → 金色（与兽聚特殊聚会一致）
 
 
 def _card_accent(card: dict) -> tuple:
@@ -113,22 +113,22 @@ def render_meme_list_image(groups: dict) -> Image.Image:
     - 左侧时间轴（年实心圆 / 月空心圆 / 连接线）
     - 右侧多列卡片（3 列，每张 300×150）
     """
-    width   = 1080
+    width = 1080
     padding = 40
-    card_w  = 300
-    card_h  = 150
-    gap     = 30
-    cols    = 3  # 每行最多 3 列，比兽聚多一列（卡片内容更简短）
+    card_w = 300
+    card_h = 150
+    gap = 30
+    cols = 3  # 每行最多 3 列，比兽聚多一列（卡片内容更简短）
 
     font_title = ImageFont.truetype(FONT_PATH, 28)
     font_small = ImageFont.truetype(FONT_PATH, 20)
-    font_tiny  = ImageFont.truetype(FONT_PATH, 16)
+    font_tiny = ImageFont.truetype(FONT_PATH, 16)
 
     # ── 第一遍：预算总高度 ────────────────────────────────
     def _calc_height() -> int:
         y = padding
         for year in sorted(groups):
-            y += 70   # 年份行
+            y += 70  # 年份行
             for month, cards in groups[year].items():
                 y += 50  # 月份行
                 x = padding
@@ -144,22 +144,22 @@ def render_meme_list_image(groups: dict) -> Image.Image:
         return y
 
     total_h = _calc_height()
-    img  = Image.new("RGB", (width, total_h), _BG)
+    img = Image.new("RGB", (width, total_h), _BG)
     draw = ImageDraw.Draw(img)
 
     # ── 第二遍：绘制 ──────────────────────────────────────
-    y_offset    = padding
-    timeline_x  = padding - 20
-    year_r      = 8
-    month_r     = 6
+    y_offset = padding
+    timeline_x = padding - 20
+    year_r = 8
+    month_r = 6
     prev_node_y = None
     prev_node_r = None
 
     for year in sorted(groups):
         months = groups[year]
 
-        year_h      = font_title.getbbox(year)[3]
-        year_cy     = y_offset + year_h // 2
+        year_h = font_title.getbbox(year)[3]
+        year_cy = y_offset + year_h // 2
 
         # 连接上一节点到本年份圆
         if prev_node_y is not None:
@@ -175,12 +175,12 @@ def render_meme_list_image(groups: dict) -> Image.Image:
             fill=_WHITE
         )
         draw.text((padding, y_offset), year, font=font_title, fill=_WHITE)
-        y_offset   += year_h + 12
+        y_offset += year_h + 12
         prev_node_y = year_cy
         prev_node_r = year_r
 
         for month, cards in months.items():
-            month_h  = font_small.getbbox(month)[3]
+            month_h = font_small.getbbox(month)[3]
             month_cy = y_offset + month_h // 2
 
             # 连接上一节点到本月份圆
@@ -197,7 +197,7 @@ def render_meme_list_image(groups: dict) -> Image.Image:
                 outline=_LINE_CLR, width=2
             )
             draw.text((padding + 20, y_offset), month, font=font_small, fill=_GREY)
-            y_offset   += month_h + 10
+            y_offset += month_h + 10
             prev_node_y = month_cy
             prev_node_r = month_r
 
@@ -263,8 +263,8 @@ def add_meme_list_footer(img: Image.Image) -> Image.Image:
         f"                   合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
         "        排版制作：Design by LingHui  |  数据来源：meme-generator"
     )
-    footer_h  = 90
-    bg_color  = (22, 22, 28)
+    footer_h = 90
+    bg_color = (22, 22, 28)
     txt_color = (100, 100, 110)
 
     w, h = img.size

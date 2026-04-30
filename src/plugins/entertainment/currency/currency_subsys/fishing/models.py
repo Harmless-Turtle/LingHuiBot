@@ -1,12 +1,9 @@
 from typing import Optional
 
-from nonebot import logger
+from nonebot_plugin_orm import Model
 from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
-from nonebot_plugin_orm import Model
-from nonebot.internal.matcher import Matcher
-from nonebot.adapters.onebot.v11 import GroupMessageEvent,MessageSegment
 
 from src.plugins.database.models import Users
 
@@ -24,10 +21,10 @@ class FishingData(Model):
         String, default="basic_fishing_rod"
     )
     fish_hook: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, default=None        # 初始无鱼钩，需单独购买
+        String, nullable=True, default=None  # 初始无鱼钩，需单独购买
     )
     hook_durability: Mapped[int] = mapped_column(
-        default=0                                  # 购买鱼钩时写入耐久
+        default=0  # 购买鱼钩时写入耐久
     )
 
 
@@ -50,12 +47,12 @@ class FishingState(Model):
         ForeignKey(Users.id), primary_key=True
     )
     is_fishing: Mapped[bool] = mapped_column(Boolean, default=False)
-    lure_end_time: Mapped[float] = mapped_column(Float, default=0.0)   # 溜鱼结束时间
-    earliest_pull: Mapped[float] = mapped_column(Float, default=0.0)   # 最早收竿时间
-    latest_pull: Mapped[float] = mapped_column(Float, default=0.0)     # 最晚收竿时间
-    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False) # 提醒是否已发
-    base_wait: Mapped[int] = mapped_column(default=0)                  # 本次随机基础等待秒数
-    window_bonus: Mapped[int] = mapped_column(default=0)               # 本次鱼竿窗口加成
+    lure_end_time: Mapped[float] = mapped_column(Float, default=0.0)  # 溜鱼结束时间
+    earliest_pull: Mapped[float] = mapped_column(Float, default=0.0)  # 最早收竿时间
+    latest_pull: Mapped[float] = mapped_column(Float, default=0.0)  # 最晚收竿时间
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)  # 提醒是否已发
+    base_wait: Mapped[int] = mapped_column(default=0)  # 本次随机基础等待秒数
+    window_bonus: Mapped[int] = mapped_column(default=0)  # 本次鱼竿窗口加成
 
 
 # ==================== 内存锁（防止同一用户并发触发竞态）====================
@@ -68,8 +65,10 @@ _fishing_lock: set[str] = set()
 async def get_fishing_data(session: AsyncSession, user_id: str) -> type[FishingData] | None:
     return await session.get(FishingData, user_id)
 
+
 async def get_state(session: AsyncSession, user_id: str) -> type[FishingState] | None:
     return await session.get(FishingState, user_id)
+
 
 async def get_bait(session: AsyncSession, user_id: str) -> type[FishingBaitData] | None:
     return await session.get(FishingBaitData, user_id)
@@ -99,11 +98,12 @@ async def equip_rod(session: AsyncSession, user_id: str, rod_key: str) -> None:
     data.fish_rod = rod_key
     await session.commit()
 
+
 async def equip_hook(
-    session: AsyncSession,
-    user_id: str,
-    hook_key: str,
-    durability: int
+        session: AsyncSession,
+        user_id: str,
+        hook_key: str,
+        durability: int
 ) -> None:
     """
     更新玩家鱼钩并写入初始耐久。
@@ -114,10 +114,11 @@ async def equip_hook(
     data.hook_durability = durability
     await session.commit()
 
+
 async def reduce_hook_durability(
-    session: AsyncSession,
-    user_id: str,
-    amount: int = 1
+        session: AsyncSession,
+        user_id: str,
+        amount: int = 1
 ) -> bool:
     """
     扣除鱼钩耐久，耐久归零时自动卸下鱼钩。
@@ -143,11 +144,12 @@ BAIT_COLUMNS = {
     "maximal": "maximal_bait",
 }
 
+
 async def add_bait(
-    session: AsyncSession,
-    user_id: str,
-    bait_type: str,
-    amount: int
+        session: AsyncSession,
+        user_id: str,
+        bait_type: str,
+        amount: int
 ) -> None:
     """
     增加饵料。bait_type 取 "basic" / "intermediate" / "advanced" / "maximal"。
@@ -157,10 +159,11 @@ async def add_bait(
     setattr(bait, col, getattr(bait, col) + amount)
     await session.commit()
 
+
 async def consume_bait(
-    session: AsyncSession,
-    user_id: str,
-    bait_type: str = "basic"
+        session: AsyncSession,
+        user_id: str,
+        bait_type: str = "basic"
 ) -> bool:
     """
     消耗一个饵料。库存不足时返回 False，消耗成功返回 True。
@@ -178,11 +181,11 @@ async def consume_bait(
 # ==================== 钓鱼状态操作 ====================
 
 async def try_start_fishing(
-    session: AsyncSession,
-    user_id: str,
-    lure_end_time: float,
-    base_wait: int,
-    window_bonus: int,
+        session: AsyncSession,
+        user_id: str,
+        lure_end_time: float,
+        base_wait: int,
+        window_bonus: int,
 ) -> bool:
     """
     尝试开始钓鱼。
@@ -219,10 +222,10 @@ async def try_start_fishing(
 
 
 async def set_pull_window(
-    session: AsyncSession,
-    user_id: str,
-    earliest: float,
-    latest: float,
+        session: AsyncSession,
+        user_id: str,
+        earliest: float,
+        latest: float,
 ) -> None:
     """
     溜鱼结束后写入收竿时间窗口，并标记提醒已发送。
@@ -249,6 +252,7 @@ async def end_fishing(session: AsyncSession, user_id: str) -> None:
     state.window_bonus = 0
     await session.commit()
 
+
 async def process_fishing(session, user_id: str):
     """所有数据库读写和判断逻辑，作为内部使用事务"""
     async with session.begin():
@@ -263,7 +267,7 @@ async def process_fishing(session, user_id: str):
         elif fishing_data.hook_durability == 0:
             return "你的鱼钩好像损坏了呢qwq"
         elif bait_data.basic_bait == 0 or bait_data.intermediate_bait == 0 or bait_data.advanced_bait == 0 or bait_data.maximal_bait == 0:
-             return "你没有足够的饵料了呢qwq"
+            return "你没有足够的饵料了呢qwq"
         elif fishing_state.is_fishing:
             return "你已经在钓鱼了哦qwq"
     return False

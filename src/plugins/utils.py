@@ -12,8 +12,7 @@ import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment,GroupMessageEvent
-from nonebot.params import CommandArg
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment, GroupMessageEvent
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -27,7 +26,9 @@ if os.path.exists(FONT_PATH):
     logger.info(f"已找到字体文件: {FONT_PATH}")
 else:
     FONT_PATH = None
-    logger.warning(f"未找到字体文件: {FONT_PATH}，将使用默认字体，可能导致错误日志图片显示异常。请确保 {FONT_PATH} 存在以获得最佳体验。")
+    logger.warning(
+        f"未找到字体文件: {FONT_PATH}，将使用默认字体，可能导致错误日志图片显示异常。请确保 {FONT_PATH} 存在以获得最佳体验。")
+
 
 # 捕获并处理函数执行中的异常，生成错误日志并构造用户友好的反馈
 def handle_errors(func):
@@ -406,7 +407,7 @@ def ensure_files_exist(file_path: list[Path], description: str, normal_data: lis
 
 async def at_is_true(
         event: GroupMessageEvent,
-        args:Message = CommandArg()
+        args: Message = CommandArg()
 ):
     """
 

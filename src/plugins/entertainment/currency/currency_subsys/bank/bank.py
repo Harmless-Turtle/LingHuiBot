@@ -137,13 +137,13 @@ async def _bank_robbery(
     # 获取at用户
     try:
         # 校验消息段长度，@后会自动跟空格所以可能是三段
-        msg=event.original_message
+        msg = event.original_message
         if not 2 <= len(msg) <= 3:
             raise BankError("参数格式错误！格式：抢劫@<一个用户>")
 
         # 校验是否是 at
         at_seg = msg[1]
-        if not at_seg.type=="at":
+        if not at_seg.type == "at":
             raise InvalidTransferTarget("唔...似乎没有获取到你想要打劫的用户呢，请不要复制别人的at指令哦w")
 
         target_id = str(at_seg.data.get("qq"))

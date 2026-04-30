@@ -5,12 +5,11 @@ from src.plugins import utils
 # data路径作为全局变量使用
 path_header = Path.cwd() / "data"
 
-
 ########################
 #      结婚系统自检      #
 ########################
 # 定义路径变量
-marry_json_path = path_header / "entertainment"/ "marry_system" / 'marry.json'
+marry_json_path = path_header / "entertainment" / "marry_system" / 'marry.json'
 utils.ensure_files_exist(
     [
         marry_json_path,
@@ -18,7 +17,6 @@ utils.ensure_files_exist(
     "结婚系统自检",
     [{}]
 )
-
 
 ########################
 #      制作表情包自检        #
@@ -36,17 +34,16 @@ utils.ensure_files_exist(
 #      漂流瓶自检        #
 ########################
 # 定义路径变量
-bottle_path = path_header / "entertainment"/ "drift_bottle" / 'bottle.json'
-auto_path = path_header / "entertainment"/ "drift_bottle" / "auto_switch.json"
+bottle_path = path_header / "entertainment" / "drift_bottle" / 'bottle.json'
+auto_path = path_header / "entertainment" / "drift_bottle" / "auto_switch.json"
 utils.ensure_files_exist(
     [
         bottle_path,
         auto_path
     ],
     "漂流瓶文件自检",
-    [{},{}]
+    [{}, {}]
 )
-
 
 ########################
 #      漂流瓶自检        #
@@ -71,5 +68,5 @@ utils.ensure_files_exist(
         robbery_time_path
     ],
     "抢银行计时器文件自检",
-    [{},{}]
+    [{}, {}]
 )

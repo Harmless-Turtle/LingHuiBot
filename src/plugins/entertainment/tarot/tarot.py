@@ -1,21 +1,23 @@
-from nonebot.adapters.onebot.v11.event import GroupMessageEvent, PrivateMessageEvent, MessageEvent
-from nonebot.adapters.onebot.v11 import Bot, MessageSegment
-from typing import Dict, List, Set, Union
-from nonebot.params import CommandArg
-from nonebot.adapters import Message
-from nonebot.matcher import Matcher
-from nonebot import on_command
-from pathlib import Path
-from io import BytesIO
-from PIL import Image
-import ujson as json
 import random
+from io import BytesIO
+from pathlib import Path
+from typing import Dict, List, Set, Union
 
-from ..commands import tarot,divine
+import ujson as json
+from PIL import Image
+from nonebot.adapters import Message
+from nonebot.adapters.onebot.v11 import Bot, MessageSegment
+from nonebot.adapters.onebot.v11.event import GroupMessageEvent, PrivateMessageEvent, MessageEvent
+from nonebot.matcher import Matcher
+from nonebot.params import CommandArg
+
 from src.plugins.utils import handle_errors
+from ..commands import tarot, divine
 
 tarot_path: Path = Path(__file__).parent / "resource"
 tarot_official_themes: List[str] = ["BilibiliTarot", "TouhouTarot"]
+
+
 # __tarot_version__ = "v0.4.0.post4"
 # __tarot_usages__ = f'''
 # 塔罗牌 {__tarot_version__}
@@ -24,6 +26,7 @@ tarot_official_themes: List[str] = ["BilibiliTarot", "TouhouTarot"]
 
 class EventNotSupport(Exception):
     pass
+
 
 @tarot.handle()
 @handle_errors
@@ -36,21 +39,21 @@ async def _(matcher: Matcher, event: MessageEvent, args: Message = CommandArg())
     # 2. 从所有塔罗牌信息中随机出一张
     with open(Path(__file__).parent / "resource/tarot.json", 'r', encoding='utf-8') as f:
         content = json.load(f)
-        all_cards = content.get("cards")    # 所有的塔罗牌信息
-    
+        all_cards = content.get("cards")  # 所有的塔罗牌信息
+
     if theme == "BilibiliTarot":
         sub_types: List[str] = ["MajorArcana", "Cups", "Pentacles", "Sowrds", "Wands"]
 
     if theme == "TouhouTarot":
         sub_types: List[str] = ["MajorArcana"]
-    
+
     subset: Dict[str, Dict[str, Union[str, Dict[str, str]]]] = {
         k: v for k, v in all_cards.items() if v.get("type") in sub_types
     }
     cards_index: List[str] = random.sample(list(subset), 1)
     cards_info: List[Dict[str, Union[str, Dict[str, str]]]] = [
         v for k, v in subset.items() if k in cards_index]
-    
+
     # 3. 由文本获取指定图片
     card_info = cards_info[0]
 
@@ -80,15 +83,15 @@ async def _(matcher: Matcher, event: MessageEvent, args: Message = CommandArg())
     buf = BytesIO()
     img.save(buf, format='png')
 
-    await matcher.finish(MessageSegment.reply(event.message_id)+"你翻开了一张塔罗牌...\n" + msg + MessageSegment.image(buf))
-
+    await matcher.finish(
+        MessageSegment.reply(event.message_id) + "你翻开了一张塔罗牌...\n" + msg + MessageSegment.image(buf))
 
 
 @divine.handle()
 @handle_errors
 async def general_divine(bot: Bot, matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     if args.extract_plain_text(): await matcher.finish()
-    
+
     # 1. 从两种塔罗牌中随机输出一种的名字
     theme: str = random.choice(tarot_official_themes)
 
@@ -126,7 +129,7 @@ async def general_divine(bot: Bot, matcher: Matcher, event: MessageEvent, args: 
     is_cut: bool = formation.get("is_cut")
     representations: List[Union[str, List[str]]] = random.choice(
         formation.get("representations"))
-    
+
     # 4. Genrate message
     chain = []
     for i in range(cards_num):
@@ -135,7 +138,7 @@ async def general_divine(bot: Bot, matcher: Matcher, event: MessageEvent, args: 
             msg_header = MessageSegment.text(f"切牌「{representations[i]}」\n")
         else:
             msg_header = MessageSegment.text(
-                f"第{i+1}张牌「{representations[i]}」\n")
+                f"第{i + 1}张牌「{representations[i]}」\n")
 
         card_info = cards_info[i]
 

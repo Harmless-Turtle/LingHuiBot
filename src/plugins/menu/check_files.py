@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from src.plugins import utils
 
 ALL_MENU_MD = Path() / 'markdown' / 'all_menu.md'
@@ -7,7 +8,6 @@ MAIN_MENU_MD = Path() / 'markdown' / 'main_system.md'
 SERVICE_MENU_MD = Path() / 'markdown' / 'user_agreement.md'
 MARRY_MENU_MD = Path() / 'markdown' / 'entertainment_system.md'
 ADMIN_MENU_MD = Path() / 'markdown' / 'admin_system.md'
-
 
 ALL_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'All_Menu.png'
 FURRY_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'Furry_Menu.png'
@@ -26,5 +26,5 @@ utils.ensure_files_exist(
         ADMIN_MENU_MD,
     ],
     "菜单模块自检",
-    [None,None,None,None,None,None]
+    [None, None, None, None, None, None]
 )

@@ -1,48 +1,52 @@
 import random as rd
 from pathlib import Path
 
-from nonebot import logger,get_driver
+from nonebot import logger, get_driver
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     MessageSegment,
     Message,
     Bot, GroupMessageEvent
 )
+from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
-from nonebot.internal.matcher import Matcher
 
+from src.plugins.entertainment.check_files import bottle_path, auto_path
 from src.plugins.entertainment.commands import (
     add_battle,
     pick_battle,
     auto_switch_battle
 )
-from src.plugins.entertainment.check_files import bottle_path,auto_path
 from src.plugins.utils import handle_json
 from .models import add_drift_bottle
+
 
 @add_battle.handle()
 async def _add_battle(
         matcher: Matcher,
         event: GroupMessageEvent,
-        session:async_scoped_session
+        session: async_scoped_session
 ):
     data = handle_json(bottle_path, 'r')
     text = str(event.raw_message)
     text = text.split(" ")
     text.pop(0)
     if len(text) < 1:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "唔...切片失败了，请检查是否按照“bottle <这里输入你想说的话>”的格式使用呢")
-    text_list = data.get(str(event.user_id),[])
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + "唔...切片失败了，请检查是否按照“bottle <这里输入你想说的话>”的格式使用呢")
+    text_list = data.get(str(event.user_id), [])
     text = "\n".join(text)
     if len(text) >= 150:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "唔...你输入的内容太长了哦，请限制在150字以内呢xwx")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + "唔...你输入的内容太长了哦，请限制在150字以内呢xwx")
     text_list.append(text)
     logger.info(text)
     data[str(event.user_id)] = text_list
     handle_json(bottle_path, 'w', data)
-    await add_drift_bottle(session, str(event.user_id),str(event.group_id), text)
-    await matcher.finish(MessageSegment.reply(event.message_id)+"你的漂流瓶已经投进了大海...\n让我们猜一下它会飘向何处吧~")
+    await add_drift_bottle(session, str(event.user_id), str(event.group_id), text)
+    await matcher.finish(
+        MessageSegment.reply(event.message_id) + "你的漂流瓶已经投进了大海...\n让我们猜一下它会飘向何处吧~")
 
 
 @pick_battle.handle()
@@ -75,17 +79,19 @@ async def _pick_battle(matcher: Matcher, bot: Bot, event: MessageEvent):
                             f"Tip：如果您发现了违规的漂流瓶内容，请发送“bug反馈”将本次使用记录反馈给管理员。管理员会酌情对违规用户进行处罚\n"
                             f"十分感谢您的配合。")
 
+
 @auto_switch_battle.handle()
-async def _auto_switch_battle(bot:Bot,matcher: Matcher, event: GroupMessageEvent,args:Message = CommandArg()):
+async def _auto_switch_battle(bot: Bot, matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     group_member = await bot.get_group_member_info(user_id=event.user_id, group_id=event.group_id)
     group_admin = group_member['role']
     superusers = get_driver().config.superusers
     if str(event.user_id) not in superusers and "member" == group_admin:
-        await matcher.finish(MessageSegment.reply(event.message_id)+"唔...你不是凌辉su用户或者群管理员，没办法操控这个开关呢xwx")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + "唔...你不是凌辉su用户或者群管理员，没办法操控这个开关呢xwx")
     switch_data = handle_json(auto_path, 'r')
-    mode = switch_data.get(str(event.group_id),{f"{event.group_id}":False})
+    mode = switch_data.get(str(event.group_id), {f"{event.group_id}": False})
     switch_data[str(event.group_id)] = not mode
     handle_json(auto_path, 'w', switch_data)
     text = "已开启随机漂流功能，漂流瓶会在随机的时间里被送到本群呢w" if not mode else "已关闭随机漂流功能"
-    await matcher.finish(MessageSegment.reply(event.message_id)+f"{text}")
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}")

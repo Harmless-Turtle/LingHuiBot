@@ -15,9 +15,10 @@ from .command import (
 )
 from .model import GroupBlacklist, UserBlacklist
 
+
 @add_group_blacklist.handle()
 async def add_group(
-        matcher:Matcher,
+        matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
         args: Message = CommandArg()
@@ -47,7 +48,7 @@ async def add_group(
 
 @del_group_blacklist.handle()
 async def del_user(
-        matcher:Matcher,
+        matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
         args: Message = CommandArg()
@@ -76,7 +77,7 @@ async def del_user(
 
 @add_user_blacklist.handle()
 async def add_user(
-        matcher:Matcher,
+        matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
         args: Message = CommandArg()
@@ -112,14 +113,14 @@ async def add_user(
 
 @del_user_blacklist.handle()
 async def del_user(
-        matcher:Matcher,
+        matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
         args: Message = CommandArg()
 ):
     user_id = args.extract_plain_text().strip()
     if not user_id.isdigit():
-       await matcher.finish(
+        await matcher.finish(
             MessageSegment.reply(event.message_id) +
             "唔...请输入一个正确的数字才可以呢。"
         )
@@ -186,7 +187,7 @@ async def handle_check_group_blacklist(
             group_info = await bot.get_group_info(group_id=int(group_id))
             group_name = group_info.get("group_name")
         except ActionFailed:
-            group_name ="<群昵称获取失败>"
+            group_name = "<群昵称获取失败>"
         text += f"{group_name}[{group_id}]\n"
     await matcher.finish(
         MessageSegment.reply(event.message_id) + f"下面是黑名单群聊：\n{text}"

@@ -1,8 +1,10 @@
+import random
 from pathlib import Path
 from typing import List, Dict, Optional
-import random
-from .wolfkill_vote import WolfKillVote
+
 from .wolfkill_night import WolfKillNight
+from .wolfkill_vote import WolfKillVote
+
 
 class WolfKillGame:
     def auto_check_and_finish(self):
@@ -16,6 +18,7 @@ class WolfKillGame:
             self.data['winner'] = winner
             self.save()
         return winner
+
     def __init__(self, room_file: Path, data: dict):
         self.room_file = room_file
         self.data = data

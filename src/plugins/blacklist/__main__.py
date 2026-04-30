@@ -1,13 +1,14 @@
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Event, MessageEvent,GroupMessageEvent
-from nonebot.message import event_preprocessor
+from nonebot.adapters.onebot.v11 import Event, MessageEvent, GroupMessageEvent
 from nonebot.exception import IgnoredException
+from nonebot.message import event_preprocessor
 from nonebot_plugin_orm import get_session
 
 from .model import GroupBlacklist, UserBlacklist
 
 # 获取超级用户列表
 superusers = get_driver().config.superusers
+
 
 @event_preprocessor
 async def blacklist_processor(event: Event):

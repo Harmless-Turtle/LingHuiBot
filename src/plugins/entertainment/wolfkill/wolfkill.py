@@ -1,6 +1,9 @@
-from nonebot.adapters.onebot.v11 import Message
 from nonebot import on_command
+from nonebot.adapters.onebot.v11 import Message
+
 wolf_kill_help = on_command("狼人杀帮助", aliases={"狼人杀说明", "狼人杀指南"})
+
+
 # 狼人杀帮助指令
 @wolf_kill_help.handle()
 async def _wolf_kill_help(matcher: Matcher):
@@ -11,9 +14,13 @@ async def _wolf_kill_help(matcher: Matcher):
         await matcher.finish(Message(content))
     else:
         await matcher.finish("未找到狼人杀用户指南。")
+
+
 # 自动判定胜负指令
 from nonebot import on_command
+
 wolf_kill_auto_check = on_command("自动判定胜负")
+
 
 @wolf_kill_auto_check.handle()
 async def _wolf_kill_auto_check(
@@ -31,6 +38,8 @@ async def _wolf_kill_auto_check(
         await matcher.finish("好人阵营胜利！游戏结束。")
     else:
         await matcher.finish("游戏尚未结束，无胜负。")
+
+
 from pathlib import Path
 
 from nonebot import get_driver, logger
@@ -53,6 +62,7 @@ from ..commands import (
     wolf_kill_check_win
 )
 
+
 # 白天投票指令
 @wolf_kill_vote.handle()
 async def _wolf_kill_vote(
@@ -73,6 +83,7 @@ async def _wolf_kill_vote(
     game.cast_vote(event.user_id, target_id)
     await matcher.finish(f"你已投票给玩家{target_id}")
 
+
 # 票数结算指令
 @wolf_kill_tally.handle()
 async def _wolf_kill_tally(
@@ -88,6 +99,7 @@ async def _wolf_kill_tally(
         await matcher.finish("平票，没有玩家被淘汰。")
     else:
         await matcher.finish(f"玩家{out}被淘汰出局！")
+
 
 # 胜负判定指令
 @wolf_kill_check_win.handle()
@@ -106,6 +118,8 @@ async def _wolf_kill_check_win(
         await matcher.finish("好人阵营胜利！")
     else:
         await matcher.finish("游戏尚未结束。")
+
+
 from .check_rule import require_room_not_exists, require_room_exists, require_waiting, require_not_full
 from .wolfkill_game import WolfKillGame
 from src.plugins import utils

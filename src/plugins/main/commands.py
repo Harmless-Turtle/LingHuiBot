@@ -90,7 +90,6 @@ btfrk = on_command("我是", rule=check_bt)
 like = on_command("点赞", aliases={"赞我"}, block=True)
 eat_what = on_command("今天吃什么")
 
-
 #####################
 #     入/退群检查     #
 #####################

@@ -1,14 +1,14 @@
 import io
 
-
 from PIL import Image
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent
 from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_htmlrender import md_to_pic
 
-from .commands import *
 from .check_files import *
+from .commands import *
+
 
 @menu.handle()
 async def menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
@@ -34,9 +34,11 @@ async def service_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Me
 async def marry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, MARRY_MENU_MD, MARRY_MENU_PIC_DATA, args)
 
+
 @admin_menu.handle()
 async def admin_menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, ADMIN_MENU_MD, ADMIN_MENU_PIC_DATA, args)
+
 
 async def handle_menu_command(matcher: Matcher, event: MessageEvent, md_path: Path, pic_path: Path, args: Message):
     """通用的菜单命令处理函数"""
