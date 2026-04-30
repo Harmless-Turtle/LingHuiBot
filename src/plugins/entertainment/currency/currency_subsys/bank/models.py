@@ -8,7 +8,7 @@ from .exceptions import (
     InvalidTransferAmount,
     InvalidTransferTarget,
 )
-from ...models import MoHuiCoinData, Users
+from ...models import Users, get_mohui_data
 
 
 class BankCoinData(Model):
@@ -27,22 +27,6 @@ async def get_bank_data(session: async_scoped_session, user_id: str) -> BankCoin
 
     if coin is None:
         coin = BankCoinData(user_id=user_id, bank_coin=0)
-        session.add(coin)
-        await session.flush()
-
-    return coin
-
-
-async def get_mohui_data(session: async_scoped_session, user_id: str) -> MoHuiCoinData:
-    """获取用户的墨辉币记录；若记录不存在则自动创建并初始化为 0。"""
-    result = await session.execute(
-        select(MoHuiCoinData)
-        .where(MoHuiCoinData.user_id == user_id)
-    )
-    coin = result.scalar_one_or_none()
-
-    if coin is None:
-        coin = MoHuiCoinData(user_id=user_id, mohui_coin=0)
         session.add(coin)
         await session.flush()
 

@@ -1,4 +1,4 @@
-from .....Exceptions import CurrencyError
+from ...exceptions import CurrencyError
 
 
 class BankError(CurrencyError):

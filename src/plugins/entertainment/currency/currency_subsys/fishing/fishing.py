@@ -3,16 +3,11 @@ from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import get_session, async_scoped_session
 
-from src.plugins.entertainment.commands import (
-    fishing_downswing,
-    buy_fishing_hook
-)
-from src.plugins.entertainment.currency.models import get_user_coin
-from src.plugins.utils import handle_errors
 from .items import *
-from .models import (
-    process_fishing
-)
+from .models import process_fishing
+from ...models import get_mohui_data
+from ....commands import fishing_downswing, buy_fishing_hook
+from .....utils import handle_errors
 
 
 @fishing_downswing.handle()
@@ -40,7 +35,7 @@ async def _buy_fishing_hook(
         args: Message = CommandArg(),
 ):
     args = args.extract_plain_text()
-    user_coin = await get_user_coin(session=session, user_id=str(event.user_id))
+    obj = await get_mohui_data(session=session, user_id=str(event.user_id))
     hook_name = FishingHook.all_hook['name']
     if args not in hook_name:
         await matcher.finish(MessageSegment.reply(

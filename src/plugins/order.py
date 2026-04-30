@@ -1,9 +1,9 @@
-import httpx
 import json
 import os
 import random
 from pathlib import Path
 
+import httpx
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     MessageSegment,

@@ -40,10 +40,6 @@ class EntertainmentError(ModuleError):
     message = "娱乐功能模块发生异常，请稍后再试。"
 
 
-class CurrencyError(EntertainmentError):
-    message = "货币系统发生异常，请稍后再试。"
-
-
 class BlacklistError(ModuleError):
     message = "黑名单模块发生异常，请稍后再试。"
 

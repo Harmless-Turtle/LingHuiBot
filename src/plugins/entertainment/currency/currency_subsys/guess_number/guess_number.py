@@ -6,9 +6,9 @@ from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot, MessageSegment
 from nonebot.internal.matcher import Matcher
 from nonebot_plugin_orm import async_scoped_session
 
-from src.plugins.entertainment.commands import guess_number
-from src.plugins.entertainment.currency.models import get_user_coin, modify_user_coin
-from src.plugins.utils import handle_errors
+from ...models import get_mohui_data, add_mohui_coin, remove_mohui_coin
+from ....commands import guess_number
+from .....utils import handle_errors
 
 # 定义全局内存字典
 active_games: Dict[int, Dict[str, Any]] = {}
@@ -33,7 +33,8 @@ async def _(
     user_id = event.user_id
 
     # 检查余额
-    mh_coin = await get_user_coin(session, str(user_id))
+    obj = await get_mohui_data(session, str(user_id))
+    mh_coin = obj.mohui_coin
     if mh_coin < bet_amount:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你的墨辉币不足qwq...")
     if bet_amount <= 0:
@@ -42,7 +43,7 @@ async def _(
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "下注金额必须大于0捏uwu...\n非法的请求将上报给管理员处理。")
     # 扣除下注金额
-    await modify_user_coin(session, str(user_id), -bet_amount)
+    await remove_mohui_coin(session, str(user_id), bet_amount)
 
     # 判断是否已开局
     is_first_player = group_id not in active_games
@@ -94,7 +95,7 @@ async def _(
         # 如果该用户有中奖记录，统计并加钱
         if user_win_total > 0:
             correct_count += 1
-            await modify_user_coin(session, str(uid), user_win_total)
+            await add_mohui_coin(session, str(uid), user_win_total)
             winner_messages.append(f"- {uid} 获得了 {user_win_total} 墨辉币")
 
     # 构建播报文本

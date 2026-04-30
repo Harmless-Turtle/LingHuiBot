@@ -1,8 +1,9 @@
 from nonebot_plugin_orm import Model, async_scoped_session
-from sqlalchemy import ForeignKey, BigInteger
+from sqlalchemy import ForeignKey, BigInteger, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.plugins.database.models import Users
+from .exceptions import CurrencyBalanceNotEnough, CurrencyInvalidAmount
+from ...database.models import Users
 
 MAX_MOHUI_COIN = 9223372036854775807
 
@@ -15,37 +16,55 @@ class MoHuiCoinData(Model):
     mohui_coin: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
 
 
-async def get_user_coin(session: async_scoped_session, user_id: str) -> int:
-    """
-    查询用户的墨辉币余额。如果用户不存在，则自动创建一条余额为 0 的记录。
-    """
-    obj = await session.get(MoHuiCoinData, user_id)
+async def add_mohui_coin(session, user_id: str, amount: int) -> int:
+    if amount <= 0:
+        raise CurrencyInvalidAmount()
+
+    obj = await get_mohui_data(session, user_id)
+
     if obj is None:
-        # 如果数据库没这个人，就新建一个，初始金币为 0
         obj = MoHuiCoinData(user_id=user_id, mohui_coin=0)
         session.add(obj)
-        await session.commit()
-        await session.refresh(obj)
+        await session.flush()
 
-    return int(str(obj.mohui_coin))
+    obj.mohui_coin += amount
+    await session.flush()
+
+    return obj.mohui_coin
 
 
-async def modify_user_coin(session: async_scoped_session, user_id: str, amount: int) -> int:
-    """
-    修改用户的墨辉币（增加或减少）。
-    amount 为正数则是增加，为负数则是扣除。
-    返回修改后的最新余额。
-    """
-    obj = await session.get(MoHuiCoinData, user_id)
+async def remove_mohui_coin(session, user_id: str, amount: int) -> int:
+    if amount <= 0:
+        raise CurrencyInvalidAmount()
+
+    obj = await get_mohui_data(session, user_id)
+
     if obj is None:
-        obj = MoHuiCoinData(user_id=user_id, mohui_coin=amount)
+        obj = MoHuiCoinData(user_id=user_id, mohui_coin=0)
         session.add(obj)
-    else:
-        result = obj.mohui_coin + amount
-        if result > MAX_MOHUI_COIN:
-            raise ValueError(f"操作失败，墨辉币余额不能超过 {MAX_MOHUI_COIN} 个")
-        obj.mohui_coin += amount
+        await session.flush()
+        raise CurrencyBalanceNotEnough()
 
-    await session.commit()
-    await session.refresh(obj)
-    return int(str(obj.mohui_coin))
+    if obj.mohui_coin < amount:
+        raise CurrencyBalanceNotEnough()
+
+    obj.mohui_coin -= amount
+    await session.flush()
+
+    return obj.mohui_coin
+
+
+async def get_mohui_data(session: async_scoped_session, user_id: str) -> MoHuiCoinData:
+    """获取用户的墨辉币记录；若记录不存在则自动创建并初始化为 0。"""
+    result = await session.execute(
+        select(MoHuiCoinData)
+        .where(MoHuiCoinData.user_id == user_id)
+    )
+    coin = result.scalar_one_or_none()
+
+    if coin is None:
+        coin = MoHuiCoinData(user_id=user_id, mohui_coin=0)
+        session.add(coin)
+        await session.flush()
+
+    return coin

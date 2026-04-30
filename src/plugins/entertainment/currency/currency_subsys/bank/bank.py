@@ -139,7 +139,7 @@ async def _bank_robbery(
         # 校验消息段长度，@后会自动跟空格所以可能是三段
         msg = event.original_message
         if not 2 <= len(msg) <= 3:
-            raise BankError("参数格式错误！格式：抢劫@<一个用户>")
+            raise BankError("参数格式错误！格式：抢银行@<一个用户>")
 
         # 校验是否是 at
         at_seg = msg[1]

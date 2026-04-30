@@ -15,9 +15,9 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
-from src.plugins.entertainment.currency.models import modify_user_coin, get_user_coin
 from .check_file import *
 from .commands import *
+from ..entertainment.currency.models import get_mohui_data, add_mohui_coin
 from ..utils import handle_errors
 
 # 获取机器人的名字
@@ -178,8 +178,9 @@ async def sign_in_function(
     # 判断随机给墨辉币的数量
     rd_coins = rd.randint(50, 300)
     operate_coins = user_count * 2 + rd_coins
-    await modify_user_coin(session, str(event.user_id), operate_coins)
-    balance = await get_user_coin(session, str(event.user_id))
+    await add_mohui_coin(session, str(event.user_id), operate_coins)
+    obj = await get_mohui_data(session, str(event.user_id))
+    balance = obj.mohui_coin
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         # 生成检测到“好久不见”字样的默认值
