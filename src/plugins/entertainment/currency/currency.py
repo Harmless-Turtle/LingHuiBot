@@ -1,5 +1,5 @@
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment, Message, Bot
-from nonebot.params import ArgPlainText, CommandArg
+from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 from sqlalchemy import select
 
@@ -14,12 +14,13 @@ from ...utils import handle_errors
 async def _add_coin(
         event: GroupMessageEvent,
         session: async_scoped_session,
-        arg: str = ArgPlainText()
+        arg: Message = CommandArg()
 ):
     try:
-        if not arg.isdigit():
+        amount_text = arg.extract_plain_text()
+        if not amount_text.isdigit():
             raise CurrencyInvalidAmount("请输入一个正整数作为添加的墨辉币数量")
-        amount = int(arg)
+        amount = int(amount_text)
         balance = await add_mohui_coin(session, str(event.user_id), amount)
 
     except CurrencyError as e:
