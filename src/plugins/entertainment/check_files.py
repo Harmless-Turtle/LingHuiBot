@@ -31,22 +31,7 @@ utils.ensure_files_exist(
 )
 
 ########################
-#      漂流瓶自检        #
-########################
-# 定义路径变量
-bottle_path = path_header / "entertainment" / "drift_bottle" / 'bottle.json'
-auto_path = path_header / "entertainment" / "drift_bottle" / "auto_switch.json"
-utils.ensure_files_exist(
-    [
-        bottle_path,
-        auto_path
-    ],
-    "漂流瓶文件自检",
-    [{}, {}]
-)
-
-########################
-#      漂流瓶自检        #
+#      狼人杀自检        #
 ########################
 wolf_kill_path = Path.cwd() / "data" / "entertainment" / "wolfkill"
 utils.ensure_files_exist(
