@@ -52,7 +52,7 @@ async def handle_menu_command(matcher: Matcher, event: MessageEvent, md_path: Pa
     )
 
 
-async def get_menu_pic(md_path: Path, pic_path: Path = None, width: int = 900) -> bytes:
+async def get_menu_pic(md_path: Path, pic_path: Path, width: int = 900) -> bytes:
     # 判断图片是否存在且比md文件新，否则重新生成
     if pic_path and pic_path.exists() and md_path.exists():
         pic_mtime = pic_path.stat().st_mtime

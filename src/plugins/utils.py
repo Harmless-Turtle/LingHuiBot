@@ -79,7 +79,8 @@ def handle_errors(func):
                 error_image.save(buffer_image, format="PNG")
                 buffer_image.seek(0)
                 error_response = create_error_reply(error, event, buffer_image)
-                await matcher.finish(error_response + "\nTips:您可以通过发送“bug反馈”来将此错误日志直接反馈给开发者")
+                if error_response:
+                    await matcher.finish(error_response + "\nTips:您可以通过发送“bug反馈”来将此错误日志直接反馈给开发者")
             else:
                 logger.warning(
                     f"{__name__}捕获到错误，但由于被装饰的函数没有填写 matcher 和 event 参数，无法告知用户")

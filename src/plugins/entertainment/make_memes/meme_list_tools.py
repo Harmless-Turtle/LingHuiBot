@@ -274,7 +274,7 @@ def add_meme_list_footer(img: Image.Image) -> Image.Image:
     draw = ImageDraw.Draw(final)
     try:
         font = ImageFont.truetype(FONT_PATH, 20)
-    except Exception:
+    except (OSError, ValueError):
         font = ImageFont.load_default()
 
     draw.text(

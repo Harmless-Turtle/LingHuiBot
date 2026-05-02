@@ -1,7 +1,7 @@
 from datetime import date
 
 import nonebot
-from nonebot.adapters.onebot.v11 import MessageSegment
+from nonebot.adapters.onebot.v11 import MessageSegment, Bot, ActionFailed
 from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_orm import get_session
 from sqlalchemy import select
@@ -29,10 +29,7 @@ async def setup_birthday_scheduler():
 
 async def _init_birthday_jobs():
     # 1. 获取 Bot 实例
-    try:
-        bot = nonebot.get_bot()
-    except Exception:
-        return
+    bot: Bot = nonebot.get_bot()
 
     async with get_session() as session:
         # 2. 查询所有设置了生日的用户
@@ -54,8 +51,8 @@ async def _init_birthday_jobs():
 
             if group_settings and group_settings.enable:
                 try:
-                    group_user_list = await bot.get_group_member_list(group_id=str(group_settings.group_id))
-                    if int(user_id) not in [member['user_id'] for member in group_user_list]:
+                    group_user_list = await bot.get_group_member_list(group_id=int(group_settings.group_id))
+                    if str(user_id) not in [member['user_id'] for member in group_user_list]:
                         continue  # 不在群内，直接跳过当前用户，不发消息
                     # 获取昵称
                     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
@@ -73,5 +70,5 @@ async def _init_birthday_jobs():
                         group_id=int(group_settings.group_id),
                         message=MessageSegment.at(user_id) + f" {age_text}\n祝{nickname}生日快乐呢~\n"
                     )
-                except Exception:
+                except ActionFailed:
                     continue

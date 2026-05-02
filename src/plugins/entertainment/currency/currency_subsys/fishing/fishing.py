@@ -20,9 +20,9 @@ async def _fishing_downswing(
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     # 获取用户id
     user_id = str(event.user_id)
-    fishing_SQL = await process_fishing(session=get_session(), user_id=user_id)
-    if fishing_SQL:
-        await matcher.finish(MessageSegment.reply(event.message_id) + fishing_SQL)
+    fishing_sql = await process_fishing(session=get_session(), user_id=user_id)
+    if fishing_sql:
+        await matcher.finish(MessageSegment.reply(event.message_id) + fishing_sql)
     await matcher.finish("这是一个测试文本，用来表示通过了钓鱼的前置准备条件。")
 
 

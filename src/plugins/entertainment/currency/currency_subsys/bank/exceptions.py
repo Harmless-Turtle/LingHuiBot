@@ -23,6 +23,7 @@ class InvalidTransferTarget(BankError):
 
 
 __all__ = [
+    "BankError",
     "BankBalanceNotEnough",
     "InvalidBankOperation",
     "InvalidTransferAmount",

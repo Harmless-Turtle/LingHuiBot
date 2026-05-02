@@ -42,7 +42,7 @@ async def pc_function(matcher: Matcher):
     if poke_count >= 3 and time.time() - time_count <= 120:
         if time.time() - time_count >= 120:
             poke_count = 0
-            await pc_function()
+            await pc_function(matcher)
         else:
             if send:
                 send = False

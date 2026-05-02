@@ -124,7 +124,7 @@ async def bank_money(
 ):
     if args.extract_plain_text(): await matcher.finish()
     bank_coin = await get_bank_data(session=session, user_id=str(event.user_id))
-    await matcher.finish(MessageSegment.reply(event.message_id) + f"你的银行存款共有{bank_coin}个墨辉币捏uwu")
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"你的银行存款共有{bank_coin.bank_coin}个墨辉币捏uwu")
 
 
 @bank_robbery.handle()

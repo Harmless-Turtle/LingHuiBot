@@ -190,7 +190,7 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
     handle_json(group_join_flag_path, 'w', data)
     user = user["nick"]
     comment = event.comment
-    if comment == "":
+    if comment is None or comment.strip() == "":
         comment = "未填写入群理由"
     ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操你妈"
     if comment in ban_text:
@@ -260,9 +260,9 @@ async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
     user_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
     if user_is_admin['role'] == 'member':
         await matcher.finish(MessageSegment.reply(event.message_id) + "你不是群管理组，不允许进行这个操作呢qwq")
-    if "允许" in str(event.get_message):
+    if "允许" in str(event.get_message()):
         select = True
-    elif "拒绝" in str(event.get_message):
+    elif "拒绝" in str(event.get_message()):
         select = False
     else:
         await matcher.finish(MessageSegment.reply(event.message_id) + "命令不正确")

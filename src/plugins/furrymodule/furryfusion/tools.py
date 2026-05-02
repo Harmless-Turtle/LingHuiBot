@@ -83,7 +83,7 @@ def add_custom_footer(img: Image.Image) -> Image.Image:
     """
     联动函数：在生成图片的底部正中央添加指定文本
     """
-    FOOTER_TEXT = ("                          信息来源：FurryFusion.net\n"
+    footer_text = ("                          信息来源：FurryFusion.net\n"
                    f"                        合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
                    "        排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
                    f"      数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
@@ -107,7 +107,7 @@ def add_custom_footer(img: Image.Image) -> Image.Image:
     try:
         # 使用与小字相同的字体大小
         font = ImageFont.truetype(FONT_PATH, 20)
-    except:
+    except (OSError, ValueError):
         font = ImageFont.load_default()
 
     # 获取文字锚点，确保绝对居中
@@ -115,7 +115,7 @@ def add_custom_footer(img: Image.Image) -> Image.Image:
     text_x = width // 2
     text_y = height + (footer_height // 2)
 
-    draw.text((text_x, text_y), FOOTER_TEXT, font=font, fill=text_color, anchor="mm")
+    draw.text((text_x, text_y), footer_text, font=font, fill=text_color, anchor="mm")
 
     return final_img
 
