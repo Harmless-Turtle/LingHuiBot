@@ -51,6 +51,8 @@ async def handle_meme(
     plain = args.extract_plain_text().strip()
     tokens = plain.split()
     if raw_cmd in ("摸",):
+        if "自己" not in str(args) and "[CQ:at" not in str(args):
+            await meme_matcher.finish()
         meme_key_input = 'petpet'
         user_texts = []
     elif not tokens:

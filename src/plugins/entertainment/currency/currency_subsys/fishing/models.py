@@ -262,7 +262,7 @@ async def process_fishing(session, user_id: str):
         fishing_data = await get_fishing_data(session, user_id)
         fishing_state = await get_state(session, user_id)
         bait_data = await get_bait(session, user_id)
-        if fishing_data.fish_hook is "":
+        if fishing_data.fish_hook == "":
             return "你还没有购买鱼钩呢qwq"
         elif fishing_data.hook_durability == 0:
             return "你的鱼钩好像损坏了呢qwq"
