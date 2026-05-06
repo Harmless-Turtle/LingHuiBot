@@ -8,7 +8,7 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
 
 <p align="center">
   <a href="./LICENSE">
-    <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
+    <img src="https://img.shields.io/github/license/Harmless-Turtle/LingHuiBot.svg" alt="license">
   </a>
   <img src="https://img.shields.io/badge/python-3.13.5-blue.svg" alt="python">
 </p>
