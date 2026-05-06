@@ -39,6 +39,7 @@ async def bank_save(
             operation="save"
         )
         await session.commit()
+        await session.refresh(balance)
     except BankError as e:
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
         return
@@ -69,6 +70,7 @@ async def bank_remove(
             operation="remove"
         )
         await session.commit()
+        await session.refresh(balance)
     except BankError as e:
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
         return
@@ -107,6 +109,7 @@ async def bank_transfer(
             amount=amount
         )
         await session.commit()
+        await session.refresh(transfer_money)
     except BankError as e:
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
         return
