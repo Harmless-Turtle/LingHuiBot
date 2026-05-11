@@ -22,6 +22,7 @@ async def _add_coin(
             raise CurrencyInvalidAmount("请输入一个正整数作为添加的墨辉币数量")
         amount = int(amount_text)
         balance = await add_mohui_coin(session, str(event.user_id), amount)
+        await session.commit()
 
     except CurrencyError as e:
         await add_coin.finish(MessageSegment.reply(event.message_id) + e.message)

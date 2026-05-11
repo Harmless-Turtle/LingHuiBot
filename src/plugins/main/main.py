@@ -179,6 +179,7 @@ async def sign_in_function(
     rd_coins = rd.randint(50, 300)
     operate_coins = user_count * 2 + rd_coins
     await add_mohui_coin(session, str(event.user_id), operate_coins)
+    await session.commit()
     obj = await get_mohui_data(session, str(event.user_id))
     balance = obj.mohui_coin
     # 判断：调用是否出现“好久不见”字样

@@ -123,6 +123,7 @@ async def _process_robbery(
     if correct == 2:
         await remove_mohui_coin(session, str(event.user_id), operate_coins)
         await add_mohui_coin(session, str(target_id), operate_coins)
+        await session.commit()
         obj2 = await get_mohui_data(session, str(event.user_id))
         from_user_coins = obj2.mohui_coin
 
@@ -133,3 +134,4 @@ async def _process_robbery(
         )
     await add_mohui_coin(session, str(event.user_id), operate_coins)
     await remove_mohui_coin(session, str(target_id), operate_coins)
+    await session.commit()

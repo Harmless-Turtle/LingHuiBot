@@ -44,6 +44,7 @@ async def _(
             MessageSegment.reply(event.message_id) + "下注金额必须大于0捏uwu...\n非法的请求将上报给管理员处理。")
     # 扣除下注金额
     await remove_mohui_coin(session, str(user_id), bet_amount)
+    await session.commit()
 
     # 判断是否已开局
     is_first_player = group_id not in active_games
@@ -96,6 +97,7 @@ async def _(
         if user_win_total > 0:
             correct_count += 1
             await add_mohui_coin(session, str(uid), user_win_total)
+            await session.commit()
             winner_messages.append(f"- {uid} 获得了 {user_win_total} 墨辉币")
 
     # 构建播报文本
