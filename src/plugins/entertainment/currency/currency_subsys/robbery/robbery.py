@@ -27,7 +27,7 @@ async def _robbery(
 
         at_seg = msg[1]
         if not at_seg.type == "at":
-            raise CurrencyError("请输入正确的用户ID或者at对象捏")
+            await matcher.finish()
 
         target_id = str(at_seg.data.get("qq"))
         if target_id == str(event.user_id):

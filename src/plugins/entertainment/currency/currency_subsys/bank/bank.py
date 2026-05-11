@@ -102,14 +102,14 @@ async def bank_transfer(
                 amount = int(text)
 
     try:
-        await transfer_money(
+        target_data = await transfer_money(
             session=session,
             user_id=str(event.user_id),
             target_user_id=target_id,
             amount=amount
         )
         await session.commit()
-        await session.refresh(transfer_money)
+        await session.refresh(target_data)
     except BankError as e:
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
         return
