@@ -75,16 +75,17 @@ Windows操作系统安装教程：<br>
 
 4. 尝试运行 `nb run --reload` ，按提示更新至最新迁移并观察终端Log是否出现如下信息：
 
-> 01-31 01:24:18 [INFO] nonebot | OneBot V11 | Bot <此处应该是你Bot的QQ号> connected
+> <运行时间> [INFO] nonebot | OneBot V11 | Bot <此处应该是你Bot的QQ号> connected
 
-若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。您可以通过例如NapCatQQ等WebSocket服务器通过监听<code>ws:
-//localhost:9090/onebot/v11/ws</code>来将QQ对接至凌辉Bot
+若出现如上信息，即意味着您已经成功将凌辉Bot部署于您的电脑中。且现在凌辉Bot已开始监听QQ客户端的信息。
 
 > 注意：如果您的NoneBot2因端口占用导致启动失败，请修改.env文件的<code>PORT=9090</code>为你系统中任一未被占用的端口，并在上述所说的WebSocket服务端中将<code>localhost:9090</code>中的9090更换为你自己配置的端口
 
 Linux操作系统安装流程：<br>
 
 <s>既然都用Linux了，安装流程就不必教了，和Windows操作系统安装流程差不太多，换个命令而已</s>
+
+> 当您需要安装playwright时，您可能会遇到安装失败的情况。此时，请转移到dotEnv文件中，将<code>HTMLRENDER_BROWSER_CHANNEL="chrome"</code>的注释取消，随后，请直接在您的操作系统中安装Chrome浏览器。
 
 文件依赖：<br>
 凌辉 Bot 要求您至少应该准备如下ttf字体文件包在data目录下：
