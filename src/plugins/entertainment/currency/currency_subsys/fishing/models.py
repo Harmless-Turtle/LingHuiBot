@@ -259,15 +259,16 @@ async def process_fishing(session, user_id: str):
         fishing_data = await get_fishing_data(session, user_id)
         if fishing_data is None:
             await init_player(session, user_id)
-        fishing_data = await get_fishing_data(session, user_id)
+            fishing_data = await get_fishing_data(session, user_id)
         fishing_state = await get_state(session, user_id)
         bait_data = await get_bait(session, user_id)
-        if fishing_data.fish_hook == "":
-            return "你还没有购买鱼钩呢qwq"
+        result = False
+        if not fishing_data.fish_hook:
+            result = "你还没有购买鱼钩呢qwq"
         elif fishing_data.hook_durability == 0:
-            return "你的鱼钩好像损坏了呢qwq"
-        elif bait_data.basic_bait == 0 or bait_data.intermediate_bait == 0 or bait_data.advanced_bait == 0 or bait_data.maximal_bait == 0:
-            return "你没有足够的饵料了呢qwq"
+            result = "你的鱼钩好像损坏了呢qwq"
+        elif bait_data.basic_bait == 0 and bait_data.intermediate_bait == 0 and bait_data.advanced_bait == 0 and bait_data.maximal_bait == 0:
+            result = "你没有足够的饵料了呢qwq"
         elif fishing_state.is_fishing:
-            return "你已经在钓鱼了哦qwq"
-    return False
+            result = "你已经在钓鱼了哦qwq"
+    return result

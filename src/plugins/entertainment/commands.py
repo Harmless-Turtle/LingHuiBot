@@ -64,6 +64,7 @@ bank_robbery = on_command("抢银行", block=True)
 #########################
 fishing_downswing = on_command("钓鱼", block=True)
 buy_fishing_hook = on_command("购买鱼钩")
+fishing_hook_attribute = on_command("鱼钩属性")
 
 #########################
 #                 表情包制作 触发器                   #

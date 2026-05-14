@@ -34,38 +34,37 @@ class FishingRod:
 
 
 class FishingHook:
-    all_hook = {
-        "name": ["铁钩", "银钩", "金钩", "幸运钩"],
-        "price": ["basic_fishhook", "intermediate_fishhook", "advanced_fishhook", "maximal_fishhook"]
-    }
-    basic_fishhook = {
-        "level": 1,
-        "name": "铁钩",
-        "price": 80,
-        "durability": 100,
-        "bonus": 0
-    }
-    intermediate_fishhook = {
-        "level": 2,
-        "name": "银钩",
-        "price": 300,
-        "durability": 200,
-        "bonus": 5
-    }
-    advanced_fishhook = {
-        "level": 3,
-        "name": "金钩",
-        "price": 800,
-        "durability": 500,
-        "bonus": 10
-    }
-    maximal_fishhook = {
-        "level": 4,
-        "name": "幸运钩",
-        "price": 2000,
-        "durability": 5,
-        "bonus": 50
-    }
+    all_hook_names = ["铁钩", "银钩", "金钩", "幸运钩"]
+    hook_attribute = [
+        {
+            "level": 1,
+            "name": "铁钩",
+            "price": 80,
+            "durability": 100,
+            "bonus": 0
+        },
+        {
+            "level": 2,
+            "name": "银钩",
+            "price": 300,
+            "durability": 200,
+            "bonus": 5
+        },
+        {
+            "level": 3,
+            "name": "金钩",
+            "price": 800,
+            "durability": 500,
+            "bonus": 10
+        },
+        {
+            "level": 4,
+            "name": "幸运钩",
+            "price": 2000,
+            "durability": 5,
+            "bonus": 50
+        }
+    ]
 
 
 class FishingBait:
