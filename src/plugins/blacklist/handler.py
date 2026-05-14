@@ -195,7 +195,10 @@ async def handle_check_group_blacklist(
 
 
 @check_su.handle()
-async def handle_chek_su(event: GroupMessageEvent):
+async def handle_chek_su(event: MessageEvent):
+    normal_message = event.raw_message
+    if "凌辉" not in normal_message:
+        await check_su.finish()
     from nonebot import get_driver
     su_list = get_driver().config.superusers
     if str(event.user_id) in su_list:

@@ -71,7 +71,7 @@ Windows操作系统安装教程：<br>
 
 2. 将 `.env.example` 重命名成 `.env` 并填写相应配置。
 
-3. 运行命令 `playwright install chromium` ，安装 `playwright`
+3. 运行命令 `playwright install chromium` ，安装 `playwright` 的chromium浏览器依赖。
 
 4. 尝试运行 `nb run --reload` ，按提示更新至最新迁移并观察终端Log是否出现如下信息：
 
@@ -81,11 +81,12 @@ Windows操作系统安装教程：<br>
 
 > 注意：如果您的NoneBot2因端口占用导致启动失败，请修改.env文件的<code>PORT=9090</code>为你系统中任一未被占用的端口，并在上述所说的WebSocket服务端中将<code>localhost:9090</code>中的9090更换为你自己配置的端口
 
+> 如果你在安装过程中遇到了 `playwright` 安装失败的问题，请尝试直接在全局中安装chromium，或者在.env文件中将`HTMLRENDER_BROWSER_CHANNEL`配置项更改为您系统中已知的任意浏览器。具体支持的浏览器
+> 请前往[playwright官方文档](https://playwright.dev/docs/browsers#run-tests-on-different-browsers)查询
+
 Linux操作系统安装流程：<br>
 
 <s>既然都用Linux了，安装流程就不必教了，和Windows操作系统安装流程差不太多，换个命令而已</s>
-
-> 当您需要安装playwright时，您可能会遇到安装失败的情况。此时，请转移到dotEnv文件中，将<code>HTMLRENDER_BROWSER_CHANNEL="chrome"</code>的注释取消，随后，请直接在您的操作系统中安装Chrome浏览器。
 
 文件依赖：<br>
 凌辉 Bot 要求您至少应该准备如下ttf字体文件包在data目录下：
