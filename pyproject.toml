@@ -24,6 +24,8 @@ dependencies = [
     "pyahocorasick>=2.2.0",
     "meme-generator==0.2.3",
     "pyncm",
+    "nonebot-plugin-bilichat>=6.5.0",
+    "bilichat-request>=0.5.12",
 ]
 
 [tool.nonebot]
@@ -48,6 +50,7 @@ nonebot-plugin-kawaii-status = ["nonebot_plugin_kawaii_status"]
 nonebot-plugin-orm = ["nonebot_plugin_orm"]
 nonebot-plugin-uninfo = ["nonebot_plugin_uninfo"]
 nonebot-plugin-mcserver-status-check = ["nonebot_plugin_mcserver_status_check"]
+nonebot-plugin-bilichat = ["nonebot_plugin_bilichat"]
 
 
 [tool.pyright]
