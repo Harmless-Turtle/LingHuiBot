@@ -4,8 +4,8 @@ from nonebot.params import CommandArg
 from nonebot_plugin_orm import get_session, async_scoped_session
 
 from .items import *
-from .models import process_fishing
-from ...models import get_mohui_data
+from .models import process_fishing,equip_hook
+from ...models import get_mohui_data,remove_mohui_coin
 from ....commands import fishing_downswing, buy_fishing_hook,fishing_hook_attribute
 from .....utils import handle_errors,batch_get
 
@@ -34,7 +34,9 @@ async def _buy_fishing_hook(
         session: async_scoped_session,
         args: Message = CommandArg(),
 ):
+    # 获取想要购买的鱼钩的名称
     args = args.extract_plain_text()
+    # 建立session会话，与SQL通信
     user_coin = await get_mohui_data(session=session, user_id=str(event.user_id))
     hook_data = {}
     hook_name = FishingHook.all_hook_names
@@ -47,7 +49,9 @@ async def _buy_fishing_hook(
             break
     if user_coin.mohui_coin < hook_data['price']:
         await matcher.finish(MessageSegment.reply(event.message_id)+"你的墨辉币似乎不足以购买这个鱼钩qwq")
-    #TODO 2026.5.14 22：27归档：钓鱼系统的购买鱼钩功能尚未完善。
+    await remove_mohui_coin(session=session, user_id=str(event.user_id), amount=hook_data['price'])
+    await equip_hook(session=session, user_id=str(event.user_id), hook_key=hook_data['name'], durability=hook_data['durability'])
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"finish")
 
 @fishing_hook_attribute.handle()
 @handle_errors
