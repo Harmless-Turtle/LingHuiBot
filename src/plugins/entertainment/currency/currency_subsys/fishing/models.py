@@ -121,6 +121,9 @@ async def equip_rod(session, user_id: str, rod_key: str) -> None:
     rod_key 对应 items.py 中 FishingRod 的属性名，如 "intermediate_fishing_rod"。
     """
     data = await get_fishing_data(session, user_id)
+    if data is None:
+        await init_player(session, user_id)
+        data = await get_fishing_data(session, user_id)
     data.fish_rod = rod_key
     await session.commit()
 

@@ -30,6 +30,7 @@ async def _buy_fishing_rod(
         session: async_scoped_session,
         args: Message = CommandArg()
 ):
+    args = args.extract_plain_text()
     user_coin = await get_mohui_data(session=session, user_id=str(event.user_id))
     user_rod = await get_rod(session=session, user_id=str(event.user_id))
     rod_data = {}
@@ -50,11 +51,11 @@ async def _buy_fishing_rod(
                 buy_rod = item
                 break
         if rod_data['level'] <= buy_rod['level']:
-            await matcher.finish(MessageSegment.reply(event.message_id) + f"你已经拥有了{user_rod}，不能降级购买捏")
+            await matcher.finish(MessageSegment.reply(event.message_id) + f"你已经拥有了{user_rod}，不能降级购买或者购买同级鱼竿捏")
     await remove_mohui_coin(session=session, user_id=str(event.user_id), amount=rod_data['price'])
     await equip_rod(session=session, user_id=str(event.user_id),rod_key=rod_data['name'])
     await matcher.finish(MessageSegment.reply(
-        event.message_id) + f"购买{rod_data['name']}成功！鱼竿耐久为{rod_data['durability']}，钓到鱼后允许起竿时间范围为{rod_data['bonus_min']}s~{rod_data['bonus_max']}s。")
+        event.message_id) + f"购买{rod_data['name']}成功！钓到鱼后允许起竿时间范围为{rod_data['bonus_min']}s~{rod_data['bonus_max']}s。")
 
 
 @fishing_downswing.handle()

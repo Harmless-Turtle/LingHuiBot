@@ -4,7 +4,7 @@ class FishingRod:
         {
             "level": 1,
             "name": "竹竿",
-            "price": 0,
+            "price": 1,
             "bonus_min": 5,
             "bonus_max": 10
         },
