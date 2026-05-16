@@ -1,36 +1,35 @@
 class FishingRod:
-    all_rod = {
-        "name": ["竹竿", "碳素杆", "竞技杆", "凌辉神竿"],
-        "price": ["basic_fishing_rod", "intermediate_fishing_rod", "advanced_fishing_rod", "maximal_fishing_rod"]
-    }
-    basic_fishing_rod = {
-        "level": 1,
-        "name": "竹竿",
-        "price": 0,
-        "bonus_min": 5,
-        "bonus_max": 10
-    }
-    intermediate_fishing_rod = {
-        "level": 2,
-        "name": "碳素杆",
-        "price": 500,
-        "bonus_min": 12,
-        "bonus_max": 20
-    }
-    advanced_fishing_rod = {
-        "level": 3,
-        "name": "竞技杆",
-        "price": 2000,
-        "bonus_min": 22,
-        "bonus_max": 32
-    }
-    maximal_fishing_rod = {
-        "level": 4,
-        "name": "凌辉神竿",
-        "price": 20000,
-        "bonus_min": 40,
-        "bonus_max": 50
-    }
+    all_rod_names = ["竹竿", "碳素杆", "竞技杆", "凌辉神竿"]
+    rod_attribute = [
+        {
+            "level": 1,
+            "name": "竹竿",
+            "price": 0,
+            "bonus_min": 5,
+            "bonus_max": 10
+        },
+        {
+            "level": 2,
+            "name": "碳素杆",
+            "price": 500,
+            "bonus_min": 12,
+            "bonus_max": 20
+        },
+        {
+            "level": 3,
+            "name": "竞技杆",
+            "price": 2000,
+            "bonus_min": 22,
+            "bonus_max": 32
+        },
+        {
+            "level": 4,
+            "name": "凌辉神竿",
+            "price": 20000,
+            "bonus_min": 40,
+            "bonus_max": 50
+        }
+    ]
 
 
 class FishingHook:
@@ -68,30 +67,33 @@ class FishingHook:
 
 
 class FishingBait:
-    basic_fishing_bait = {
-        "level": 1,
-        "name": "普通饵料",
-        "price": 10,
-        "bonus": 0
-    }
-    intermediate_fishing_bait = {
-        "level": 2,
-        "name": "初级饵料",
-        "price": 50,
-        "bonus": 5
-    }
-    advanced_fishing_bait = {
-        "level": 3,
-        "name": "中级饵料",
-        "price": 200,
-        "bonus": 15
-    }
-    maximal_fishing_bait = {
-        "level": 4,
-        "name": "高级饵料",
-        "price": 1000,
-        "bonus": 30
-    }
+    bait_names = ['普通饵料','初级饵料','中级饵料','高级饵料']
+    bait_attribute = [
+        {
+            "level": 1,
+            "name": "普通饵料",
+            "price": 10,
+            "bonus": 0
+        },
+        {
+            "level": 2,
+            "name": "初级饵料",
+            "price": 50,
+            "bonus": 5
+        },
+        {
+            "level": 3,
+            "name": "中级饵料",
+            "price": 200,
+            "bonus": 15
+        },
+        {
+            "level": 4,
+            "name": "高级饵料",
+            "price": 1000,
+            "bonus": 30
+        }
+    ]
 
 
 class Fish:

@@ -79,6 +79,13 @@ async def get_hook(session,user_id:str) -> str | None:
         return data
     return data.fish_hook
 
+async def get_rod(session,user_id:str) -> str | None:
+    data = await session.get(FishingData, user_id)
+    if data is None:
+        return data
+    return data.fish_rod
+
+
 # ==================== 初始化 ====================
 
 async def init_player(session: AsyncSession, user_id: str) -> None:
@@ -108,7 +115,7 @@ async def init_player(session: AsyncSession, user_id: str) -> None:
 
 # ==================== 装备操作 ====================
 
-async def equip_rod(session: AsyncSession, user_id: str, rod_key: str) -> None:
+async def equip_rod(session, user_id: str, rod_key: str) -> None:
     """
     更新玩家鱼竿。
     rod_key 对应 items.py 中 FishingRod 的属性名，如 "intermediate_fishing_rod"。
