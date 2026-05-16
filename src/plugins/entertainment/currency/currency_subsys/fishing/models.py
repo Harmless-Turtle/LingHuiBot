@@ -85,10 +85,24 @@ async def init_player(session: AsyncSession, user_id: str) -> None:
     """
     初始化新玩家，创建三张表的对应行。
     调用前请确认该 user_id 尚未初始化，否则会触发主键冲突。
+    Args:
+        session: session数据库会话
+        user_id: 用户QQ号
+    Returns:
+        None
     """
-    session.add(FishingData(user_id=user_id))
-    session.add(FishingBaitData(user_id=user_id))
-    session.add(FishingState(user_id=user_id))
+    has_data = await session.get(FishingData, user_id)
+    has_bait = await session.get(FishingBaitData, user_id)
+    has_state = await session.get(FishingState, user_id)
+
+    if has_data is None:
+        session.add(FishingData(user_id=user_id))
+
+    if has_bait is None:
+        session.add(FishingBaitData(user_id=user_id))
+
+    if has_state is None:
+        session.add(FishingState(user_id=user_id))
     await session.commit()
 
 
