@@ -100,7 +100,7 @@ async def equip_rod(session: AsyncSession, user_id: str, rod_key: str) -> None:
 
 
 async def equip_hook(
-        session: AsyncSession,
+        session,
         user_id: str,
         hook_key: str,
         durability: int

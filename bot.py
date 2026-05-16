@@ -25,6 +25,7 @@
 import nonebot
 from nonebot import require
 from nonebot.adapters.onebot.v11 import Adapter
+import bilichat_request
 
 nonebot.init()
 
@@ -39,6 +40,7 @@ require("nonebot_plugin_datastore")
 require("nonebot_plugin_localstore")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_kawaii_status")
+require("nonebot_plugin_bilichat")
 # require("nonebot_plugin_mcserver_status_check")
 nonebot.load_plugins("src/plugins")
 

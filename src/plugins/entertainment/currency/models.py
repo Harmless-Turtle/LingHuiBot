@@ -34,6 +34,15 @@ async def add_mohui_coin(session, user_id: str, amount: int) -> int:
 
 
 async def remove_mohui_coin(session, user_id: str, amount: int) -> int:
+    """
+    Args:
+        session:Session数据库会话
+        user_id: 要操作的用户QQ号
+        amount: 要操作的金额数字
+
+    Returns:
+        int: 操作后的墨辉币余额
+    """
     if amount <= 0:
         raise CurrencyInvalidAmount()
 
