@@ -4,7 +4,7 @@ from nonebot.params import CommandArg
 from nonebot_plugin_orm import get_session, async_scoped_session
 
 from .items import *
-from .models import process_fishing,equip_hook
+from .models import process_fishing,equip_hook,get_hook
 from ...models import get_mohui_data,remove_mohui_coin
 from ....commands import fishing_downswing, buy_fishing_hook,fishing_hook_attribute
 from .....utils import handle_errors,batch_get
@@ -38,6 +38,7 @@ async def _buy_fishing_hook(
     args = args.extract_plain_text()
     # 建立session会话，与SQL通信
     user_coin = await get_mohui_data(session=session, user_id=str(event.user_id))
+    user_hook = await get_hook(session=session, user_id=str(event.user_id))
     hook_data = {}
     hook_name = FishingHook.all_hook_names
     if args not in hook_name:
@@ -49,9 +50,12 @@ async def _buy_fishing_hook(
             break
     if user_coin.mohui_coin < hook_data['price']:
         await matcher.finish(MessageSegment.reply(event.message_id)+"你的墨辉币似乎不足以购买这个鱼钩qwq")
+    text_temp = ''
+    if user_hook:
+        text_temp = "您已经购买过鱼钩了，本次购买将覆盖掉旧的鱼钩捏\n"
     await remove_mohui_coin(session=session, user_id=str(event.user_id), amount=hook_data['price'])
     await equip_hook(session=session, user_id=str(event.user_id), hook_key=hook_data['name'], durability=hook_data['durability'])
-    await matcher.finish(MessageSegment.reply(event.message_id) + f"finish")
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"{text_temp}购买{hook_data['name']}成功！鱼钩耐久为{hook_data['durability']}，珍惜品种加权为{hook_data['bonus']}。")
 
 @fishing_hook_attribute.handle()
 @handle_errors

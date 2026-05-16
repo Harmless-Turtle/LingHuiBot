@@ -73,6 +73,11 @@ async def get_state(session: AsyncSession, user_id: str) -> type[FishingState] |
 async def get_bait(session: AsyncSession, user_id: str) -> type[FishingBaitData] | None:
     return await session.get(FishingBaitData, user_id)
 
+async def get_hook(session,user_id:str) -> str | None:
+    data = await session.get(FishingData, user_id)
+    if data is None:
+        return data
+    return data.fish_hook
 
 # ==================== 初始化 ====================
 
@@ -110,6 +115,9 @@ async def equip_hook(
     hook_key 对应 items.py 中 FishingHook 的属性名，如 "advanced_fishhook"。
     """
     data = await get_fishing_data(session, user_id)
+    if data is None:
+        await init_player(session, user_id)
+        data = await get_fishing_data(session, user_id)
     data.fish_hook = hook_key
     data.hook_durability = durability
     await session.commit()
@@ -255,20 +263,19 @@ async def end_fishing(session: AsyncSession, user_id: str) -> None:
 
 async def process_fishing(session, user_id: str):
     """所有数据库读写和判断逻辑，作为内部使用事务"""
-    async with session.begin():
+    fishing_data = await get_fishing_data(session, user_id)
+    if fishing_data is None:
+        await init_player(session, user_id)
         fishing_data = await get_fishing_data(session, user_id)
-        if fishing_data is None:
-            await init_player(session, user_id)
-            fishing_data = await get_fishing_data(session, user_id)
-        fishing_state = await get_state(session, user_id)
-        bait_data = await get_bait(session, user_id)
-        result = False
-        if not fishing_data.fish_hook:
-            result = "你还没有购买鱼钩呢qwq"
-        elif fishing_data.hook_durability == 0:
-            result = "你的鱼钩好像损坏了呢qwq"
-        elif bait_data.basic_bait == 0 and bait_data.intermediate_bait == 0 and bait_data.advanced_bait == 0 and bait_data.maximal_bait == 0:
-            result = "你没有足够的饵料了呢qwq"
-        elif fishing_state.is_fishing:
-            result = "你已经在钓鱼了哦qwq"
+    fishing_state = await get_state(session, user_id)
+    bait_data = await get_bait(session, user_id)
+    result = False
+    if not fishing_data.fish_hook:
+        result = "你还没有购买鱼钩呢qwq"
+    elif fishing_data.hook_durability == 0:
+        result = "你的鱼钩好像损坏了呢qwq"
+    elif bait_data.basic_bait == 0 and bait_data.intermediate_bait == 0 and bait_data.advanced_bait == 0 and bait_data.maximal_bait == 0:
+        result = "你没有足够的饵料了呢qwq"
+    elif fishing_state.is_fishing:
+        result = "你已经在钓鱼了哦qwq"
     return result
