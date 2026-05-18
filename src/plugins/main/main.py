@@ -354,6 +354,8 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
 
 @nc_version_info.handle()
 async def _version_info(bot: Bot, matcher: Matcher, event: MessageEvent):
+    if "凌辉" not in str(MessageEvent.raw_message):
+        await matcher.finish()
     data = await bot.get_version_info()
     await matcher.finish(MessageSegment.reply(event.message_id) + f"当前使用的客户端实例：{data["app_name"]}\n"
                                                                   f"客户端实例版本号：{data['app_version']}\n"

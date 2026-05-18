@@ -18,9 +18,25 @@ from ....commands import (
     buy_fishing_rod,
     buy_fishing_bait,
     fishing_hook_attribute,
+    fishing_rod_attribute,
 )
 from .....utils import handle_errors,batch_get
 
+@fishing_downswing.handle()
+@handle_errors
+async def _fishing_downswing(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        args: Message = CommandArg()
+) -> None:
+    if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
+    # 获取用户id
+    user_id = str(event.user_id)
+    async with get_session() as session:
+        fishing_sql = await process_fishing(session=session, user_id=user_id)
+    if fishing_sql:
+        await matcher.finish(MessageSegment.reply(event.message_id) + fishing_sql)
+    await matcher.finish("这是一个测试文本，用来表示通过了钓鱼的前置准备条件。")
 
 @buy_fishing_rod.handle()
 @handle_errors
@@ -47,7 +63,7 @@ async def _buy_fishing_rod(
     if user_rod:
         buy_rod = {}
         for item in FishingRod.rod_attribute:
-            if item['name'] in args:
+            if item['name'] in user_rod:
                 buy_rod = item
                 break
         if rod_data['level'] <= buy_rod['level']:
@@ -56,24 +72,6 @@ async def _buy_fishing_rod(
     await equip_rod(session=session, user_id=str(event.user_id),rod_key=rod_data['name'])
     await matcher.finish(MessageSegment.reply(
         event.message_id) + f"购买{rod_data['name']}成功！钓到鱼后允许起竿时间范围为{rod_data['bonus_min']}s~{rod_data['bonus_max']}s。")
-
-
-@fishing_downswing.handle()
-@handle_errors
-async def _fishing_downswing(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        args: Message = CommandArg()
-) -> None:
-    if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
-    # 获取用户id
-    user_id = str(event.user_id)
-    async with get_session() as session:
-        fishing_sql = await process_fishing(session=session, user_id=user_id)
-    if fishing_sql:
-        await matcher.finish(MessageSegment.reply(event.message_id) + fishing_sql)
-    await matcher.finish("这是一个测试文本，用来表示通过了钓鱼的前置准备条件。")
-
 
 @buy_fishing_hook.handle()
 @handle_errors
@@ -124,6 +122,28 @@ async def _fishing_hook_attribute(
             f"价格：{price}墨辉币\n"
             f"耐久：{durability}\n"
             f"珍惜品种加权：{bonus}"
+        )
+        make_text = await batch_get(text, None, event.self_id, f"{event.self_id}")
+        final_list.append(make_text)
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
+
+@fishing_rod_attribute.handle()
+@handle_errors
+async def _fishing_rod_attribute(
+        bot:Bot,
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        args: Message = CommandArg(),
+):
+    if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
+    final_list = []
+    for item in FishingRod.rod_attribute:
+        level,name,price,bonus_min,bonus_max = item['level'],item['name'],item['price'],item["bonus_min"],item["bonus_max"]
+        text = (
+            f"鱼竿等级：{level}\n"
+            f"鱼竿名称：{name}\n"
+            f"价格：{price}墨辉币\n"
+            f"允许的起竿时间：{bonus_min}s~{bonus_max}s"
         )
         make_text = await batch_get(text, None, event.self_id, f"{event.self_id}")
         final_list.append(make_text)
