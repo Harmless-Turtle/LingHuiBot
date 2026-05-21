@@ -10,8 +10,8 @@ from .models import TyphoonSubscribe
 from .utils import check_and_get_new_typhoon_card
 
 
-@scheduler.scheduled_job("cron", day="*/1", hour=22, minute=53, id="typhoon_push")
-async def check_typhoon(bot:Bot):
+@scheduler.scheduled_job("cron", day="*/1", hour=7, minute=0, id="typhoon_push")
+async def check_typhoon():
     logger.info("[Typhoon Task] 触发晚间台风订阅轮询...")
 
     async with get_session() as session:
@@ -21,7 +21,7 @@ async def check_typhoon(bot:Bot):
 
     if not subscribed_groups:
         logger.info("[Typhoon Task] 当前没有任何群聊开启台风订阅，任务结束。")
-        await bot.finish()
+        return
 
     logger.info(f"[Typhoon Task] 当前检测到开启订阅的群有: {subscribed_groups}")
 
@@ -29,7 +29,7 @@ async def check_typhoon(bot:Bot):
         img_bytes = await check_and_get_new_typhoon_card()
         if img_bytes is None:
             logger.info("[Typhoon Task] 未检测到新台风数据，不执行推送。")
-            await bot.finish()
+            return
         img_segment = MessageSegment.image(img_bytes)
         # 获取 Bot 实例并广播
         bot: Bot = get_bot()
