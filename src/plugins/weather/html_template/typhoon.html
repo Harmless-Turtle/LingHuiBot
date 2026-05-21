@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台风实况预警卡片</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, "Helvetica Neue", sans-serif;
+            background: #0f172a;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .typhoon-glow {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 150px;
+            height: 150px;
+            /* 根据台风是否活跃，渲染不同的微光颜色 */
+            background: radial-gradient(circle, {% if typhoon.status == 'active' %}rgba(14, 165, 233, 0.25){% else %}rgba(148, 163, 184, 0.15){% endif %} 0%, rgba(14, 165, 233, 0) 70%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="glass-card relative w-[550px] rounded-3xl p-6 text-slate-200 overflow-hidden">
+        <div class="typhoon-glow"></div>
+
+        <div class="flex justify-between items-start border-b border-slate-700/50 pb-4 mb-5">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="bg-sky-500/20 text-sky-400 text-xs font-semibold px-2 py-0.5 rounded-full border border-sky-500/30">
+                        第 {{ typhoon.code_4digit }} 号
+                    </span>
+                    <span class="text-xs text-slate-400 font-mono">TS{{ typhoon.code_4digit }}</span>
+                </div>
+                <h1 class="text-3xl font-bold tracking-wide text-white flex items-center gap-2">
+                    {{ typhoon.name_cn }} <span class="text-lg font-light text-slate-400 tracking-normal uppercase">{{ typhoon.name_en }}</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">名字寓意：{{ typhoon.meaning }}</p>
+            </div>
+
+            <div class="text-right">
+                {% if typhoon.status == 'active' %}
+                <span class="inline-flex items-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2.5 py-1 rounded-md">
+                    <span class="w-2 h-2 bg-emerald-400 rounded-full mr-1.5 animate-pulse"></span>
+                    活跃中
+                </span>
+                {% else %}
+                <span class="inline-flex items-center bg-slate-700/40 text-slate-400 border border-slate-600/30 text-xs font-semibold px-2.5 py-1 rounded-md">
+                    已停编归档
+                </span>
+                {% endif %}
+                <p class="text-[10px] text-slate-500 mt-1 font-mono">内部ID: {{ typhoon.id }}</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/40 border border-slate-700/30 rounded-2xl p-5 text-center mb-4">
+            <p class="text-sm text-slate-300 font-medium">🌐 西北太平洋及南海台风监测</p>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                当前接口列表已同步。由于当前无活跃台风生成，本卡片已自动进入【历史档案读取模式】。
+            </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+            <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-3">
+                <span class="text-slate-500 block mb-0.5">编报序列</span>
+                <span class="text-white font-semibold">{{ typhoon.seq_code or "无" }}</span>
+            </div>
+            <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-3">
+                <span class="text-slate-500 block mb-0.5">数据接口状态</span>
+                <span class="text-sky-400 font-semibold">Ready (API 200)</span>
+            </div>
+        </div>
+
+        <div class="text-center text-[10px] text-slate-600 mt-6 border-t border-slate-800/60 pt-3">
+            数据来源：中国气象局公共气象服务中心台风网
+        </div>
+    </div>
+
+</body>
+</html>

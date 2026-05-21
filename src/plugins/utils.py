@@ -146,7 +146,7 @@ def generate_text_image(error_msg, font_path):
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict:
+def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 

@@ -28,8 +28,9 @@ except AttributeError:
 
 
 CURRENT_DIR = str(os.path.dirname(__file__))
+TEMPLATE_DIR = os.path.join(CURRENT_DIR, "html_template")
 # 创建文件系统加载器，告诉 Jinja2 去哪里找 HTML 模板文件
-template_loader = jinja2.FileSystemLoader(searchpath=CURRENT_DIR)
+template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
 # 实例化 template_env 对象
 template_env = jinja2.Environment(loader=template_loader, enable_async=True)
 
@@ -106,15 +107,15 @@ async def _(
     pollutants_list = []
 
     if AQI_data and "indexes" in AQI_data:
-        # 1. 提取首位空气质量标准指数
+        # 提取首位空气质量标准指数
         target_index = AQI_data["indexes"][0]
         aqi_display = f"{target_index.get('aqiDisplay', '--')} {target_index.get('category', '')}"
-        aqi_color = target_index.get("color")  # 包含 red, green, blue
+        aqi_color = target_index.get("color")
         aqi_effect = target_index.get("health", {}).get("effect", "")
         if target_index.get("primaryPollutant"):
             primary_pollutant = target_index["primaryPollutant"].get("name", "无")
 
-        # 2. 循环清洗污染物浓度
+        # 循环清洗污染物浓度
         for p in AQI_data.get("pollutants", []):
             pollutants_list.append({
                 "name": p.get("name"),
