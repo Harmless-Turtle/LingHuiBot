@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>天气卡片模板</title>
+    <title>天气卡片</title>
 </head>
 <body style="margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; background-color: #f0f2f5; font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;">
 
@@ -50,29 +50,6 @@
                 <span style="font-size: 12px; opacity: 0.85;">体感 {{ feelsLike }}°C</span>
             </div>
         </div>
-
-        {% if warnings %}
-        <div class="warning-banner-list" style="display: flex; flex-direction: column; gap: 6px; width: 100%; margin-bottom: 14px;">
-            {% for warning in warnings %}
-            <div style="
-                background: {{ warning.bg_color }};
-                border-left: 4px solid {{ warning.border_color }};
-                padding: 8px 12px;
-                border-radius: 8px;
-                font-size: 11px;
-                font-weight: 500;
-                color: #fff;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            ">
-                <span style="padding-right: 8px; line-height: 1.3;">⚠️ {{ warning.text }}</span>
-                <span style="opacity: 0.7; font-size: 10px; white-space: nowrap;">{{ warning.time }}</span>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
 
         <div class="env-panel" style="
             display: flex;
@@ -178,6 +155,28 @@
                 {% endif %}
                 {% endfor %}
             </div>
+        </div>
+        {% endif %}
+        {% if warnings %}
+        <div class="warning-banner-list" style="display: flex; flex-direction: column; gap: 6px; width: 100%; margin-bottom: 14px;">
+            {% for warning in warnings %}
+            <div style="
+                background: {{ warning.bg_color }};
+                border-left: 4px solid {{ warning.border_color }};
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: 500;
+                color: #fff;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            ">
+                <span style="padding-right: 8px; line-height: 1.3;">⚠️ {{ warning.text }}</span>
+                <span style="opacity: 0.7; font-size: 10px; white-space: nowrap;">{{ warning.time }}</span>
+            </div>
+            {% endfor %}
         </div>
         {% endif %}
         <div class="footer" style="

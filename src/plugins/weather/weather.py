@@ -13,8 +13,8 @@ from nonebot.params import CommandArg
 import re
 
 from .commands import weather_check
-from ..utils import handle_errors
-from .utils import *
+from src.plugins.utils import handle_errors
+from .utils import http_get
 
 try:
     api_key = get_driver().config.weather_api_key
@@ -155,7 +155,7 @@ async def _(
     rendered_html = ""
     try:
         # 加载HTML模板
-        template = template_env.get_template("test.html")
+        template = template_env.get_template("weather.html")
 
         # 准备传入 HTML 参数
         render_context = {
