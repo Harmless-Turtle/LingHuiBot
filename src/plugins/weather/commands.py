@@ -4,3 +4,4 @@ from nonebot import on_command
 weather_check = on_command("天气查询", aliases={"查询天气"})
 typhoon_check = on_command("台风查询", aliases={"查询台风"})
 typhoon_subscribe = on_command("台风订阅", aliases={"订阅台风"})
+weather_forecast = on_command("天气预报", aliases={"查询天气预报"})
