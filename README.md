@@ -98,6 +98,9 @@ Linux操作系统安装流程：<br>
 由于凌辉 Bot 的`表情包制作`功能需要使用到外部工具生成，因此请自行前往此工具的GitHub仓库下载资源包及配置：<br>
 [meme-generator-rs](https://github.com/MemeCrafters/meme-generator-rs/releases/tag/v0.2.3)
 
+2026.6.1更新：<br>
+由于nonebot_plugin_bilichat插件支持更有效的CookieCloud登录哔哩哔哩，因此凌辉Bot的用户现在可以选择使用CookieCloud方式登录哔哩哔哩以获取更稳定的订阅服务。<br>
+如果您想要使用CookieCloud方式登录哔哩哔哩，请前往[nonebot_plugin_bilichat的CookieCloud配置教程](markdown/cookiecloud_config.md)以了解如何配置。
 
 <h2>联系开发组</h2>
 
