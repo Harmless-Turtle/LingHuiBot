@@ -4,11 +4,10 @@ from nonebot.internal.matcher import Matcher
 from nonebot import get_bot
 from nonebot_plugin_orm import AsyncSession
 
-from src.plugins.utils import handle_errors, handle_json, batch_get
+from src.plugins.utils import handle_errors, batch_get
 from .commands import typhoon_check, typhoon_subscribe
 from .utils import get_current_typhoon_cards
 from .models import add_typhoon_sub
-from .check_file import typhoon_id_path
 
 
 @typhoon_check.handle()
