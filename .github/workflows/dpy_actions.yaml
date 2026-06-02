@@ -24,11 +24,7 @@ jobs:
           PAT: ${{ secrets.DPY_PAT }}
           PROJECT_ID: ${{ secrets.DPY_PROJECT_ID }}
           API_KEY: ${{ secrets.DPY_API_KEY }}
-      - name: Designite incremental code quality analysis and issue creation
-        uses: DesigniteTools/designite-incremental-analysis@v2.1.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Designite incremental code quality analysis
+      - name: Designite incremental analysis and violation check
         uses: DesigniteTools/designite-incremental-analysis@v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
