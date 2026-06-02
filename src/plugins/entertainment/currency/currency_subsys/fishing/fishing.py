@@ -9,7 +9,7 @@ from .models import (
     equip_hook,
     equip_rod,
     get_hook,
-    get_rod
+    get_rod, get_bait,add_bait
 )
 from ...models import get_mohui_data,remove_mohui_coin
 from ....commands import (
@@ -148,3 +148,55 @@ async def _fishing_rod_attribute(
         make_text = await batch_get(text, None, event.self_id, f"{event.self_id}")
         final_list.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
+
+
+@buy_fishing_bait.handle()
+@handle_errors
+async def _buy_fishing_bait(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg(),
+):
+    bait_name = FishingBait.bait_names
+    raw_args = args.extract_plain_text().strip().split()
+    if not raw_args:
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + f"请输入正确的饵料名称，目前有：{', '.join(bait_name)}。\n饵料的详细参数，请使用命令“饵料属性”获取")
+
+    bait_target = raw_args[0]
+    count = 1
+    if len(raw_args) > 1:
+        try:
+            count = int(raw_args[1])
+            if count <= 0:
+                raise ValueError
+            if count > 100:
+                await matcher.finish(MessageSegment.reply(event.message_id) + "一次购买的数量不能超过100个哦qwq")
+        except ValueError:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "购买数量必须是正整数呢awa")
+    user_coin = await get_mohui_data(session=session, user_id=str(event.user_id))
+
+    if bait_target not in bait_name:
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + f"请输入正确的饵料名称，目前有：{', '.join(bait_name)}\n饵料的详细参数，请使用命令“饵料属性”获取")
+    bait_data = {}
+    for item in FishingBait.bait_attribute:
+        if item['name'] == bait_target:
+            bait_data = item
+            break
+    total_price = bait_data['price'] * count
+    if user_coin.mohui_coin < total_price:
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + f"你的墨辉币不足以购买 {count} 个 {bait_data['name']} qwq\n总共需要: {total_price} 墨辉币，当前剩余: {user_coin.mohui_coin}")
+    BAIT_MAP = {
+        "普通饵料": "basic",
+        "初级饵料": "intermediate",
+        "中级饵料": "advanced",
+        "高级饵料": "maximal"
+    }
+    bait_type = BAIT_MAP[bait_data['name']]
+    await remove_mohui_coin(session=session, user_id=str(event.user_id), amount=total_price)
+    await add_bait(session=session, user_id=str(event.user_id), bait_type=bait_type, amount=count)
+    await matcher.finish(MessageSegment.reply(
+        event.message_id) + f"成功购买了{count}个{bait_data['name']}了捏~")
