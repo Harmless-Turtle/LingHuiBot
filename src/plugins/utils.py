@@ -471,13 +471,3 @@ def _():
     else:
         ss = 4
     return ss
-def _():
-    if 1== 1:
-        ss = 1
-    elif 2== 1:
-        ss = 2
-    elif 3 == 1:
-        ss = 3
-    else:
-        ss = 4
-    return ss
