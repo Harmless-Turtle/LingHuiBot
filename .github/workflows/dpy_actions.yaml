@@ -23,3 +23,8 @@ jobs:
         uses: DesigniteTools/designite-incremental-analysis@v2.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Designite incremental code quality analysis
+        uses: DesigniteTools/designite-incremental-analysis@v2.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fail-on-violation: true
