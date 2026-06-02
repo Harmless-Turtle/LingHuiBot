@@ -2,9 +2,9 @@ name: DPy Incremental Analysis
 
 on:
   push:
-    branches: [main,dev111]
+    branches: [main,dev111,weather]
   pull_request:
-    branches: [main,dev111]
+    branches: [main,dev111,weather]
 
 jobs:
   incremental-quality-check:
