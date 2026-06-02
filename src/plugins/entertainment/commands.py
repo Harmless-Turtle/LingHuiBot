@@ -63,6 +63,7 @@ bank_robbery = on_command("抢银行", block=True)
 #             货币子系统<钓鱼> 触发器               #
 #########################
 fishing_downswing = on_command("钓鱼", block=True)
+fishing_pull = on_command("收竿", aliases={"提竿"}, block=True)
 buy_fishing_hook = on_command("购买鱼钩")
 buy_fishing_rod = on_command("购买鱼竿")
 buy_fishing_bait = on_command("购买饵料")
