@@ -4,8 +4,6 @@
 
 <h1 align="center"><em>凌辉Bot Furry系统功能列表</em></h1>
 
-此系统功能代码位于 <a href="../src/plugins/Furry.py">Furry.py</a> 中
-
 ## 如何阅读该文档？
 
 可用：表示该功能是否可以使用。<br>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>天气卡片</title>
+</head>
+<body style="margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; background-color: #f0f2f5; font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;">
+
+    <div id="weather-card" style="
+        width: 400px; 
+        height: auto; 
+        min-height: 720px;
+        background: linear-gradient(135deg, #4a90e2 0%, #50e3c2 100%);
+        border-radius: 30px;
+        padding: 24px;
+        box-sizing: border-box;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        display: flex;
+        flex-direction: column;
+        color: white;
+    ">
+
+        <div class="top-bar" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 26px; font-weight: bold; letter-spacing: 1px;">{{ province }}{{ city }}</span>
+                <span style="font-size: 11px; opacity: 0.75; margin-top: 4px;">观测时间：{{ obsTime }}</span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                {{ weather }}
+            </div>
+        </div>
+
+        <div class="hero-section" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 8px;">
+            <div style="display: flex; align-items: flex-start;">
+                <span style="font-size: 76px; font-weight: bold; line-height: 1;">{{ temperature }}</span>
+                <span style="font-size: 24px; font-weight: bold; margin-top: 8px; margin-left: 2px;">°C</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                <div style="font-size: 46px; line-height: 1;">
+                    {% if weather_icon == '100' or weather_icon == '150' %}☀️
+                    {% elif weather_icon in ['101', '102', '103', '151', '152', '153'] %}🌤️
+                    {% elif weather_icon == '104' or weather_icon == '154' %}☁️
+                    {% elif weather_icon in ['300', '301', '350', '351'] %}🌧️
+                    {% elif weather_icon == '305' or weather_icon == '309' %}🌦️
+                    {% elif weather_icon == '306' %}🌧️
+                    {% elif weather_icon == '307' or weather_icon == '308' or weather_icon == '310' or weather_icon == '311' or weather_icon == '312' %}🌧️{% elif weather_icon in ['302', '303', '304'] %}🌩️
+                    {% elif weather_icon in ['400', '401', '402', '403', '456', '457'] %}❄️
+                    {% else %}🌤️{% endif %}
+                </div>
+                <span style="font-size: 12px; opacity: 0.85;">体感 {{ feelsLike }}°C</span>
+            </div>
+        </div>
+
+        <div class="env-panel" style="
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(5px);
+            border-radius: 16px;
+            padding: 10px 6px;
+            margin-bottom: 14px;
+            font-size: 12px;
+            text-align: center;
+        ">
+            <div>
+                <div style="opacity: 0.7; margin-bottom: 2px;">降水量</div>
+                <div style="font-weight: bold;">{{ precip | default('0.0') }} mm</div>
+            </div>
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15); align-self: center;"></div>
+            <div>
+                <div style="opacity: 0.7; margin-bottom: 2px;">云量</div>
+                <div style="font-weight: bold;">{{ cloud | default('——') }}{% if cloud %}%{% endif %}</div>
+            </div>
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15); align-self: center;"></div>
+            <div>
+                <div style="opacity: 0.7; margin-bottom: 2px;">能见度</div>
+                <div style="font-weight: bold;">{{ vis | default('——') }} km</div>
+            </div>
+            <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.15); align-self: center;"></div>
+            <div>
+                <div style="opacity: 0.7; margin-bottom: 2px;">空气质量</div>
+                <div style="
+                    font-weight: bold;
+                    font-size: 11px;
+                    padding: 2px 8px;
+                    border-radius: 8px;
+                    display: inline-block;
+                    /* 如果后端传了颜色的 rgba 字典，就使用它并加 0.35 透明度作为背景，否则默认半透明白色 */
+                    background: {% if aqi_color %}rgba({{ aqi_color.red }}, {{ aqi_color.green }}, {{ aqi_color.blue }}, 0.35){% else %}rgba(255,255,255,0.2){% endif %};
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+                ">
+                    {{ aqi | default('——') }}
+                 </div>
+            </div>
+        </div>
+
+        <div class="details-grid" style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 20px;
+            padding: 14px;
+            margin-bottom: 12px;
+        ">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 11px; opacity: 0.7; margin-bottom: 3px;">相对湿度</span>
+                <span style="font-size: 14px; font-weight: bold;">{{ humidity }}%</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 11px; opacity: 0.7; margin-bottom: 3px;">大气压强</span>
+                <span style="font-size: 14px; font-weight: bold;">{{ pressure }} hPa</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 11px; opacity: 0.7; margin-bottom: 3px;">露点温度</span>
+                <span style="font-size: 14px; font-weight: bold;">{{ dew | default('——') }}{% if dew %}°C{% endif %}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; grid-column: span 1;">
+                <span style="font-size: 11px; opacity: 0.7; margin-bottom: 3px;">风向风角</span>
+                <span style="font-size: 13px; font-weight: bold;">{{ windDir }} ({{ wind360 }}°)</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 11px; opacity: 0.7; margin-bottom: 3px;">风力等级</span>
+                <span style="font-size: 14px; font-weight: bold;">{{ windScale }} 级</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <span style="font-size: 11px; opacity: 0.7; margin-bottom: 3px;">具体风速</span>
+                <span style="font-size: 13px; font-weight: bold;">{{ windSpeed }} km/h</span>
+            </div>
+        </div>
+        {% if pollutants %}
+        <div class="aqi-pollutants-panel" style="
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        ">
+            <div style="font-size: 10px; opacity: 0.8; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px;">
+                <span>🎯 首要污染物: <strong style="color: #fff;">{{ primary_pollutant | default('无') }}</strong></span>
+                <span style="opacity: 0.75; font-style: italic;">{{ aqi_effect }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; text-align: center;">
+                {% for p in pollutants %}
+                <div style="flex: 1;">
+                    <div style="font-size: 9px; opacity: 0.65; transform: scale(0.9); transform-origin: center;">{{ p.name }}</div>
+                    <div style="font-size: 12px; font-weight: bold; margin-top: 1px;">{{ p.value }}</div>
+                    <div style="font-size: 8px; opacity: 0.5; transform: scale(0.85);">{{ p.unit }}</div>
+                </div>
+                {% if not loop.last %}
+                <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.1); align-self: center;"></div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% if warnings %}
+        <div class="warning-banner-list" style="display: flex; flex-direction: column; gap: 6px; width: 100%; margin-bottom: 14px;">
+            {% for warning in warnings %}
+            <div style="
+                background: {{ warning.bg_color }};
+                border-left: 4px solid {{ warning.border_color }};
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: 500;
+                color: #fff;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            ">
+                <span style="padding-right: 8px; line-height: 1.3;">⚠️ {{ warning.text }}</span>
+                <span style="opacity: 0.7; font-size: 10px; white-space: nowrap;">{{ warning.time }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="footer" style="
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 10px;
+            opacity: 0.55;
+            line-height: 1.3;
+        ">
+            <div style="display: flex; justify-content: space-between;">
+                <span>更新时间：{{ updateTime }}</span>
+                <span>API状态: {{ code | default('200') }}</span>
+            </div>
+            <div>数据源: {{ refer_sources | default('QWeather') }} | {{ refer_license | default('Developers License') }}</div>
+            <div style="word-break: break-all; font-family: monospace; opacity: 0.4;">报告源: {{ fxLink }}</div>
+        </div>
+
+    </div>
+
+</body>
+</html>

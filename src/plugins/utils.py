@@ -146,7 +146,7 @@ def generate_text_image(error_msg, font_path):
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict:
+def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 
@@ -188,7 +188,7 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) 
 
 
 # 批量转发内容构建函数
-async def batch_get(text: str, picture: Optional[str], qq: int, name: str) -> MessageSegment:
+async def batch_get(text: str, picture: Optional[str] | bytes, qq: int, name: str) -> MessageSegment:
     if picture is not None:
         make_information = MessageSegment.text(text) + MessageSegment.image(picture)
     else:

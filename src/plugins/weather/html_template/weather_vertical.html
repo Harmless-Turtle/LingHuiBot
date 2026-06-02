@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>凌辉机器人 - 预测天气竖版卡片模板 (Jinja2)</title>
+    <style>
+        /* 基础重置：移除所有边距，防止截图错位 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background-color: #121212;
+            font-family: "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+            width: 400px;
+            height: 720px;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        /* ==========================================
+           核心竖版卡片样式 (400px * 720px 满幅面板)
+           ========================================== */
+        .weather-vertical-card {
+            width: 400px;
+            height: 720px;
+            padding: 28px 24px;
+            position: relative;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            background: {{ bg_gradient | default('linear-gradient(135deg, #FF8C42, #FF3C5F)') }};
+        }
+
+        /* 右上角柔和光晕装饰 */
+        .weather-vertical-card::after {
+            content: "";
+            position: absolute;
+            right: -30px;
+            top: -30px;
+            width: 180px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 50%;
+            filter: blur(20px);
+            pointer-events: none;
+        }
+
+        /* ==========================================
+           1. 头部区块 (城市、日期与更新时间)
+           ========================================== */
+        .card-header {
+            width: 100%;
+            display: block;
+            margin-bottom: 25px;
+        }
+        
+        .header-main {
+            display: table;
+            width: 100%;
+        }
+        
+        .city-box {
+            display: table-cell;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        
+        .date-box {
+            display: table-cell;
+            text-align: right;
+            vertical-align: bottom;
+            font-size: 15px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+        
+        .update-time-badge {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 6px;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        /* ==========================================
+           2. 核心天气呈现区 (大图、大温度、昼夜分述)
+           ========================================== */
+        .core-weather-box {
+            width: 100%;
+            display: table;
+            margin-bottom: 28px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 18px 16px;
+        }
+        
+        .core-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 50%;
+        }
+        
+        .big-icon-container {
+            display: block;
+            height: 52px;
+        }
+        
+        .icon-day-main {
+            float: left;
+            font-size: 42px;
+            line-height: 52px;
+        }
+        
+        .text-day-main {
+            float: left;
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 52px;
+            margin-left: 10px;
+        }
+        
+        .night-condition-sub {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 10px;
+            display: block;
+            clear: both;
+        }
+
+        .core-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+            width: 50%;
+        }
+        
+        .temp-max-large {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+            display: inline-block;
+        }
+        
+        .temp-separator {
+            font-size: 24px;
+            opacity: 0.6;
+            margin: 0 4px;
+            font-weight: 300;
+        }
+        
+        .temp-min-large {
+            font-size: 24px;
+            opacity: 0.85;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        /* ==========================================
+           3. 日月天文星象条 (集成日出日落、月相)
+           ========================================== */
+        .astronomy-bar {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 25px;
+            display: table;
+        }
+        
+        .astro-item {
+            display: table-cell;
+            width: 33.33%;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .astro-item.left-align { text-align: left; }
+        .astro-item.right-align { text-align: right; }
+        
+        .astro-label {
+            opacity: 0.7;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .astro-value {
+            font-weight: bold;
+        }
+
+        /* ==========================================
+           4. 精细化气象指标网格
+           ========================================== */
+        .metrics-grid-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 5px;
+            margin-bottom: 12px;
+        }
+        
+        .metrics-grid-table td {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 10px 12px;
+            width: 50%;
+            vertical-align: top;
+        }
+        
+        .grid-label {
+            font-size: 10px;
+            opacity: 0.7;
+            display: block;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+        
+        .grid-value {
+            font-size: 13px;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+        
+        .grid-sub-value {
+            font-size: 11px;
+            opacity: 0.75;
+            font-weight: normal;
+            margin-top: 1px;
+            display: block;
+        }
+
+
+        /* ==========================================
+           5. 页脚技术元数据 (固定吸底)
+           ========================================== */
+        .card-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            padding-top: 12px;
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+        }
+        
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .footer-table td {
+            font-size: 9px;
+            opacity: 0.5;
+            line-height: 1.4;
+            vertical-align: top;
+        }
+        
+        .fxlink-text {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            word-break: break-all;
+            display: block;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="weather-vertical-card">
+        
+        <div class="card-header">
+            <div class="header-main">
+                <div class="city-box">{{ city }}</div>
+                <div class="date-box">{{ date_label | default('预报') }} · {{ daily.fxDate }}</div>
+            </div>
+            <span class="update-time-badge">API 最近更新: {{ updateTime }} (CST)</span>
+        </div>
+
+        <div class="core-weather-box">
+            <div class="core-left">
+                <div class="big-icon-container">
+                    <span class="icon-day-main">{{ day_emoji | default('☀️') }}</span>
+                    <span class="text-day-main">
+                        {{ daily.textDay }}
+                        {% if daily.textDay != daily.textNight and daily.textNight not in daily.textDay %}
+                        转 {{ daily.textNight }}
+                        {% endif %}
+                    </span>
+                </div>
+                <span class="night-condition-sub">🌙 夜间：{{ daily.textNight }} (状态码: {{ daily.iconNight }})</span>
+            </div>
+            <div class="core-right">
+                <div class="temp-max-large">{{ daily.tempMax }}°</div>
+                <div class="temp-separator">/</div>
+                <div class="temp-min-large">{{ daily.tempMin }}°C</div>
+            </div>
+        </div>
+
+        <div class="astronomy-bar">
+            <div class="astro-item left-align">
+                <span class="astro-label">🌅 日出 / 日落</span>
+                <span class="astro-value">{{ daily.sunrise }} / {{ daily.sunset }}</span>
+            </div>
+            <div class="astro-item">
+                <span class="astro-label">🌓 月相</span>
+                <span class="astro-value">{{ daily.moonPhase }} ({{ moon_emoji | default('🌙') }})</span>
+            </div>
+            <div class="astro-item right-align">
+                <span class="astro-label">🌙 月升 / 月落</span>
+                <span class="astro-value">{{ daily.moonrise | default('--:--') }} / {{ daily.moonset | default('--:--') }}</span>
+            </div>
+        </div>
+
+        <div class="metrics-grid-container">
+            <table class="metrics-grid-table">
+                <tr>
+                    <td>
+                        <span class="grid-label">💨 白天风向风力</span>
+                        <span class="grid-value">{{ daily.windDirDay }} {{ daily.windScaleDay }}级</span>
+                        <span class="grid-sub-value">风速: {{ daily.windSpeedDay }} km/h ({{ daily.wind360Day }}°)</span>
+                    </td>
+                    <td>
+                        <span class="grid-label">💨 夜间风向风力</span>
+                        <span class="grid-value">{{ daily.windDirNight }} {{ daily.windScaleNight }}级</span>
+                        <span class="grid-sub-value">风速: {{ daily.windSpeedNight }} km/h ({{ daily.wind360Night }}°)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="grid-label">🌧️ 预报总降水量</span>
+                        <span class="grid-value">{{ daily.precip }} mm</span>
+                    </td>
+                    <td>
+                        <span class="grid-label">💧 相对平均湿度</span>
+                        <span class="grid-value">{{ daily.humidity }}%</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="grid-label">☀️ 紫外线强度指数</span>
+                        <span class="grid-value">指数 {{ daily.uvIndex }}</span>
+                    </td>
+                    <td>
+                        <span class="grid-label">🌀 大气压强</span>
+                        <span class="grid-value">{{ daily.pressure }} hPa</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="grid-label">👁️ 预估水平能见度</span>
+                        <span class="grid-value">{{ daily.vis }} km</span>
+                    </td>
+                    <td>
+                        <span class="grid-label">☁️ 预估云量占比</span>
+                        <span class="grid-value">{{ daily.cloud }}%</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card-footer">
+            <table class="footer-table">
+                <tr>
+                    <td style="width: 55%; padding-right: 10px;">
+                        <strong>数据源说明 (Sources):</strong><br>
+                        {{ refer_sources | default('QWeather, CMA') }}
+                    </td>
+                    <td style="width: 45%; text-align: right;">
+                        <strong>数据许可声明:</strong><br>
+                        {{ refer_license | default('Commercial License') }}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</body>
+</html>
