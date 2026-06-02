@@ -442,32 +442,3 @@ async def at_is_true(
     if not target_id and "@" in (str(event.raw_message)):
         return "illegal"
     return str(target_id)
-
-
-def _():
-    if 1 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    elif 2 == 1:
-        return 1
-    else:
-        return 1
