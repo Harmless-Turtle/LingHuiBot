@@ -1,0 +1,25 @@
+name: DPy Incremental Analysis
+
+on:
+  push:
+    branches: [main,dev111]
+  pull_request:
+    branches: [main,dev111]
+
+jobs:
+  incremental-quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Run Designite analysis
+        id: designite
+        uses: DesigniteTools/DPyAction@v1.3.1
+        with:
+          PAT: ${{ secrets.DPY_PAT }}
+          PROJECT_ID: ${{ secrets.DPY_PROJECT_ID }}
+          API_KEY: ${{ secrets.DPY_API_KEY }}
+      - name: Designite incremental code quality analysis and issue creation
+        uses: DesigniteTools/designite-incremental-analysis@v2.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
