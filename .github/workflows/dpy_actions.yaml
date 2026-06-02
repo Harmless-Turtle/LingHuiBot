@@ -9,9 +9,14 @@ on:
 jobs:
   incremental-quality-check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Run Designite analysis
         id: designite
         uses: DesigniteTools/DPyAction@v1.3.1
