@@ -168,7 +168,7 @@ def get_moon_emoji(phase_name: str):
 # ===== 天气查询核心逻辑 =====
 
 async def process_weather_check(
-        matcher: Matcher, event: GroupMessageEvent, bot: Bot, location: dict
+        matcher: Matcher, event: GroupMessageEvent, location: dict
 ):
     """处理天气查询核心逻辑（从原 handler 中提取）"""
     location_id = location['id']
@@ -193,21 +193,21 @@ async def process_weather_check(
         )
     qweather_now = weather_data.get("now", {})
 
-    AQI_data = await http_get("AQI", f"{base_url}/airquality/v1/current/{lat}/{lon}", headers)
+    aqi_data = await http_get("AQI", f"{base_url}/airquality/v1/current/{lat}/{lon}", headers)
     aqi_display = "--"
     aqi_color = None
     primary_pollutant = "无"
     aqi_effect = ""
     pollutants_list = []
 
-    if AQI_data and "indexes" in AQI_data:
-        target_index = AQI_data["indexes"][0]
+    if aqi_data and "indexes" in aqi_data:
+        target_index = aqi_data["indexes"][0]
         aqi_display = f"{target_index.get('aqiDisplay', '--')} {target_index.get('category', '')}"
         aqi_color = target_index.get("color")
         aqi_effect = target_index.get("health", {}).get("effect", "")
         if target_index.get("primaryPollutant"):
             primary_pollutant = target_index["primaryPollutant"].get("name", "无")
-        for p in AQI_data.get("pollutants", []):
+        for p in aqi_data.get("pollutants", []):
             pollutants_list.append({
                 "name": p.get("name"),
                 "value": p.get("concentration", {}).get("value", "--"),
@@ -377,7 +377,6 @@ async def process_weather_forecast(
 async def _(
         matcher: Matcher,
         event: GroupMessageEvent,
-        bot: Bot,
         args: Message = CommandArg()
 ):
     if not api_key:
@@ -386,7 +385,7 @@ async def _(
     city = args.extract_plain_text().strip()
     if not city:
         await matcher.finish("请提供要查询的城市名称，例如：天气查询 北京")
-
+    locations = []
     try:
         locations = await lookup_city(city)
     except ValueError as e:
@@ -396,7 +395,7 @@ async def _(
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到匹配的城市，请检查城市名称")
 
     if len(locations) == 1:
-        await process_weather_check(matcher, event, bot, locations[0])
+        await process_weather_check(matcher, event, locations[0])
     else:
         key = _selection_key(event)
         _pending_selections[key] = {
@@ -434,12 +433,11 @@ async def _(
             f"不支持该天数预报，已自动使用{days}天预报"
             f"（支持天数: {', '.join(map(str, sorted(VALID_FORECAST_DAYS)))}）"
         )
-
+    locations = []
     try:
         locations = await lookup_city(city)
     except ValueError as e:
         await matcher.finish(MessageSegment.reply(event.message_id) + str(e))
-
     if not locations:
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到匹配的城市，请检查城市名称")
 
@@ -493,7 +491,7 @@ async def _(
     # 根据类型调用对应的处理函数
     selection_type = pending["type"]
     if selection_type == "check":
-        await process_weather_check(matcher, event, bot, location)
+        await process_weather_check(matcher, event, location)
     elif selection_type == "forecast":
         days = pending.get("days", DEFAULT_FORECAST_DAYS)
         await process_weather_forecast(matcher, event, bot, location, days)
