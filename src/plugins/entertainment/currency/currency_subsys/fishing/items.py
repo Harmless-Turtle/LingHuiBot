@@ -61,7 +61,7 @@ class FishingHook:
             "name": "幸运钩",
             "price": 2000,
             "durability": 5,
-            "bonus": 50
+            "bonus": 15
         }
     ]
 

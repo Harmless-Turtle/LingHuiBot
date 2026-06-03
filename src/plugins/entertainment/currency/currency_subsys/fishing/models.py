@@ -53,6 +53,7 @@ class FishingState(Model):
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)  # 提醒是否已发
     base_wait: Mapped[int] = mapped_column(default=0)  # 本次随机基础等待秒数
     window_bonus: Mapped[int] = mapped_column(default=0)  # 本次鱼竿窗口加成
+    bait_bonus: Mapped[int] = mapped_column(default=0)  # 本次饵料加成
 
 
 # ==================== 内存锁（防止同一用户并发触发竞态）====================
@@ -157,6 +158,16 @@ async def reduce_hook_durability(
     返回 True 表示鱼钩仍可用，False 表示已损坏被卸下。
     """
     data = await get_fishing_data(session, user_id)
+
+    # 👇 新增：防止新玩家没有数据直接报错
+    if data is None:
+        await init_player(session, user_id)
+        data = await get_fishing_data(session, user_id)
+
+    # 👇 新增：如果没有鱼钩，直接返回可用
+    if not data.fish_hook:
+        return True
+
     data.hook_durability -= amount
     if data.hook_durability <= 0:
         data.fish_hook = None
@@ -218,19 +229,20 @@ async def try_start_fishing(
         lure_end_time: float,
         base_wait: int,
         window_bonus: int,
+        bait_bonus: int,
 ) -> bool:
     """
-    尝试开始钓鱼。
-    内存锁拦截极短时间内的重复触发；
-    数据库层再校验 is_fishing 防止状态异常。
-    返回 True 表示成功抛竿，False 表示已在钓鱼中。
+        尝试开始钓鱼。
+        内存锁拦截极短时间内的重复触发；
+        数据库层再校验 is_fishing 防止状态异常。
+        返回 True 表示成功抛竿，False 表示已在钓鱼中。
 
-    用法示例：
-        success = await try_start_fishing(session, user_id, lure_end, base, bonus)
-        if not success:
-            await send("已在钓鱼中")
-            return
-    """
+        用法示例：
+            success = await try_start_fishing(session, user_id, lure_end, base, bonus)
+            if not success:
+                await send("已在钓鱼中")
+                return
+        """
     if user_id in _fishing_lock:
         return False
 
@@ -244,6 +256,7 @@ async def try_start_fishing(
         state.lure_end_time = lure_end_time
         state.base_wait = base_wait
         state.window_bonus = window_bonus
+        state.bait_bonus = bait_bonus  # <-- 新增赋值
         state.reminder_sent = False
         state.earliest_pull = 0.0
         state.latest_pull = 0.0
@@ -285,21 +298,54 @@ async def end_fishing(session: AsyncSession, user_id: str) -> None:
     await session.commit()
 
 
-async def process_fishing(session, user_id: str):
-    """所有数据库读写和判断逻辑，作为内部使用事务"""
+async def process_fishing(session, user_id: str, bait_name_arg: str = ""):
+    """
+    重构：所有数据库读写和判断逻辑。
+    支持传入指定的饵料中文名，若不传则自动挑低级到高级有库存的饵料。
+    返回元组: (错误提示文本或False, 选中的英文饵料类型键名)
+    """
     fishing_data = await get_fishing_data(session, user_id)
     if fishing_data is None:
         await init_player(session, user_id)
         fishing_data = await get_fishing_data(session, user_id)
     fishing_state = await get_state(session, user_id)
     bait_data = await get_bait(session, user_id)
-    result = False
+
     if not fishing_data.fish_hook:
-        result = "你还没有购买鱼钩呢qwq"
-    elif fishing_data.hook_durability == 0:
-        result = "你的鱼钩好像损坏了呢qwq"
-    elif bait_data.basic_bait == 0 and bait_data.intermediate_bait == 0 and bait_data.advanced_bait == 0 and bait_data.maximal_bait == 0:
-        result = "你没有足够的饵料了呢qwq"
-    elif fishing_state.is_fishing:
-        result = "你已经在钓鱼了哦qwq"
-    return result
+        return "你还没有购买鱼钩呢qwq", None
+    if fishing_data.hook_durability == 0:
+        return "你的鱼钩好像损坏了呢qwq", None
+    if fishing_state.is_fishing:
+        return "你已经在钓鱼了哦qwq", None
+
+    # 饵料映射表
+    BAIT_MAP = {
+        "普通饵料": "basic",
+        "初级饵料": "intermediate",
+        "中级饵料": "advanced",
+        "高级饵料": "maximal"
+    }
+
+    selected_type = None
+    bait_name_arg = bait_name_arg.strip()
+
+    if bait_name_arg:
+        # 玩家主动指定了饵料
+        if bait_name_arg not in BAIT_MAP:
+            return f"请输入正确的饵料名称捏！目前有：{', '.join(BAIT_MAP.keys())}", None
+
+        selected_type = BAIT_MAP[bait_name_arg]
+        col_name = BAIT_COLUMNS[selected_type]
+        if getattr(bait_data, col_name) < 1:
+            return f"你包里的【{bait_name_arg}】数量不足了捏qwq", None
+    else:
+        # 玩家只输入了“/钓鱼”，启动自动挑选库存机制（顺序：普通 -> 初级 -> 中级 -> 高级）
+        for ch_name, en_key in BAIT_MAP.items():
+            col_name = BAIT_COLUMNS[en_key]
+            if getattr(bait_data, col_name) >= 1:
+                selected_type = en_key
+                break
+        if not selected_type:
+            return "你包里没有任何多余的饵料了呢qwq", None
+
+    return False, selected_type
