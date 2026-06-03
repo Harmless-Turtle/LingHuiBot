@@ -135,7 +135,5 @@ Bot，则视为您已阅读并同意本协议的全部条款。</b>
 | FurryFusion 兽聚汇总 | FurryFusion    | https://www.furryfusion.net |
 | FurryAI聊天        | FurryBar       | https://www.furrybar.com    |
 | 每日鉴毛API          | `《每日鉴毛》By狼神米迩` | NG                          |
-| 塔罗牌              | OIAPI          | https://oiapi.net           |
-
 
 - 以及其他提供API接口支持的网站。
