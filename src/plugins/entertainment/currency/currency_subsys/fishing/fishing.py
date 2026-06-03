@@ -34,7 +34,8 @@ from ....commands import (
     buy_fishing_bait,
     fishing_hook_attribute,
     fishing_rod_attribute,
-    fishing_pull
+    fishing_pull,
+    fishing_bait_attribute
 )
 from .....utils import handle_errors,batch_get
 
@@ -149,6 +150,28 @@ async def _fishing_rod_attribute(
         final_list.append(make_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
 
+
+@fishing_bait_attribute.handle()
+@handle_errors
+async def fishing_bait_attribute(
+        bot:Bot,
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        args: Message = CommandArg(),
+):
+    if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
+    final_list = []
+    for item in FishingBait.bait_attribute:
+        level,name,price,bonus = item['level'],item['name'],item['price'],item["bonus"]
+        text = (
+            f"饵料等级：{level}\n"
+            f"饵料名称：{name}\n"
+            f"价格：{price}墨辉币\n"
+            f"物品稀有度加权：{bonus}"
+        )
+        make_text = await batch_get(text, None, event.self_id, f"{event.self_id}")
+        final_list.append(make_text)
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
 
 @buy_fishing_bait.handle()
 @handle_errors

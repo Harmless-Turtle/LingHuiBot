@@ -69,6 +69,7 @@ buy_fishing_rod = on_command("购买鱼竿")
 buy_fishing_bait = on_command("购买饵料")
 fishing_hook_attribute = on_command("鱼钩属性")
 fishing_rod_attribute = on_command("鱼竿属性")
+fishing_bait_attribute = on_command("饵料属性")
 
 #########################
 #                 表情包制作 触发器                   #
