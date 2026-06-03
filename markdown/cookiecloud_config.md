@@ -32,7 +32,7 @@ cookie_clouds:<br>
 `.venv/bin/uvicorn main:app --host 127.0.0.1 --port 23333`
 
 4. 在浏览器的CookieCloud插件中，单击`测试`或者`手动同步`按钮，观察uvicorn终端是否出现如下信息：<br>
-> INFO:     127.0.0.1:42378 - "GET /get/86fUTo28vW8SZyX6RNFpQS HTTP/1.1" 200 OK
+> INFO:     127.0.0.1:42378 - "GET /get/<你的uuid> HTTP/1.1" 200 OK
 
 5. 重启凌辉Bot实例，观察终端是否出现：
 `[INFO] nonebot_plugin_bilichat | 本地 API 已启用, 地址: http: //127.0.0.1:9090/bilichat_local_request_api/bilichatapi 配置: `<br>
