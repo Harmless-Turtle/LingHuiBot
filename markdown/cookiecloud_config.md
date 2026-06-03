@@ -20,7 +20,7 @@
 2. 找到其中的local_api_config配置项，在下面添加内容：<br>
 cookie_clouds:<br>
 **-**   password: CookieCloud配置的密码<br>
-    url: http://127.0.0.1:23333br>
+    url: http://127.0.0.1:23333<br>
     uuid: CookieCloud配置的UUID<br>
 
 > 由于markdown渲染的问题，您需要保证粘贴的内容符合Yaml文件规则。
@@ -38,31 +38,31 @@ cookie_clouds:<br>
 `[INFO] nonebot_plugin_bilichat | 本地 API 已启用, 地址: http: //127.0.0.1:9090/bilichat_local_request_api/bilichatapi 配置: `<br>
 ````
 {
-	"log_level": "DEBUG",<br>
-	"log_trace_retention": 3,<br>
-	"log_info_retention": 30,<br>
-	"log_request_retention": 0,<br>
-	"log_compression_format": "tar.xz",<br>
-	"data_path": "/home/LingHui/NoneBot/LingHuiBot/data/nonebot_plugin_bilichat/bilichat_request",<br>
-	"sentry_dsn": "",<br>
-	"playwright_download_host": "",<br>
-	"playwright_headless": true,<br>
-	"retry": 3,<br>
-	"timeout": 20,<br>
-	"dynamic_cache_ttl": 120,<br>
-	"pc_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0",<br>
-	"mobile_user_agent": "Mozilla/5.0 (Android 15; Mobile; rv:135.0) Gecko/135.0 Firefox/135.0",<br>
-	"api_access_token": "",<br>
-	"api_sub_dynamic_limit": "720/hour",<br>
-	"api_sub_live_limit": "1800/hour",<br>
-	"api_enable_health_check": false,<br>
-	"account_recover_interval": 120,<br>
+	"log_level": "DEBUG",
+	"log_trace_retention": 3,
+	"log_info_retention": 30,
+	"log_request_retention": 0,
+	"log_compression_format": "tar.xz",
+	"data_path": "/home/LingHui/NoneBot/LingHuiBot/data/nonebot_plugin_bilichat/bilichat_request",
+	"sentry_dsn": "",
+	"playwright_download_host": "",
+	"playwright_headless": true,
+	"retry": 3,
+	"timeout": 20,
+	"dynamic_cache_ttl": 120,
+	"pc_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0",
+	"mobile_user_agent": "Mozilla/5.0 (Android 15; Mobile; rv:135.0) Gecko/135.0 Firefox/135.0",
+	"api_access_token": "",
+	"api_sub_dynamic_limit": "720/hour",
+	"api_sub_live_limit": "1800/hour",
+	"api_enable_health_check": false,
+	"account_recover_interval": 120,
 	"cookie_clouds": [{
-		"url": "http://127.0.0.1:23333",<br>
-		"uuid": "<你的UUID>",<br>
-		"password": "<你的Password>"<br>
-	}]<br>
-}<br>
+		"url": "http://127.0.0.1:23333",
+		"uuid": "<你的UUID>",
+		"password": "<你的Password>"
+	}]
+}
 ````
 如果出现如上信息，即意味着您已经成功配置了CookieCloud，并且现在凌辉Bot的bilichat插件已经可以使用CookieCloud获取用户Cookie了。<br>
 更详细的问题或疑难解答，请联系开发者解决。
