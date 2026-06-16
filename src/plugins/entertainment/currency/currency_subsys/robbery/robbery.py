@@ -44,7 +44,7 @@ async def _robbery(
     operate_coins = rd.randint(100, 500)
     # 获取目标方的昵称
     stranger_info = await bot.get_stranger_info(user_id=int(target_id))
-    nickname = stranger_info.get('nickname', '来自远方的旅人')
+    nickname = stranger_info.get('nickname', '未获取到名称')
 
     try:
         await _process_robbery(
@@ -84,6 +84,9 @@ async def _process_robbery(
     user_data = time_data.get(str(event.user_id), {})
     # 如果用户状态存在，则进入判断
     if user_data:
+        # 统一判断并删除
+        if now_time - user_data['time'] >= 86400:
+            user_data['count'] = 0
         # 获取计数器
         count = user_data['count']
         if count >= 5:
@@ -94,9 +97,8 @@ async def _process_robbery(
                     "你今天已经抢太多次啦，休息一下吧uwu\n"
                     "此消息仅会发送1次，直至时间足够刷新。"
                 )
-        # 统一判断并删除
-        if now_time - user_data['time'] >= 86400:
-            del time_data[str(event.user_id)]
+            else:
+                await matcher.finish()
 
     # 获取双方的墨辉币数量
     from_user_data = await get_mohui_data(session, str(event.user_id))
