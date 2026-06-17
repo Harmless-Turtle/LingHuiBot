@@ -1,7 +1,7 @@
 from typing import Optional
 
 from nonebot_plugin_orm import Model
-from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String
+from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String,text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -53,7 +53,7 @@ class FishingState(Model):
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)  # 提醒是否已发
     base_wait: Mapped[int] = mapped_column(default=0)  # 本次随机基础等待秒数
     window_bonus: Mapped[int] = mapped_column(default=0)  # 本次鱼竿窗口加成
-    bait_bonus: Mapped[int] = mapped_column(default=0)  # 本次饵料加成
+    bait_bonus: Mapped[int] = mapped_column(server_default=text('0'))  # 本次饵料加成
 
 
 # ==================== 内存锁（防止同一用户并发触发竞态）====================
