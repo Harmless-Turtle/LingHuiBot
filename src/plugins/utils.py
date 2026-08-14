@@ -146,7 +146,7 @@ def generate_text_image(error_msg, font_path):
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict | None:
+def handle_json(json_path: Path | str, mode: str, data: Optional[dict | list|str] = None) -> dict | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 
@@ -326,16 +326,17 @@ def get_config_item(key: str, default=None, required=False, desc=None):
 
 
 # ========= 工具函数：异步请求 API =========
-async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str = "get") -> dict:
+async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str = "get",raw_response=False) -> dict|str:
     """
     统一的异步 API 请求工具。
 
-    参数:
+    Args:
         endpoint (str): API 路径（如 'service/screen'）。
         params (dict | None): 查询参数字典，可选，默认为 None。
-        service (str): 服务名称，用于区分不同api的请求。
+        service (str): 服务名称，用于区分不同api的请求。如果为非特征，则直接访问请求。
         request_mode (str): 请求方式，'get' 或 'post'，默认为 'get'。
-    返回:
+        raw_response:是否返回访问URL的原始值，默认为False
+    Returns:
         dict: 成功时返回解析后的 JSON 数据；发生错误时抛出 Exception。
     """
     if service == "furryfusion":
@@ -343,7 +344,7 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
     elif service == "furry":
         url = f"https://cloud.foxtail.cn/api/{endpoint}"
     else:
-        raise ValueError("未填写服务url，工具运行失败。")
+        url = endpoint
     async with httpx.AsyncClient() as client:
         if request_mode == "post":
             response = await client.post(url, timeout=10.0)
@@ -351,7 +352,10 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
             response = await client.get(url, timeout=10.0)
         # 如果状态码不是 2xx，抛出异常
         response.raise_for_status()
-        return response.json()
+        if raw_response:
+            return response.text  # 返回原始 HTML 文本
+        else:
+            return response.json()
 
 
 def ensure_files_exist(file_path: list[Path], description: str, normal_data: list) -> None:

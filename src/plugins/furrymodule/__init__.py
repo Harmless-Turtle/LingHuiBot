@@ -1,5 +1,5 @@
 from . import (
     furry,
     furrybar,
-    furryfusion
+    FEC
 )

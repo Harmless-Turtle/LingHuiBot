@@ -27,6 +27,7 @@ dependencies = [
     "nonebot-plugin-bilichat>=6.5.0",
     "bilichat-request>=0.5.12",
     "uv>=0.11.15",
+    "beautifulsoup4>=4.15.0",
 ]
 
 [tool.nonebot]

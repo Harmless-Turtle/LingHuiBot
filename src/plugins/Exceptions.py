@@ -44,5 +44,8 @@ class BlacklistError(ModuleError):
     message = "黑名单模块发生异常，请稍后再试。"
 
 
-class FurryModuleError(EntertainmentError):
+class FurryModuleError(ModuleError):
     message = "Furry 功能模块发生异常，请稍后再试。"
+
+class FurryFusionError(ModuleError):
+    message = ("FurryFEC 功能模块发生异常，请稍后再试\n请确认API是否可达。")
