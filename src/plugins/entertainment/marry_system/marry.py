@@ -108,8 +108,7 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     nickname = stranger_info.get('nickname', '昵称获取失败')
     time_text = time_handle(self_data['time'])
     # 直接删除用户和用户对象json
-    data.pop(self_qq, None)
-    data.pop(cp_qq, None)
+    del data[self_qq][group_id],data[cp_qq][group_id]
     # 将处理完的Data写入文件
     handle_json(marry_json_path, 'w', data)
     await matcher.finish(MessageSegment.reply(
