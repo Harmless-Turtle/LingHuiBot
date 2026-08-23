@@ -129,17 +129,18 @@ async def marry_propose_func(
     user_id, bot_qq, self_qq, timestamp, group_id = event.self_id, event.self_id, event.user_id, int(time.time()), str(
         event.group_id)
     # 获取at值
-    user_id = await  at_is_true(event, args)
-    logger.info(user_id)
+    user_id = await  at_is_true(event)
+    if not user_id.isdigit():
+        await matcher.finish(MessageSegment.reply(event.message_id) + "凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
     is_robot = await bot.get_group_member_info(group_id=event.group_id, user_id=int(user_id))
-    if user_id == self_qq or user_id == bot_qq or is_robot['is_robot']:
+    if user_id == str(self_qq) or user_id == str(bot_qq) or is_robot['is_robot']:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你你...你不可以向自己或者机器人求婚呢xwx")
     # 判断是否为非法请求
     # 获取请求值是否为tx机器人
     temp = str(text)
-    if user_id == 0 or user_id == str(event.self_id):
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + "凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
+    # if user_id == 0 or user_id == str(event.self_id):
+    #     await matcher.finish(MessageSegment.reply(
+    #         event.message_id) + "凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
     if "CQ" not in temp and "求婚" in temp:
         await matcher.finish()
     data = handle_json(marry_json_path, 'r')
@@ -279,7 +280,7 @@ async def marry_check_func(
     data = handle_json(marry_json_path, 'r')
     self_qq, group_id, user_id = str(event.user_id), str(event.group_id), 0
     # 获取at值
-    user_id = await at_is_true(event, args)
+    user_id = await at_is_true(event)
     if user_id != 0:
         self_qq = user_id
     text = "你"

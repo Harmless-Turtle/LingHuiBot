@@ -105,7 +105,7 @@ async def handle_meme(
         # 纯文字表情，不需要图片
         pass
     else:
-        user_id = await at_is_true(event, args)
+        user_id = await at_is_true(event)
 
         if user_id == "illegal":
             await meme_matcher.finish(
