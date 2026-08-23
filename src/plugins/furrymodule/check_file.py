@@ -10,7 +10,8 @@ batch_path = DATA_PATH / "batch"
 temp_image_path = OPENDATA / 'data' / 'furry_system' / 'temp.jpg'
 allin_pic_prerequisite_path = OPENDATA / 'data' / 'furry_system' / 'processed_images'
 forward_path = OPENDATA / "data" / "furry_system" / "furrybar"
-fec_buildId = OPENDATA / "data"  / "furry_system"/ "fec_buildID.json"
+fec_buildId_path = OPENDATA / "data"  / "furry_system"/ "fec" / "fec_buildID.json"
+fec_images_path = OPENDATA / "data"  / "furry_system"/ "fec" / "images"
 
 # 校验文件
 ensure_files_exist(
@@ -22,8 +23,9 @@ ensure_files_exist(
         temp_image_path,
         allin_pic_prerequisite_path,
         forward_path,
-        fec_buildId
+        fec_buildId_path,
+        fec_images_path
     ],
     description="furrymodule模块 自检",
-    normal_data=[None, None, [], None, None, None, None,{}]
+    normal_data=[None, None, [], None, None, None, None,{},None]
 )

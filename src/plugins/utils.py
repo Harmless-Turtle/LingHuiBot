@@ -293,7 +293,7 @@ async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str
         alpha
     )
     img_resized = img_resized.convert("RGB")
-    output_dir = Path.cwd() / 'data' / 'Furry_System' / "processed_images"
+    output_dir = Path.cwd() / 'data' / 'furry_system' / "processed_images"
     os.makedirs(output_dir, exist_ok=True)
 
     draw = ImageDraw.Draw(img_resized)
