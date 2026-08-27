@@ -105,26 +105,44 @@ async def handle_meme(
         # 纯文字表情，不需要图片
         pass
     else:
-        user_id = await at_is_true(event)
+        # 保持原有单 @ / 无 @ 行为，只扩展为收集 CommandArg 中的全部 @ 段。
+        # 不改变头像缓存路径和下载时机，避免引入与原插件无关的副作用。
+        at_user_ids: list[str] = []
+        for segment in args:
+            if segment.type == "at":
+                qq = str(segment.data.get("qq", ""))
+                if qq == "all":
+                    continue
+                if qq.isdigit():
+                    at_user_ids.append(qq)
 
-        if user_id == "illegal":
-            await meme_matcher.finish(
-                MessageSegment.reply(event.message_id) + "AT 格式不合法，请直接 @用户 而不是输入 @ 符号。")
+        if at_user_ids:
+            if max_img != -1:
+                at_user_ids = at_user_ids[:max_img]
+            for index, user_id in enumerate(at_user_ids):
+                target_dir = memes_make_path / f"{event.message_id}_{index}_{user_id}.jpg"
+                await download_avatar(user_id, target_dir)
+                with open(target_dir, "rb") as f:
+                    images.append(Image("avatar", f.read()))
+        else:
+            # 完全保留原来的无 @ 逻辑（包括 at_is_true 对非法 AT 的兼容）。
+            user_id = await at_is_true(event)
 
-        if user_id in ("finish", "illegal") or not user_id.isdigit():
-            # 没有 @ 任何人
-            if min_img > 0:
-                # 必须有图 → 用发送者自己的头像
-                user_id = str(event.user_id)
-            else:
-                # 图片可选 → 跳过
-                user_id = None
+            if user_id == "illegal":
+                await meme_matcher.finish(
+                    MessageSegment.reply(event.message_id) + "AT 格式不合法，请直接 @用户 而不是输入 @ 符号。")
 
-        if user_id:
-            target_dir = memes_make_path / f"{event.user_id}.jpg"
-            await download_avatar(user_id, target_dir)
-            with open(target_dir, "rb") as f:
-                images.append(Image("avatar", f.read()))
+            if user_id in ("finish", "illegal") or not user_id.isdigit():
+                if min_img > 0:
+                    user_id = str(event.user_id)
+                else:
+                    user_id = None
+
+            if user_id:
+                target_dir = memes_make_path / f"{event.user_id}.jpg"
+                await download_avatar(user_id, target_dir)
+                with open(target_dir, "rb") as f:
+                    images.append(Image("avatar", f.read()))
 
         if len(images) < min_img:
             await meme_matcher.finish(MessageSegment.reply(event.message_id) +
