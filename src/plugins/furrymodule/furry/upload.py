@@ -61,8 +61,9 @@ async def upload_furry_image(
         group: GroupMessageEvent,
         args: Message = CommandArg(),
 ):
+    if "#" not in str(args):
+        await matcher.finish()
     data = str(args).split("#")
-
     # 路径检查
     if not os.path.exists(DATA_PATH):
         os.makedirs(DATA_PATH)

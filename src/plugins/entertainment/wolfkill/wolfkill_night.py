@@ -1,8 +1,8 @@
 # wolfkill_night.py
 # 狼人杀夜晚行动流程实现
 
-from typing import Dict, List, Optional
-import random
+from typing import Dict, Optional
+
 
 class NightActionResult:
     def __init__(self):
@@ -13,6 +13,7 @@ class NightActionResult:
         self.protected: Optional[int] = None  # 守卫守护
         self.poison_used: bool = False
         self.save_used: bool = False
+
 
 class WolfKillNight:
     def __init__(self, role_map: Dict[int, str]):

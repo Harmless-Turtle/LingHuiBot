@@ -23,8 +23,12 @@
 
 
 import nonebot
+import os
 from nonebot import require
 from nonebot.adapters.onebot.v11 import Adapter
+import bilichat_request
+
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/home/LingHui/NoneBot/LingHuiBot/data/nonebot_plugin_htmlrender"
 
 nonebot.init()
 
@@ -39,6 +43,7 @@ require("nonebot_plugin_datastore")
 require("nonebot_plugin_localstore")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_kawaii_status")
+require("nonebot_plugin_bilichat")
 # require("nonebot_plugin_mcserver_status_check")
 nonebot.load_plugins("src/plugins")
 

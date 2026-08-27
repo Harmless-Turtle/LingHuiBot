@@ -1,8 +1,8 @@
 import os
+import random as rd
 import shutil
 import time
 from pathlib import Path
-import random as rd
 
 import httpx
 import jwt
@@ -54,6 +54,7 @@ try:
 except AttributeError:
     see_furry_baseURL = None
     logger.warning("未读取到鉴毛API，鉴毛功能可能不可用！")
+
 
 @furry_random.handle()
 @handle_errors
@@ -213,12 +214,12 @@ async def service_furry_status(matcher: Matcher, event: MessageEvent):
 @see_furry.handle()
 @handle_errors
 async def see_furry_function(
-        matcher:Matcher,
+        matcher: Matcher,
         event: MessageEvent,
-        args:Message = CommandArg()):
+        args: Message = CommandArg()):
     if "#" not in str(args) and str(args) != "":
         await matcher.finish()
-    params_data = {"all":"1"}
+    params_data = {"all": "1"}
     try:
         input_data = str(args).split("#")
         input_data = input_data[1]
@@ -241,7 +242,7 @@ async def see_furry_function(
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(f"{see_furry_baseURL}/{splice_url}",
-                                         json={"qq": payload["qq"],"token": token},
+                                         json={"qq": payload["qq"], "token": token},
                                          params=params_data,
                                          timeout=timeout)
     except NetworkError:
@@ -249,9 +250,10 @@ async def see_furry_function(
     data = response.json()
     if response.status_code != 200:
         text = data['message']
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回：{text}[HTTP {response.status_code}]，请稍后再试。")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + f"鉴毛API返回：{text}[HTTP {response.status_code}]，请稍后再试。")
     data = data['data']
-    select = rd.randint(0,len(data)-1)
+    select = rd.randint(0, len(data) - 1)
     data = data[select]
     qishu = data['qishu']
     name = data['name']
@@ -261,13 +263,15 @@ async def see_furry_function(
     by = data['by']
     image_url = data['url']
     if image_url == "":
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"鉴毛API返回了数据，但似乎没有图片URL，请稍后再试。")
-    await matcher.finish(MessageSegment.reply(event.message_id)+f"期数：{qishu}\n"
-                                                                f"名字：{name}\n"
-                                                                f"城市：{city}\n"
-                                                                f"种族：{race}\n"
-                                                                f"工作室：{studio}\n"
-                                                                f"图片制作：{by}"+MessageSegment.image(image_url))
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + f"鉴毛API返回了数据，但似乎没有图片URL，请稍后再试。")
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"期数：{qishu}\n"
+                                                                  f"名字：{name}\n"
+                                                                  f"城市：{city}\n"
+                                                                  f"种族：{race}\n"
+                                                                  f"工作室：{studio}\n"
+                                                                  f"图片制作：{by}" + MessageSegment.image(image_url))
+
 
 @check_upload.handle()
 @handle_errors

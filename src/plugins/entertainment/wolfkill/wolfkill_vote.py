@@ -1,7 +1,8 @@
 # wolfkill_vote.py
 # 投票与胜负判定逻辑
-from typing import Dict, List, Optional
 from collections import Counter
+from typing import Dict, List, Optional
+
 
 class WolfKillVote:
     def __init__(self, alive_players: List[int]):

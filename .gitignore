@@ -134,3 +134,4 @@ menu_config/
 *.ttf
 *.png
 /cache/
+config

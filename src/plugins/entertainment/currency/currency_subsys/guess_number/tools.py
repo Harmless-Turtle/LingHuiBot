@@ -1,6 +1,8 @@
 from typing import Dict
 
 group_lottery: Dict[int, dict] = {}
+
+
 def add_bet(group_id: int, user_id: int, number: int, amount: int):
     # 累加下注金额
     if group_id not in group_lottery:

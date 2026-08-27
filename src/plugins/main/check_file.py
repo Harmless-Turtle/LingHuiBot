@@ -30,5 +30,5 @@ ensure_files_exist(
         group_join_flag_path
     ],
     description="main 模块自检",
-    normal_data=[[], {}, [], {}, None, None, {}, {}, {},{}]
+    normal_data=[[], {}, [], {}, None, None, {}, {}, {}, {}]
 )

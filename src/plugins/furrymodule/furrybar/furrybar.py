@@ -147,7 +147,8 @@ async def furry_bar_function(matcher: Matcher, event: MessageEvent, reply: Group
         user_json_data['messages'].append(assistant_data)
         # 写入用户文件进行保存
         handle_json(user_json_path, 'w', user_json_data)
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"{text}\n---------\n*AI也可能会犯错。其答案未必准确无误。")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + f"{text}\n---------\n*AI也可能会犯错。其答案未必准确无误。")
 
 
 @reset_furrybar.handle()
@@ -293,7 +294,8 @@ async def _model_switch(matcher: Matcher, event: MessageEvent, args: Message = C
             MessageSegment.reply(event.message_id) + "未检索到此模型，请使用”模型列表“命令来查找可用模型")
     data['model'] = args
     handle_json(user_normal_path, 'w', data)
-    await matcher.finish(MessageSegment.reply(event.message_id) + f"模型已切换为{args}。若要立即生效，请发送命令”重置模型“")
+    await matcher.finish(
+        MessageSegment.reply(event.message_id) + f"模型已切换为{args}。若要立即生效，请发送命令”重置模型“")
 
 
 @check_model.handle()

@@ -17,8 +17,8 @@ from nonebot_plugin_orm import async_scoped_session
 
 from .check_file import *
 from .commands import *
+from ..entertainment.currency.models import get_mohui_data, add_mohui_coin
 from ..utils import handle_errors
-from src.plugins.entertainment.currency.models import modify_user_coin,get_user_coin
 
 # 获取机器人的名字
 config = get_driver().config
@@ -42,7 +42,7 @@ async def pc_function(matcher: Matcher):
     if poke_count >= 3 and time.time() - time_count <= 120:
         if time.time() - time_count >= 120:
             poke_count = 0
-            await pc_function()
+            await pc_function(matcher)
         else:
             if send:
                 send = False
@@ -57,6 +57,7 @@ async def pc_function(matcher: Matcher):
         time_count = time.time()
         random_message = text_list[rd.randint(0, len(text_list) - 1)]
         await matcher.finish(f"{random_message}")
+
 
 @add_welcome.handle()
 @handle_errors
@@ -112,7 +113,7 @@ async def sign_in_function(
         matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
-        args:Message = CommandArg()
+        args: Message = CommandArg()
 ):
     # 若签到文本后有文本，则直接结束任务
     if args.extract_plain_text(): await matcher.finish()
@@ -177,8 +178,10 @@ async def sign_in_function(
     # 判断随机给墨辉币的数量
     rd_coins = rd.randint(50, 300)
     operate_coins = user_count * 2 + rd_coins
-    await modify_user_coin(session, str(event.user_id), operate_coins)
-    balance = await get_user_coin(session, str(event.user_id))
+    await add_mohui_coin(session, str(event.user_id), operate_coins)
+    await session.commit()
+    obj = await get_mohui_data(session, str(event.user_id))
+    balance = obj.mohui_coin
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         # 生成检测到“好久不见”字样的默认值
@@ -348,8 +351,11 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
     select = a[f'meal{random_number}']
     await matcher.finish(MessageSegment.reply(event.message_id) + f"{a['mealwhat']}\n要不{select}吧！")
 
+
 @nc_version_info.handle()
-async def _version_info(bot:Bot,matcher:Matcher,event:MessageEvent):
+async def _version_info(bot: Bot, matcher: Matcher, event: MessageEvent):
+    if "凌辉" not in str(MessageEvent.raw_message):
+        await matcher.finish()
     data = await bot.get_version_info()
     await matcher.finish(MessageSegment.reply(event.message_id) + f"当前使用的客户端实例：{data["app_name"]}\n"
                                                                   f"客户端实例版本号：{data['app_version']}\n"

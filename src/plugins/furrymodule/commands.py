@@ -12,7 +12,7 @@ furry_list = on_command("查列表", aliases={"查列表#", "查兽兽"}, priori
 # 兽图状态
 furry_status = on_command("兽图状态", aliases={"兽图状态#"}, priority=10, block=True)
 # 鉴毛
-see_furry = on_command("鉴毛",aliases={"每日鉴毛"},priority=10, block=True)
+see_furry = on_command("鉴毛", aliases={"每日鉴毛"}, priority=10, block=True)
 # 获取服务器信息
 service_status = on_command("服务器状态", aliases={"兽云祭信息", "兽云祭状态", "服务状态"}, priority=10, block=True)
 
@@ -64,16 +64,16 @@ furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, b
 # AI对话（@机器人触发）
 furrybar = on_message(rule=to_me(), priority=99, block=True)
 # 模型切换
-user_model_switch = on_command("更改模型",aliases={"更换模型","模型切换","切换模型"},block=True)
+user_model_switch = on_command("更改模型", aliases={"更换模型", "模型切换", "切换模型"}, block=True)
 # 更改/创建用户信息
 change_config = on_command("更改用户信息", aliases={"创建用户信息", "定义个人信息"}, block=False)
 # 重置对话
 reset_furrybar = on_command("Reset", aliases={"重置对话", "重置模型"})
 # 查询当前的用户模型
-check_model = on_command("当前模型",aliases={"我的模型"},block=True)
+check_model = on_command("当前模型", aliases={"我的模型"}, block=True)
 # 删除/清空信息
 clear = on_command("删除信息", aliases={"重置fb", "清空数据"})
 # 上次对话
 latest = on_command("上次对话", aliases={"上次聊天", "最后对话", "最后记录"})
 # 模型列表
-fb_model_list = on_command("模型列表",permission=SUPERUSER)
+fb_model_list = on_command("模型列表", permission=SUPERUSER)

@@ -12,8 +12,7 @@ import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment,GroupMessageEvent
-from nonebot.params import CommandArg
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment, GroupMessageEvent
 from nonebot.exception import MatcherException
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -27,7 +26,9 @@ if os.path.exists(FONT_PATH):
     logger.info(f"已找到字体文件: {FONT_PATH}")
 else:
     FONT_PATH = None
-    logger.warning(f"未找到字体文件: {FONT_PATH}，将使用默认字体，可能导致错误日志图片显示异常。请确保 {FONT_PATH} 存在以获得最佳体验。")
+    logger.warning(
+        f"未找到字体文件: {FONT_PATH}，将使用默认字体，可能导致错误日志图片显示异常。请确保 {FONT_PATH} 存在以获得最佳体验。")
+
 
 # 捕获并处理函数执行中的异常，生成错误日志并构造用户友好的反馈
 def handle_errors(func):
@@ -78,7 +79,8 @@ def handle_errors(func):
                 error_image.save(buffer_image, format="PNG")
                 buffer_image.seek(0)
                 error_response = create_error_reply(error, event, buffer_image)
-                await matcher.finish(error_response + "\nTips:您可以通过发送“bug反馈”来将此错误日志直接反馈给开发者")
+                if error_response:
+                    await matcher.finish(error_response + "\nTips:您可以通过发送“bug反馈”来将此错误日志直接反馈给开发者")
             else:
                 logger.warning(
                     f"{__name__}捕获到错误，但由于被装饰的函数没有填写 matcher 和 event 参数，无法告知用户")
@@ -144,7 +146,7 @@ def generate_text_image(error_msg, font_path):
 
 
 # json加载函数
-def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict:
+def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) -> dict | None:
     """
     根据用户提供的路径操作json文件，仅支持读取和覆盖写入操作。
 
@@ -186,7 +188,7 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) 
 
 
 # 批量转发内容构建函数
-async def batch_get(text: str, picture: Optional[str], qq: int, name: str) -> MessageSegment:
+async def batch_get(text: str, picture: Optional[str] | bytes, qq: int, name: str) -> MessageSegment:
     if picture is not None:
         make_information = MessageSegment.text(text) + MessageSegment.image(picture)
     else:
@@ -404,39 +406,39 @@ def ensure_files_exist(file_path: list[Path], description: str, normal_data: lis
     logger.info(f"[{description}] 所有的文件及路径自检完毕。")
 
 
-async def at_is_true(
-        event: GroupMessageEvent,
-        args:Message = CommandArg()
-):
+async def at_is_true(event: GroupMessageEvent):
     """
-
-    Args:
-        event: 注入依赖项：GroupMessageEvent
-        args: 注入依赖项：Message = CommandArg()
+    检测消息中是否存在真实的 AT 段，并返回被 AT 的 QQ（或特殊状态）。
 
     Returns:
-        str:
-         可能的情况：
+        str: "finish" 表示无需响应（无任何 AT 或 @ 文本）
 
-        返回“finish”[str]：指用户提供的文本既无真实AT消息段，纯文本也没有包含“@”符号 -> 直接结束事件即可。
+             "illegal" 表示纯文本含 "@" 但非真实 AT（疑似复制）
 
-        返回"illegal"[str]：用户提供的文本中没有真实AT消息段，但纯文本包含了“@”符号 -> 可能是用户复制了别人的AT指令但未正确使用，提示用户指令不合法。
-
-        返回用户id[str]：有效的AT段，返回的是被AT用户的id
+             用户 id（str）表示有效的真实 AT
     """
-    plain_text = args.extract_plain_text().strip()
-    # 检查消息段中是否包含真实的 AT
-    has_real_at = any(seg.type == "at" for seg in args)
-    # 拦截逻辑：既没有真实 AT，也没有包含 "@" 符号的文本
-    if not (has_real_at or "@" in str(plain_text)):
+    # 获取完整消息（含所有段）
+    full_message = event.original_message
+    plain_text = full_message.extract_plain_text().strip()
+
+    # 检查是否存在真实的 AT 段
+    has_real_at = any(seg.type == "at" for seg in full_message)
+
+    # 如果既无真实 AT，纯文本也不含 "@"，则无需处理
+    if not has_real_at and "@" not in plain_text:
         return "finish"
+
+    # 尝试获取第一个真实 AT 的 QQ
     target_id = None
-    # 获取at的用户
-    for msg_seg in event.original_message:
-        if msg_seg.type == 'at':
-            target_id = msg_seg.data['qq']
+    for seg in full_message:
+        if seg.type == "at":
+            target_id = seg.data.get("qq")
             break
-    # 检查是否存在 at
-    if not target_id and "@" in (str(event.raw_message)):
+
+    # 有真实 AT 则直接返回 QQ
+    if target_id is not None:
+        return target_id
+
+    # 没有真实 AT，但纯文本包含 "@"视为非法复制
+    if "@" in plain_text:
         return "illegal"
-    return str(target_id)

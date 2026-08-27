@@ -23,7 +23,7 @@ from src.plugins.entertainment.commands import (
     marry_check,
     marry_switch
 )
-from src.plugins.utils import handle_errors, handle_json, time_handle,at_is_true
+from src.plugins.utils import handle_errors, handle_json, time_handle, at_is_true
 
 
 @marry_random.handle()
@@ -32,10 +32,10 @@ async def marry_random_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     # 若消息后存在其他消息则不响应
     if args.extract_plain_text(): await matcher.finish()
     # 提前准备数据，方便后续调用
-    data = handle_json(marry_json_path, 'r')    # 读取结婚系统信息
-    user_qq = str(event.user_id)    # 获取用户QQ号
+    data = handle_json(marry_json_path, 'r')  # 读取结婚系统信息
+    user_qq = str(event.user_id)  # 获取用户QQ号
     group_qq = str(event.group_id)  # 获取群号
-    user_list = await bot.call_api("get_group_member_list", group_id=event.group_id) # 群成员列表
+    user_list = await bot.call_api("get_group_member_list", group_id=event.group_id)  # 群成员列表
     # 如果用户已经存在于data中，则检查是否已有对象或求婚状态存在，如果存在则直接结束事件处理
     if data.get(user_qq, {}).get(group_qq, False):
         text = "你似乎已经有对象了吧...？"
@@ -57,7 +57,7 @@ async def marry_random_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     ]
     # 排除特殊情况：如果群列表人数已为0
     if len(member_list) == 0:
-        await matcher.finish(MessageSegment.reply(event.message_id)+"呃啊...这个群里好像没有人还可以结婚了qwq")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "呃啊...这个群里好像没有人还可以结婚了qwq")
     # 随机选择一个用户作为对象
     select_qq = member_list[rd.randint(0, len(member_list) - 1)]
     stranger_info = await bot.get_stranger_info(user_id=select_qq)
@@ -66,16 +66,16 @@ async def marry_random_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     now_time = int(time.time())
     # 构建双方数据并写入文件中存储
     self_json_data = {
-        "cp_qq":int(select_qq),
-        "time":now_time,
-        "request_mode":0,
-        "request":0,
+        "cp_qq": int(select_qq),
+        "time": now_time,
+        "request_mode": 0,
+        "request": 0,
     }
     select_json_data = {
-        "cp_qq":int(user_qq),
-        "time":now_time,
-        "request_mode":0,
-        "request":0
+        "cp_qq": int(user_qq),
+        "time": now_time,
+        "request_mode": 0,
+        "request": 0
     }
     if user_qq not in data:
         data[user_qq] = {}
@@ -108,8 +108,7 @@ async def finish_marry_func(matcher: Matcher, event: GroupMessageEvent, bot: Bot
     nickname = stranger_info.get('nickname', '昵称获取失败')
     time_text = time_handle(self_data['time'])
     # 直接删除用户和用户对象json
-    data.pop(self_qq, None)
-    data.pop(cp_qq, None)
+    del data[self_qq][group_id],data[cp_qq][group_id]
     # 将处理完的Data写入文件
     handle_json(marry_json_path, 'w', data)
     await matcher.finish(MessageSegment.reply(
@@ -129,17 +128,18 @@ async def marry_propose_func(
     user_id, bot_qq, self_qq, timestamp, group_id = event.self_id, event.self_id, event.user_id, int(time.time()), str(
         event.group_id)
     # 获取at值
-    user_id = await  at_is_true(event,args)
-    logger.info(user_id)
+    user_id = await  at_is_true(event)
+    if not user_id.isdigit():
+        await matcher.finish(MessageSegment.reply(event.message_id) + "凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
     is_robot = await bot.get_group_member_info(group_id=event.group_id, user_id=int(user_id))
-    if user_id == self_qq or user_id == bot_qq or is_robot['is_robot']:
+    if user_id == str(self_qq) or user_id == str(bot_qq) or is_robot['is_robot']:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你你...你不可以向自己或者机器人求婚呢xwx")
     # 判断是否为非法请求
     # 获取请求值是否为tx机器人
     temp = str(text)
-    if user_id == 0 or user_id == str(event.self_id):
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + "凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
+    # if user_id == 0 or user_id == str(event.self_id):
+    #     await matcher.finish(MessageSegment.reply(
+    #         event.message_id) + "凌辉Bot似乎没能理解你要向谁求婚呢...是不是复制了别人的请求呀owo一定要自己@出来哦~/_ \\")
     if "CQ" not in temp and "求婚" in temp:
         await matcher.finish()
     data = handle_json(marry_json_path, 'r')
@@ -279,7 +279,7 @@ async def marry_check_func(
     data = handle_json(marry_json_path, 'r')
     self_qq, group_id, user_id = str(event.user_id), str(event.group_id), 0
     # 获取at值
-    user_id = await at_is_true(event,args)
+    user_id = await at_is_true(event)
     if user_id != 0:
         self_qq = user_id
     text = "你"
@@ -386,7 +386,8 @@ async def marry_switch_utils(matcher: Matcher, event: GroupMessageEvent, bot: Bo
     logger.info(f"Debug:计数器：{count}")
     # 安全写入，避免覆盖其他群组数据
     data.setdefault(str(random_select), {})[group_id] = {"cp_qq": event.user_id, "time": timestamp}
-    data.setdefault(str(self_qq), {})[group_id] = {"cp_qq": random_select, "time": timestamp, "count": count + 1, "switch": True}
+    data.setdefault(str(self_qq), {})[group_id] = {"cp_qq": random_select, "time": timestamp, "count": count + 1,
+                                                   "switch": True}
     # 写入文件
     handle_json(marry_json_path, 'w', data)
     # 获取结束事件处理所必要的讯息
