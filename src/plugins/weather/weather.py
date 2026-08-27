@@ -2,6 +2,7 @@ import os
 import time
 import jinja2
 import jwt
+from datetime import datetime, timezone, timedelta
 
 import asyncio
 from nonebot import on_message, logger, get_driver
@@ -230,7 +231,16 @@ async def process_weather_check(
             g = color_data.get("green", 77)
             b = color_data.get("blue", 79)
             issued_time = a.get("issuedTime", "")
-            time_display = issued_time[11:16] if len(issued_time) >= 16 else ""
+            # issuedTime 通常为 ISO 8601 时间（UTC），不能直接截取字符串，
+            # 否则会把 UTC 时间误当作 GMT+8 时间显示。
+            time_display = ""
+            normalized_time = issued_time.replace("Z", "+00:00")
+            issued_dt = datetime.fromisoformat(normalized_time)
+            # API 若未携带时区信息，按 UTC 处理；随后统一转换为 GMT+8。
+            if issued_dt.tzinfo is None:
+                issued_dt = issued_dt.replace(tzinfo=timezone.utc)
+            gmt8 = timezone(timedelta(hours=8))
+            time_display = issued_dt.astimezone(gmt8).strftime("%H:%M")
             alert_list.append({
                 "text": a.get("headline", "气象预警"),
                 "time": time_display,
