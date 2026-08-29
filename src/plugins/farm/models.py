@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Optional
 
 from nonebot_plugin_orm import Model, async_scoped_session
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, select
+from sqlalchemy import DateTime, ForeignKey, Integer, String, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database.models import Users
@@ -19,8 +20,8 @@ class FarmPlot(Model):
     plot_index: Mapped[int] = mapped_column(Integer, primary_key=True)
     # 已种植作物 id（如 wheat）；None 表示空闲
     crop_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    # 种植时刻（epoch 秒）；None 表示空闲
-    planted_at: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    # 种植时刻：标准 UTC（naive datetime）；None 表示空闲
+    planted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(), nullable=True)
 
 
 # ---------------- 种地 ----------------
@@ -61,13 +62,13 @@ async def add_farm_plot(
 
 async def plant_crop(
         session: async_scoped_session, user_id: str, plot_index: int,
-        crop_id: str, now_ts: int,
+        crop_id: str, now: datetime,
 ) -> bool:
     plot = await get_farm_plot(session, user_id, plot_index)
     if plot is None or plot.crop_id is not None:
         return False
     plot.crop_id = crop_id
-    plot.planted_at = now_ts
+    plot.planted_at = now
     await session.flush()
     return True
 
