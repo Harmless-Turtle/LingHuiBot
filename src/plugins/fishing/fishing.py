@@ -1,9 +1,8 @@
 import random as rd
-import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from nonebot import on_command, require
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
@@ -12,6 +11,8 @@ from ..database.models import add_inventory, get_inventory_qty, remove_inventory
 from .models import get_fishing_session
 from ..entertainment.currency.exceptions import CurrencyBalanceNotEnough
 from ..entertainment.currency.models import add_mohui_coin, remove_mohui_coin
+from ..utils import batch_get, handle_errors
+from .exceptions import FishingBalanceNotEnough, FishingError
 
 scheduler = require("nonebot_plugin_apscheduler").scheduler
 
@@ -95,12 +96,17 @@ def roll_outcome(hook_id: str | None) -> str:
     return f"fish:{FISH[idx]['id']}"
 
 
-async def spend_coins(session, user_id: str, amount: int) -> bool:
+async def spend_coins(session, user_id: str, amount: int) -> None:
+    """从墨辉币扣款，余额不足抛 FishingBalanceNotEnough（由上层 handler 捕获）。"""
     try:
         await remove_mohui_coin(session, user_id, amount)
-        return True
     except CurrencyBalanceNotEnough:
-        return False
+        raise FishingBalanceNotEnough() from None
+
+
+def _utcnow() -> datetime:
+    """标准 UTC（naive datetime），时区由业务层决定。"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # ================= 定时推送：鱼上钩 =================
@@ -157,246 +163,284 @@ _bait_info = on_command("饵料属性", block=True)
 
 
 @_cast.handle()
+@handle_errors
 async def _handle_cast(matcher: Matcher, event: GroupMessageEvent,
                        session: async_scoped_session):
-    user_id = str(event.user_id)
-    s = await get_fishing_session(session, user_id)
-    now = int(time.time())
-    # 清理过期会话
-    if s.state == "fishing" and now > s.window_end + 60:
-        s.state = None
-        await session.flush()
-    if s.state == "fishing":
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你已经在钓鱼啦，先收竿再抛竿哦")
-    # 装备检查
-    if not s.hook_id:
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "没有鱼钩是无法钓鱼的哦！发送「购买鱼钩 铁钩」先买一个鱼钩吧")
-    if not s.rod_id:
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "你还没有鱼竿！发送「购买鱼竿 竹竿」先买一根鱼竿吧")
-    if s.rod_durability <= 0:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你的鱼竿已经损毁了，请重新「购买鱼竿」")
-    if await get_inventory_qty(session, user_id, "bait") < 1:
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "你没有饵料了！发送「购买饵料 <数量>」补充吧")
-    # 消耗
-    await remove_inventory(session, user_id, "bait", 1)
-    s.rod_durability -= 1
-    # rod_id 形如 carbon_标准，需去掉变体后缀再查配置
-    rod = _ROD_BY_ID.get(s.rod_id.split("_", 1)[0]) if s.rod_id else None
-    rod_bonus = rod["bonus"] if rod else 0
-    # 掷结果
-    outcome = roll_outcome(s.hook_id)
-    if outcome.startswith("fish:"):
-        fish = _FISH_BY_ID[outcome.split(":", 1)[1]]
-        debuff = fish["debuff"]
-    else:
-        debuff = 0
-    # 时间线
-    bite_at = now + rd.randint(*BITE_RANGE)
-    wait = rd.randint(*WAIT_RANGE)
-    window_start = bite_at + wait
-    window_len = max(MIN_WINDOW, rd.randint(*WINDOW_BASE_RANGE) + rod_bonus - debuff)
-    window_end = window_start + window_len
-    s.group_id = str(event.group_id)
-    # commit 前取值，避免 commit 后访问失效属性（MissingGreenlet）
-    group_id = s.group_id
-    rod_broken = s.rod_durability <= 0
-    s.state = "fishing"
-    s.cast_at = now
-    s.bite_at = bite_at
-    s.window_start = window_start
-    s.window_end = window_end
-    s.outcome = outcome
-    await session.commit()
-    # 定时推送：上钩（wait=溜鱼秒数） + 超时跑鱼（窗口结束后仍未收竿）
-    scheduler.add_job(
-        _send_bite, "date", run_date=datetime.fromtimestamp(bite_at),
-        args=[user_id, group_id, wait, window_len], id=f"fishing_bite_{user_id}", replace_existing=True,
-    )
-    scheduler.add_job(
-        _send_timeout, "date", run_date=datetime.fromtimestamp(window_end + 3),
-        args=[user_id, group_id], id=f"fishing_timeout_{user_id}", replace_existing=True,
-    )
-    broken = "\n（你的鱼竿耐久耗尽，已经损毁了！）" if rod_broken else ""
+    try:
+        user_id = str(event.user_id)
+        s = await get_fishing_session(session, user_id)
+        now = _utcnow()
+        # 清理过期会话（窗口结束 60 秒后视为废弃）
+        if s.state == "fishing" and s.window_end is not None and now > s.window_end + timedelta(seconds=60):
+            s.state = None
+            await session.flush()
+        if s.state == "fishing":
+            await matcher.finish(MessageSegment.reply(event.message_id) + "你已经在钓鱼啦，先收竿再抛竿哦")
+        # 装备检查
+        if not s.hook_id:
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "没有鱼钩是无法钓鱼的哦！发送「购买鱼钩 铁钩」先买一个鱼钩吧")
+        if not s.rod_id:
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "你还没有鱼竿！发送「购买鱼竿 竹竿」先买一根鱼竿吧")
+        if s.rod_durability <= 0:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "你的鱼竿已经损毁了，请重新「购买鱼竿」")
+        if await get_inventory_qty(session, user_id, "bait") < 1:
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "你没有饵料了！发送「购买饵料 <数量>」补充吧")
+        # 消耗
+        await remove_inventory(session, user_id, "bait", 1)
+        s.rod_durability -= 1
+        # rod_id 形如 carbon_标准，需去掉变体后缀再查配置
+        rod = _ROD_BY_ID.get(s.rod_id.split("_", 1)[0]) if s.rod_id else None
+        rod_bonus = rod["bonus"] if rod else 0
+        # 掷结果
+        outcome = roll_outcome(s.hook_id)
+        if outcome.startswith("fish:"):
+            fish = _FISH_BY_ID[outcome.split(":", 1)[1]]
+            debuff = fish["debuff"]
+        else:
+            debuff = 0
+        # 时间线（标准 UTC）
+        bite_at = now + timedelta(seconds=rd.randint(*BITE_RANGE))
+        wait = rd.randint(*WAIT_RANGE)
+        window_start = bite_at + timedelta(seconds=wait)
+        window_len = max(MIN_WINDOW, rd.randint(*WINDOW_BASE_RANGE) + rod_bonus - debuff)
+        window_end = window_start + timedelta(seconds=window_len)
+        s.group_id = str(event.group_id)
+        # commit 前取值，避免 commit 后访问失效属性（MissingGreenlet）
+        group_id = s.group_id
+        rod_broken = s.rod_durability <= 0
+        s.state = "fishing"
+        s.cast_at = now
+        s.bite_at = bite_at
+        s.window_start = window_start
+        s.window_end = window_end
+        s.outcome = outcome
+        await session.commit()
+        # 定时推送：上钩（wait=溜鱼秒数） + 超时跑鱼（窗口结束后仍未收竿）；
+        # run_date 传 aware UTC，避免调度器本地时区歧义
+        scheduler.add_job(
+            _send_bite, "date", run_date=bite_at.replace(tzinfo=timezone.utc),
+            args=[user_id, group_id, wait, window_len], id=f"fishing_bite_{user_id}", replace_existing=True,
+        )
+        scheduler.add_job(
+            _send_timeout, "date", run_date=(window_end + timedelta(seconds=3)).replace(tzinfo=timezone.utc),
+            args=[user_id, group_id], id=f"fishing_timeout_{user_id}", replace_existing=True,
+        )
+        broken = "\n（你的鱼竿耐久耗尽，已经损毁了！）" if rod_broken else ""
+    except FishingError as e:
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"🎣 你抛出了鱼钩，静静等待鱼儿上钩…（预计 10~30 秒后会有动静）{broken}")
 
 
 @_pull.handle()
+@handle_errors
 async def _handle_pull(matcher: Matcher, event: GroupMessageEvent,
                        session: async_scoped_session):
-    user_id = str(event.user_id)
-    s = await get_fishing_session(session, user_id)
-    if s.state != "fishing":
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你还没有在钓鱼哦，发送「钓鱼」抛竿吧")
-    now = int(time.time())
-    if now < s.window_start:
-        # 过早
+    try:
+        user_id = str(event.user_id)
+        s = await get_fishing_session(session, user_id)
+        if s.state != "fishing":
+            await matcher.finish(MessageSegment.reply(event.message_id) + "你还没有在钓鱼哦，发送「钓鱼」抛竿吧")
+        now = _utcnow()
+        if now < s.window_start:
+            # 过早
+            s.state = None
+            _cancel_bite_job(user_id)
+            _cancel_timeout_job(user_id)
+            await session.commit()
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "太心急了！鱼被你吓跑了…（下次等窗口开启后再收竿哦）")
+        if now > s.window_end:
+            # 过晚
+            s.state = None
+            _cancel_bite_job(user_id)
+            _cancel_timeout_job(user_id)
+            await session.commit()
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "收竿太晚了！鱼已经挣脱溜走了…")
+        # 窗口期内：上鱼！
         s.state = None
         _cancel_bite_job(user_id)
         _cancel_timeout_job(user_id)
-        await session.commit()
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "太心急了！鱼被你吓跑了…（下次等窗口开启后再收竿哦）")
-    if now > s.window_end:
-        # 过晚
-        s.state = None
-        _cancel_bite_job(user_id)
-        _cancel_timeout_job(user_id)
-        await session.commit()
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "收竿太晚了！鱼已经挣脱溜走了…")
-    # 窗口期内：上鱼！
-    s.state = None
-    _cancel_bite_job(user_id)
-    _cancel_timeout_job(user_id)
-    outcome = s.outcome
-    if outcome.startswith("fish:"):
-        fish = _FISH_BY_ID[outcome.split(":", 1)[1]]
-        await add_mohui_coin(session, user_id, fish["price"])
-        await session.commit()
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             f"🎣 上鱼了！你钓到了【{fish['name']}】！价值 {fish['price']} 墨辉币！")
-    elif outcome == "item:chest":
-        coins = rd.randint(100, 500)
-        await add_mohui_coin(session, user_id, coins)
-        await session.commit()
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             f"🎁 你钓上来一只宝箱！打开获得 {coins} 墨辉币！")
-    elif outcome == "item:junk":
-        await session.commit()
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "👢 你钓上来一只旧靴子…看了看又扔回水里了（一无所获）")
-    else:  # item:badluck
-        amount = rd.randint(50, 300)
-        try:
-            await remove_mohui_coin(session, user_id, amount)
+        outcome = s.outcome
+        if outcome.startswith("fish:"):
+            fish = _FISH_BY_ID[outcome.split(":", 1)[1]]
+            await add_mohui_coin(session, user_id, fish["price"])
             await session.commit()
             await matcher.finish(MessageSegment.reply(event.message_id) +
-                                 f"😱 你钓上来一只水鬼！被抢走了 {amount} 墨辉币！")
-        except CurrencyBalanceNotEnough:
+                                 f"🎣 上鱼了！你钓到了【{fish['name']}】！价值 {fish['price']} 墨辉币！")
+        elif outcome == "item:chest":
+            coins = rd.randint(100, 500)
+            await add_mohui_coin(session, user_id, coins)
             await session.commit()
             await matcher.finish(MessageSegment.reply(event.message_id) +
-                                 "😅 你钓上来一只水鬼，但它看你太穷了，没抢到钱就游走了…")
+                                 f"🎁 你钓上来一只宝箱！打开获得 {coins} 墨辉币！")
+        elif outcome == "item:junk":
+            await session.commit()
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "👢 你钓上来一只旧靴子…看了看又扔回水里了（一无所获）")
+        else:  # item:badluck
+            amount = rd.randint(50, 300)
+            try:
+                await remove_mohui_coin(session, user_id, amount)
+                await session.commit()
+                await matcher.finish(MessageSegment.reply(event.message_id) +
+                                     f"😱 你钓上来一只水鬼！被抢走了 {amount} 墨辉币！")
+            except CurrencyBalanceNotEnough:
+                await session.commit()
+                await matcher.finish(MessageSegment.reply(event.message_id) +
+                                     "😅 你钓上来一只水鬼，但它看你太穷了，没抢到钱就游走了…")
+    except FishingError as e:
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
 
 
 @_buy_rod.handle()
+@handle_errors
 async def _handle_buy_rod(matcher: Matcher, event: GroupMessageEvent,
                           session: async_scoped_session, args: Message = CommandArg()):
-    parts = args.extract_plain_text().split()
-    if not parts:
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "用法：购买鱼竿 <品阶> [标准|廉价|精良]\n品阶：竹竿/木竿/玻璃钢竿/碳素竿/钛合金竿/传说·神竿")
-    rod = resolve_rod(parts[0])
-    if rod is None:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "没有这种鱼竿，发送「鱼竿属性」查看商店")
-    variant = "标准"
-    if len(parts) > 1:
-        v = parts[1].strip()
-        if v in ROD_VARIANTS:
-            variant = v
-    p_mult, d_mult = ROD_VARIANTS[variant]
-    price = max(1, round(rod["price"] * p_mult))
-    dur = max(1, round(rod["dur"] * d_mult))
-    user_id = str(event.user_id)
-    if not await spend_coins(session, user_id, price):
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"需要 {price} 墨辉币，余额不足！")
-    s = await get_fishing_session(session, user_id)
-    old = s.rod_id
-    s.rod_id = f"{rod['id']}_{variant}"
-    s.rod_durability = dur
-    await session.commit()
-    msg = (f"已购买并装备【{rod['name']}·{variant}】（{price} 墨辉币，耐久 {dur}）。"
-           f"窗口增益 +{rod['bonus']}s")
-    if old:
-        msg += f"\n（旧鱼竿已被替换回收）"
+    try:
+        parts = args.extract_plain_text().split()
+        if not parts:
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "用法：购买鱼竿 <品阶> [标准|廉价|精良]\n品阶：竹竿/木竿/玻璃钢竿/碳素竿/钛合金竿/传说·神竿")
+        rod = resolve_rod(parts[0])
+        if rod is None:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "没有这种鱼竿，发送「鱼竿属性」查看商店")
+        variant = "标准"
+        if len(parts) > 1:
+            v = parts[1].strip()
+            if v in ROD_VARIANTS:
+                variant = v
+        p_mult, d_mult = ROD_VARIANTS[variant]
+        price = max(1, round(rod["price"] * p_mult))
+        dur = max(1, round(rod["dur"] * d_mult))
+        user_id = str(event.user_id)
+        try:
+            await spend_coins(session, user_id, price)
+        except FishingBalanceNotEnough:
+            raise FishingBalanceNotEnough(f"需要 {price} 墨辉币，余额不足！") from None
+        s = await get_fishing_session(session, user_id)
+        old = s.rod_id
+        s.rod_id = f"{rod['id']}_{variant}"
+        s.rod_durability = dur
+        await session.commit()
+        msg = (f"已购买并装备【{rod['name']}·{variant}】（{price} 墨辉币，耐久 {dur}）。"
+               f"窗口增益 +{rod['bonus']}s")
+        if old:
+            msg += f"\n（旧鱼竿已被替换回收）"
+    except FishingError as e:
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) + msg)
 
 
 @_buy_hook.handle()
+@handle_errors
 async def _handle_buy_hook(matcher: Matcher, event: GroupMessageEvent,
                            session: async_scoped_session, args: Message = CommandArg()):
-    parts = args.extract_plain_text().split()
-    if not parts:
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             "用法：购买鱼钩 <品阶>\n品阶：铁钩/银钩/金钩/传说钩")
-    hook = resolve_hook(parts[0])
-    if hook is None:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "没有这种鱼钩，发送「鱼钩属性」查看商店")
-    user_id = str(event.user_id)
-    if not await spend_coins(session, user_id, hook["price"]):
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"需要 {hook['price']} 墨辉币，余额不足！")
-    s = await get_fishing_session(session, user_id)
-    s.hook_id = hook["id"]
-    await session.commit()
+    try:
+        parts = args.extract_plain_text().split()
+        if not parts:
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 "用法：购买鱼钩 <品阶>\n品阶：铁钩/银钩/金钩/传说钩")
+        hook = resolve_hook(parts[0])
+        if hook is None:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "没有这种鱼钩，发送「鱼钩属性」查看商店")
+        user_id = str(event.user_id)
+        try:
+            await spend_coins(session, user_id, hook["price"])
+        except FishingBalanceNotEnough:
+            raise FishingBalanceNotEnough(f"需要 {hook['price']} 墨辉币，余额不足！") from None
+        s = await get_fishing_session(session, user_id)
+        s.hook_id = hook["id"]
+        await session.commit()
+    except FishingError as e:
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已购买并装备【{hook['name']}】（{hook['price']} 墨辉币）")
 
 
 @_buy_bait.handle()
+@handle_errors
 async def _handle_buy_bait(matcher: Matcher, event: GroupMessageEvent,
                            session: async_scoped_session, args: Message = CommandArg()):
-    text = args.extract_plain_text().strip()
-    qty = 1
-    if text.isdigit():
-        qty = max(1, int(text))
-    cost = qty * BAIT_PRICE
-    user_id = str(event.user_id)
-    if not await spend_coins(session, user_id, cost):
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"需要 {cost} 墨辉币，余额不足！")
-    await add_inventory(session, user_id, "bait", qty)
-    await session.commit()
+    try:
+        text = args.extract_plain_text().strip()
+        qty = 1
+        if text.isdigit():
+            qty = max(1, int(text))
+        cost = qty * BAIT_PRICE
+        user_id = str(event.user_id)
+        try:
+            await spend_coins(session, user_id, cost)
+        except FishingBalanceNotEnough:
+            raise FishingBalanceNotEnough(f"需要 {cost} 墨辉币，余额不足！") from None
+        await add_inventory(session, user_id, "bait", qty)
+        await session.commit()
+    except FishingError as e:
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已购买饵料 x{qty}（花费 {cost} 墨辉币），每次钓鱼消耗 1 个")
 
 
 @_rod_info.handle()
-async def _handle_rod_info(matcher: Matcher, event: GroupMessageEvent,
+@handle_errors
+async def _handle_rod_info(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
                            session: async_scoped_session):
     user_id = str(event.user_id)
     s = await get_fishing_session(session, user_id)
-    lines = ["【鱼竿属性】"]
+    nodes = []
+    header = "【鱼竿属性】"
     if s.rod_id:
         base, variant = (s.rod_id.split("_", 1) + ["标准"])[:2]
         rod = _ROD_BY_ID.get(base)
         if rod:
-            lines.append(f"当前：{rod['name']}·{variant}（耐久 {s.rod_durability}/{rod['dur']}，窗口增益 +{rod['bonus']}s）")
+            header += f"\n当前：{rod['name']}·{variant}（耐久 {s.rod_durability}/{rod['dur']}，窗口增益 +{rod['bonus']}s）"
         else:
-            lines.append("当前：未知鱼竿")
+            header += "\n当前：未知鱼竿"
     else:
-        lines.append("当前：无鱼竿")
-    lines.append("商店（品阶 | 标准价/耐久 | 廉价 | 精良）：")
+        header += "\n当前：无鱼竿"
+    nodes.append(await batch_get(header, None, event.self_id, "鱼竿属性"))
+    nodes.append(await batch_get("商店（品阶 | 标准价/耐久 | 廉价 | 精良）：", None, event.self_id, "鱼竿属性"))
     for rod in RODS:
         cheap_p, cheap_d = ROD_VARIANTS["廉价"]
         delux_p, delux_d = ROD_VARIANTS["精良"]
-        lines.append(f"· {rod['name']}：{rod['price']}/{rod['dur']} | "
-                     f"{round(rod['price']*cheap_p)}/{round(rod['dur']*cheap_d)} | "
-                     f"{round(rod['price']*delux_p)}/{round(rod['dur']*delux_d)}"
-                     f"（增益+{rod['bonus']}s）")
-    lines.append("发送「购买鱼竿 <品阶> [标准|廉价|精良]」购买")
-    await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.text("\n".join(lines)))
+        nodes.append(await batch_get(
+            f"· {rod['name']}：{rod['price']}/{rod['dur']} | "
+            f"{round(rod['price']*cheap_p)}/{round(rod['dur']*cheap_d)} | "
+            f"{round(rod['price']*delux_p)}/{round(rod['dur']*delux_d)}"
+            f"（增益+{rod['bonus']}s）", None, event.self_id, "鱼竿属性"))
+    nodes.append(await batch_get("发送「购买鱼竿 <品阶> [标准|廉价|精良]」购买", None, event.self_id, "鱼竿属性"))
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=nodes, time_noend=True)
+    await matcher.finish()
 
 
 @_hook_info.handle()
-async def _handle_hook_info(matcher: Matcher, event: GroupMessageEvent,
+@handle_errors
+async def _handle_hook_info(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
                             session: async_scoped_session):
     user_id = str(event.user_id)
     s = await get_fishing_session(session, user_id)
-    lines = ["【鱼钩属性】"]
+    nodes = []
+    header = "【鱼钩属性】"
     if s.hook_id and _HOOK_BY_ID.get(s.hook_id):
-        lines.append(f"当前：{_HOOK_BY_ID[s.hook_id]['name']}")
+        header += f"\n当前：{_HOOK_BY_ID[s.hook_id]['name']}"
     else:
-        lines.append("当前：无鱼钩（没有鱼钩无法钓鱼！）")
-    lines.append("商店（品阶 | 价格 | 稀有鱼概率）：")
+        header += "\n当前：无鱼钩（没有鱼钩无法钓鱼！）"
+    nodes.append(await batch_get(header, None, event.self_id, "鱼钩属性"))
+    nodes.append(await batch_get("商店（品阶 | 价格）：", None, event.self_id, "鱼钩属性"))
     for hook in HOOKS:
-        lines.append(f"· {hook['name']}：{hook['price']} 墨辉币")
-    lines.append("发送「购买鱼钩 <品阶>」购买")
-    await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.text("\n".join(lines)))
+        nodes.append(await batch_get(
+            f"· {hook['name']}：{hook['price']} 墨辉币", None, event.self_id, "鱼钩属性"))
+    nodes.append(await batch_get("发送「购买鱼钩 <品阶>」购买", None, event.self_id, "鱼钩属性"))
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=nodes, time_noend=True)
+    await matcher.finish()
 
 
 @_bait_info.handle()
+@handle_errors
 async def _handle_bait_info(matcher: Matcher, event: GroupMessageEvent,
                             session: async_scoped_session):
     user_id = str(event.user_id)

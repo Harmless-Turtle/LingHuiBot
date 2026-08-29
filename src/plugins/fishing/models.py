@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Optional
 
 from nonebot_plugin_orm import Model, async_scoped_session
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, select
+from sqlalchemy import DateTime, ForeignKey, Integer, String, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..database.models import Users
@@ -24,11 +25,12 @@ class FishingSession(Model):
     hook_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # 会话状态："fishing" 表示正在钓鱼；None 表示空闲
     state: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    cast_at: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    # 以下时间均为标准 UTC（naive datetime）；业务层按需 +8 小时转本地
+    cast_at: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
     # 上钩时刻（推送"鱼上钩"）；溜鱼结束=窗口开启；窗口关闭
-    bite_at: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
-    window_start: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
-    window_end: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    bite_at: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
+    window_end: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
     # 本次结果：fish:<tier_id> / item:chest / item:junk / item:badluck
     outcome: Mapped[str] = mapped_column(String, default="", nullable=False)
 
