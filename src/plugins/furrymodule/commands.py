@@ -14,7 +14,7 @@ furry_status = on_command("兽图状态", aliases={"兽图状态#"}, priority=10
 # 鉴毛
 see_furry = on_command("鉴毛", aliases={"每日鉴毛"}, priority=10, block=True)
 # 获取服务器信息
-service_status = on_command("服务器状态", aliases={"兽云祭信息", "兽云祭状态", "服务状态"}, priority=10, block=True)
+# service_status = on_command("服务器状态", aliases={"兽云祭信息", "兽云祭状态", "服务状态"}, priority=10, block=True)
 
 # ================= 投图审核系统（仅SUPERUSER） =================
 # 获取审核列表
@@ -37,7 +37,7 @@ upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permis
 
 # ================= FurryPic.upload 兽云祭上传子模块 =================
 # 一键上传
-upload_furry = on_command("一键上传", aliases={"投图", "管理员上传"}, priority=10, block=True)
+upload_furry = on_command("上传", aliases={"投图"}, priority=10, block=True)
 # 批量上传
 batch_upload = on_command("批量投图", aliases={"批量上传"}, block=True)
 # 定义批量上传
