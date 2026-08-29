@@ -90,8 +90,12 @@ _market = on_command("市场", aliases={"行情"}, block=True)
 
 @_kaifang.handle()
 @handle_errors
-async def _handle_kaifang(matcher: Matcher, event: GroupMessageEvent,
-                          session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_kaifang(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         user_id = str(event.user_id)
         text = args.extract_plain_text().strip()
@@ -135,13 +139,18 @@ async def _handle_kaifang(matcher: Matcher, event: GroupMessageEvent,
                                  f"开荒成功！你获得了第 {first}~{last} 块地（共 {n} 块，花费 {total_price} 墨辉币）。"
                                  f"\n当前共 {last} 块地，下一块开荒需要 {land_price(last)} 墨辉币。")
     except FarmError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
 
 
 @_seed_shop.handle()
 @handle_errors
-async def _handle_seed_shop(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
-                            session: async_scoped_session):
+async def _handle_seed_shop(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        bot: Bot,
+        session: async_scoped_session
+):
     nodes = [await batch_get("【种子商店】", None, event.self_id, "种子商店")]
     for cid, info in CROPS.items():
         grow_h = round(info["grow"] / 3600, 1)
@@ -156,8 +165,12 @@ async def _handle_seed_shop(matcher: Matcher, event: GroupMessageEvent, bot: Bot
 
 @_buy_seed.handle()
 @handle_errors
-async def _handle_buy_seed(matcher: Matcher, event: GroupMessageEvent,
-                           session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_buy_seed(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         parts = args.extract_plain_text().split()
         if not parts:
@@ -177,6 +190,7 @@ async def _handle_buy_seed(matcher: Matcher, event: GroupMessageEvent,
         await add_inventory(session, str(event.user_id), f"seed_{crop_id}", qty)
         await session.commit()
     except FarmError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已购买 {info['name']}种子 x{qty}（花费 {cost} 墨辉币）。发送「种植 {info['name']}」播种")
@@ -184,8 +198,12 @@ async def _handle_buy_seed(matcher: Matcher, event: GroupMessageEvent,
 
 @_plant.handle()
 @handle_errors
-async def _handle_plant(matcher: Matcher, event: GroupMessageEvent,
-                        session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_plant(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         parts = args.extract_plain_text().split()
         if not parts:
@@ -215,6 +233,7 @@ async def _handle_plant(matcher: Matcher, event: GroupMessageEvent,
         grow_h = round(info["grow"] / 3600, 1)
         await session.commit()
     except FarmError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已在全部 {plot_count} 块地种下{info['name']}！约 {grow_h} 小时后成熟，"
@@ -223,8 +242,11 @@ async def _handle_plant(matcher: Matcher, event: GroupMessageEvent,
 
 @_my_farm.handle()
 @handle_errors
-async def _handle_my_farm(matcher: Matcher, event: GroupMessageEvent,
-                          session: async_scoped_session):
+async def _handle_my_farm(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session
+):
     try:
         user_id = str(event.user_id)
         plots = await ensure_default_plot(session, user_id)
@@ -249,6 +271,7 @@ async def _handle_my_farm(matcher: Matcher, event: GroupMessageEvent,
         # 属性访问完成后提交（持久化新玩家的默认地块）
         await session.commit()
     except FarmError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"【你的农场】共 {plot_count} 块地\n作物：{info['name']}\n状态：{status}\n发送「市场」查看今日价格")
@@ -256,8 +279,11 @@ async def _handle_my_farm(matcher: Matcher, event: GroupMessageEvent,
 
 @_harvest.handle()
 @handle_errors
-async def _handle_harvest(matcher: Matcher, event: GroupMessageEvent,
-                          session: async_scoped_session):
+async def _handle_harvest(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session
+):
     try:
         user_id = str(event.user_id)
         now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -293,6 +319,7 @@ async def _handle_harvest(matcher: Matcher, event: GroupMessageEvent,
             await matcher.finish(MessageSegment.reply(event.message_id) + "没有可收割的作物")
         await session.commit()
     except FarmError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     lines = ["收割完成："]
     total = 0
@@ -306,8 +333,12 @@ async def _handle_harvest(matcher: Matcher, event: GroupMessageEvent,
 
 @_sell.handle()
 @handle_errors
-async def _handle_sell(matcher: Matcher, event: GroupMessageEvent,
-                       session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_sell(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         parts = args.extract_plain_text().split()
         if not parts:
@@ -331,6 +362,7 @@ async def _handle_sell(matcher: Matcher, event: GroupMessageEvent,
         await add_mohui_coin(session, user_id, income)
         await session.commit()
     except FarmError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已出售{CROPS[crop_id]['name']} x{qty}，今日单价 {price}，获得 {income} 墨辉币！")
@@ -338,8 +370,12 @@ async def _handle_sell(matcher: Matcher, event: GroupMessageEvent,
 
 @_market.handle()
 @handle_errors
-async def _handle_market(matcher: Matcher, event: GroupMessageEvent, bot: Bot,
-                         session: async_scoped_session):
+async def _handle_market(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        bot: Bot,
+        session: async_scoped_session
+):
     nodes = [await batch_get(f"【今日行情】{date.today().isoformat()}（全服同价）",
                              None, event.self_id, "今日行情")]
     for cid, info in CROPS.items():
