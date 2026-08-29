@@ -8,16 +8,14 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
-from ..database.models import (
+from ..database.models import add_inventory, get_inventory_qty, remove_inventory
+from .models import (
     FarmPlot,
     add_farm_plot,
-    add_inventory,
     clear_farm_plot,
     get_farm_plot,
     get_farm_plots,
-    get_inventory_qty,
     plant_crop,
-    remove_inventory,
 )
 from ..entertainment.currency.exceptions import CurrencyBalanceNotEnough
 from ..entertainment.currency.models import add_mohui_coin, remove_mohui_coin
@@ -92,17 +90,46 @@ _market = on_command("市场", aliases={"行情"}, block=True)
 
 @_kaifang.handle()
 async def _handle_kaifang(matcher: Matcher, event: GroupMessageEvent,
-                          session: async_scoped_session):
+                          session: async_scoped_session, args: Message = CommandArg()):
     user_id = str(event.user_id)
+    text = args.extract_plain_text().strip()
+    # 只发「开荒」默认开荒 1 块；「开荒 N」批量开荒 N 块
+    n = 1
+    if text.isdigit() and int(text) > 0:
+        n = int(text)
+    # 防御：限制单次批量上限，避免误输入超大数字导致巨额计价/长循环
+    MAX_BATCH = 20
+    if n > MAX_BATCH:
+        await matcher.finish(MessageSegment.reply(event.message_id) +
+                             f"单次最多开荒 {MAX_BATCH} 块，请分批开荒！")
     plots = await ensure_default_plot(session, user_id)
-    price = land_price(len(plots))
-    if not await spend_coins(session, user_id, price):
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"开荒需要 {price} 墨辉币，你的余额不足！")
-    plot = await add_farm_plot(session, user_id)
+    count = len(plots)
+    # 逐块计价（每块按当前地块数定价），计算批量总价
+    prices = []
+    for _ in range(n):
+        p = land_price(count)
+        prices.append(p)
+        count += 1
+    total_price = sum(prices)
+    if not await spend_coins(session, user_id, total_price):
+        await matcher.finish(MessageSegment.reply(event.message_id) +
+                             f"开荒 {n} 块地共需 {total_price} 墨辉币，你的余额不足！")
+    # 实际添加地块（commit 前取值，避免 commit 后访问失效属性）
+    new_indices = []
+    for _ in range(n):
+        plot = await add_farm_plot(session, user_id)
+        new_indices.append(plot.plot_index)
     await session.commit()
-    await matcher.finish(MessageSegment.reply(event.message_id) +
-                         f"开荒成功！你获得了第 {plot.plot_index} 块地（花费 {price} 墨辉币）。"
-                         f"\n当前共 {plot.plot_index} 块地，下一块开荒需要 {land_price(plot.plot_index)} 墨辉币。")
+    if n == 1:
+        idx = new_indices[0]
+        await matcher.finish(MessageSegment.reply(event.message_id) +
+                             f"开荒成功！你获得了第 {idx} 块地（花费 {prices[0]} 墨辉币）。"
+                             f"\n当前共 {idx} 块地，下一块开荒需要 {land_price(idx)} 墨辉币。")
+    else:
+        first, last = new_indices[0], new_indices[-1]
+        await matcher.finish(MessageSegment.reply(event.message_id) +
+                             f"开荒成功！你获得了第 {first}~{last} 块地（共 {n} 块，花费 {total_price} 墨辉币）。"
+                             f"\n当前共 {last} 块地，下一块开荒需要 {land_price(last)} 墨辉币。")
 
 
 @_seed_shop.handle()
@@ -141,47 +168,35 @@ async def _handle_buy_seed(matcher: Matcher, event: GroupMessageEvent,
 @_plant.handle()
 async def _handle_plant(matcher: Matcher, event: GroupMessageEvent,
                         session: async_scoped_session, args: Message = CommandArg()):
-    text = args.extract_plain_text().strip()
-    parts = text.split()
+    parts = args.extract_plain_text().split()
     if not parts:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "用法：种植 <作物> [第X块地]")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "用法：种植 <作物>")
     crop_id = resolve_crop(parts[0])
     if crop_id is None:
         await matcher.finish(MessageSegment.reply(event.message_id) + "没有这种作物哦，发送「种子商店」查看列表")
     user_id = str(event.user_id)
     seed_item = f"seed_{crop_id}"
-    if await get_inventory_qty(session, user_id, seed_item) < 1:
-        await matcher.finish(MessageSegment.reply(event.message_id) +
-                             f"你没有{CROPS[crop_id]['name']}种子，先「购买种子 {CROPS[crop_id]['name']}」吧")
-    plots = await ensure_default_plot(session, user_id)
-    await session.commit()  # 确保新玩家默认地块持久化（后续可能提前 finish）
-    if not plots:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你还没有地块，先「开荒」吧")
-    # 指定地块
-    target_index = None
-    for part in parts[1:]:
-        digits = "".join(ch for ch in part if ch.isdigit())
-        if digits:
-            target_index = int(digits)
-            break
-    if target_index is not None:
-        plot = await get_farm_plot(session, user_id, target_index)
-        if plot is None:
-            await matcher.finish(MessageSegment.reply(event.message_id) + f"没有第 {target_index} 块地哦")
-        if plot.crop_id is not None:
-            await matcher.finish(MessageSegment.reply(event.message_id) + f"第 {target_index} 块地已有作物，无法种植")
-    else:
-        # 自动选第一块空闲地
-        plot = next((p for p in plots if p.crop_id is None), None)
-        if plot is None:
-            await matcher.finish(MessageSegment.reply(event.message_id) + "所有地块都种满啦，先「收割」或「开荒」吧")
-    if not await remove_inventory(session, user_id, seed_item, 1):
-        await matcher.finish(MessageSegment.reply(event.message_id) + "种子不足")
-    await plant_crop(session, user_id, plot.plot_index, crop_id, int(time.time()))
-    await session.commit()
     info = CROPS[crop_id]
+    plots = await ensure_default_plot(session, user_id)
+    plot_count = len(plots)
+    seed_have = await get_inventory_qty(session, user_id, seed_item)
+    # 所有地块只允许种植同种作物：种子数须 ≥ 地块数
+    if plot_count > seed_have:
+        await matcher.finish(MessageSegment.reply(event.message_id) +
+                             f"种子不够！你共 {plot_count} 块地，需要 {plot_count} 颗{info['name']}种子，"
+                             f"当前只有 {seed_have} 颗。发送「购买种子 {info['name']}」补充")
+    if any(p.crop_id is not None for p in plots):
+        await matcher.finish(MessageSegment.reply(event.message_id) + "有未收割的作物，先「收割」再种植")
+    if not await remove_inventory(session, user_id, seed_item, plot_count):
+        await matcher.finish(MessageSegment.reply(event.message_id) + "种子不足")
+    # 全部地块同时种下同一作物
+    now_ts = int(time.time())
+    for p in plots:
+        await plant_crop(session, user_id, p.plot_index, crop_id, now_ts)
+    grow_h = round(info["grow"] / 3600, 1)
+    await session.commit()
     await matcher.finish(MessageSegment.reply(event.message_id) +
-                         f"已在第 {plot.plot_index} 块地种下{info['name']}！约 {round(info['grow'] / 3600, 1)} 小时后成熟，"
+                         f"已在全部 {plot_count} 块地种下{info['name']}！约 {grow_h} 小时后成熟，"
                          f"发送「收割」即可收获")
 
 
@@ -190,50 +205,40 @@ async def _handle_my_farm(matcher: Matcher, event: GroupMessageEvent,
                           session: async_scoped_session):
     user_id = str(event.user_id)
     plots = await ensure_default_plot(session, user_id)
-    await session.commit()  # 确保新玩家默认地块持久化
     now = int(time.time())
-    lines = [f"【{user_id} 的农场】（共 {len(plots)} 块地）"]
-    idle = 0
-    for p in plots:
-        if p.crop_id is None:
-            idle += 1
-            continue
-        info = CROPS[p.crop_id]
-        remain = p.planted_at + info["grow"] - now
-        if remain <= 0:
-            lines.append(f"· 第{p.plot_index}块地：{info['name']} ✅已成熟，可收割")
-        else:
-            h = remain // 3600
-            m = (remain % 3600) // 60
-            lines.append(f"· 第{p.plot_index}块地：{info['name']} 还有 {h}小时{m}分 成熟")
-    if idle:
-        lines.append(f"· 空闲地块 x{idle}")
-    lines.append("今日售价：")
-    for cid in CROPS:
-        lines.append(f"  {CROPS[cid]['name']} {today_price(cid)} 墨辉币")
-    await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.text("\n".join(lines)))
+    plot_count = len(plots)
+    planted = [p for p in plots if p.crop_id is not None]
+    if not planted:
+        await session.commit()  # 持久化新玩家的默认地块
+        await matcher.finish(MessageSegment.reply(event.message_id) +
+                             f"【你的农场】共 {plot_count} 块地\n目前全部空闲，发送「种植 <作物>」播种")
+    # 统一作物：所有地块同种，取第一块地信息即可
+    p0 = planted[0]
+    info = CROPS[p0.crop_id]
+    remain = p0.planted_at + info["grow"] - now
+    if remain <= 0:
+        status = "✅ 已成熟，发送「收割」即可收获"
+    else:
+        h = remain // 3600
+        m = (remain % 3600) // 60
+        status = f"还有 {h} 小时 {m} 分成熟"
+    # 属性访问完成后提交（持久化新玩家的默认地块）
+    await session.commit()
+    await matcher.finish(MessageSegment.reply(event.message_id) +
+                         f"【你的农场】共 {plot_count} 块地\n作物：{info['name']}\n状态：{status}\n发送「市场」查看今日价格")
 
 
 @_harvest.handle()
 async def _handle_harvest(matcher: Matcher, event: GroupMessageEvent,
-                          session: async_scoped_session, args: Message = CommandArg()):
+                          session: async_scoped_session):
     user_id = str(event.user_id)
-    text = args.extract_plain_text().strip()
     now = int(time.time())
     plots = await get_farm_plots(session, user_id)
     if not plots:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你还没有地块哦")
-    # 目标地块集合
-    target_index = None
-    for ch in text:
-        if ch.isdigit():
-            target_index = int("".join(c for c in text if c.isdigit()))
-            break
     harvested = []
     for p in plots:
         if p.crop_id is None:
-            continue
-        if target_index is not None and p.plot_index != target_index:
             continue
         info = CROPS[p.crop_id]
         if p.planted_at + info["grow"] > now:
@@ -247,15 +252,24 @@ async def _handle_harvest(matcher: Matcher, event: GroupMessageEvent,
             await add_inventory(session, user_id, f"seed_{p.crop_id}", 1)
         await clear_farm_plot(session, user_id, p.plot_index)
     if not harvested:
-        msg = "没有可收割的成熟作物" if target_index is None else f"第 {target_index} 块地没有可收割的成熟作物"
-        await matcher.finish(MessageSegment.reply(event.message_id) + msg)
+        # 有未成熟作物则提示剩余时间
+        planted = [p for p in plots if p.crop_id is not None]
+        if planted:
+            info = CROPS[planted[0].crop_id]
+            remain = planted[0].planted_at + info["grow"] - now
+            h = remain // 3600
+            m = (remain % 3600) // 60
+            await matcher.finish(MessageSegment.reply(event.message_id) +
+                                 f"作物还没成熟哦，{info['name']} 还有 {h} 小时 {m} 分成熟")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "没有可收割的作物")
     await session.commit()
     lines = ["收割完成："]
-    total_produce = 0
+    total = 0
     for idx, cid, y, info in harvested:
         lines.append(f"· 第{idx}块地：{info['name']} x{y}")
-        total_produce += y
-    lines.append(f"产物已放入背包，发送「出售 {CROPS[harvested[0][1]]['name']}」按今日价格卖出")
+        total += y
+    name = harvested[0][3]["name"]
+    lines.append(f"共收获 {total} 个{name}，产物已放入背包。发送「出售 {name}」按今日价格卖出")
     await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.text("\n".join(lines)))
 
 
