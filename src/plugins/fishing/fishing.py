@@ -164,8 +164,11 @@ _bait_info = on_command("饵料属性", block=True)
 
 @_cast.handle()
 @handle_errors
-async def _handle_cast(matcher: Matcher, event: GroupMessageEvent,
-                       session: async_scoped_session):
+async def _handle_cast(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session
+):
     try:
         user_id = str(event.user_id)
         s = await get_fishing_session(session, user_id)
@@ -230,6 +233,7 @@ async def _handle_cast(matcher: Matcher, event: GroupMessageEvent,
         )
         broken = "\n（你的鱼竿耐久耗尽，已经损毁了！）" if rod_broken else ""
     except FishingError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"🎣 你抛出了鱼钩，静静等待鱼儿上钩…（预计 10~30 秒后会有动静）{broken}")
@@ -237,8 +241,11 @@ async def _handle_cast(matcher: Matcher, event: GroupMessageEvent,
 
 @_pull.handle()
 @handle_errors
-async def _handle_pull(matcher: Matcher, event: GroupMessageEvent,
-                       session: async_scoped_session):
+async def _handle_pull(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session
+):
     try:
         user_id = str(event.user_id)
         s = await get_fishing_session(session, user_id)
@@ -294,13 +301,18 @@ async def _handle_pull(matcher: Matcher, event: GroupMessageEvent,
                 await matcher.finish(MessageSegment.reply(event.message_id) +
                                      "😅 你钓上来一只水鬼，但它看你太穷了，没抢到钱就游走了…")
     except FishingError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
 
 
 @_buy_rod.handle()
 @handle_errors
-async def _handle_buy_rod(matcher: Matcher, event: GroupMessageEvent,
-                          session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_buy_rod(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         parts = args.extract_plain_text().split()
         if not parts:
@@ -332,14 +344,19 @@ async def _handle_buy_rod(matcher: Matcher, event: GroupMessageEvent,
         if old:
             msg += f"\n（旧鱼竿已被替换回收）"
     except FishingError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) + msg)
 
 
 @_buy_hook.handle()
 @handle_errors
-async def _handle_buy_hook(matcher: Matcher, event: GroupMessageEvent,
-                           session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_buy_hook(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         parts = args.extract_plain_text().split()
         if not parts:
@@ -357,6 +374,7 @@ async def _handle_buy_hook(matcher: Matcher, event: GroupMessageEvent,
         s.hook_id = hook["id"]
         await session.commit()
     except FishingError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已购买并装备【{hook['name']}】（{hook['price']} 墨辉币）")
@@ -364,8 +382,12 @@ async def _handle_buy_hook(matcher: Matcher, event: GroupMessageEvent,
 
 @_buy_bait.handle()
 @handle_errors
-async def _handle_buy_bait(matcher: Matcher, event: GroupMessageEvent,
-                           session: async_scoped_session, args: Message = CommandArg()):
+async def _handle_buy_bait(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
     try:
         text = args.extract_plain_text().strip()
         qty = 1
@@ -380,6 +402,7 @@ async def _handle_buy_bait(matcher: Matcher, event: GroupMessageEvent,
         await add_inventory(session, user_id, "bait", qty)
         await session.commit()
     except FishingError as e:
+        await session.rollback()
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"已购买饵料 x{qty}（花费 {cost} 墨辉币），每次钓鱼消耗 1 个")
@@ -441,8 +464,11 @@ async def _handle_hook_info(matcher: Matcher, event: GroupMessageEvent, bot: Bot
 
 @_bait_info.handle()
 @handle_errors
-async def _handle_bait_info(matcher: Matcher, event: GroupMessageEvent,
-                            session: async_scoped_session):
+async def _handle_bait_info(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session
+):
     user_id = str(event.user_id)
     qty = await get_inventory_qty(session, user_id, "bait")
     await matcher.finish(MessageSegment.reply(event.message_id) +
