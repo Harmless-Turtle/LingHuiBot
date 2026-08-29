@@ -8,12 +8,8 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
-from ..database.models import (
-    add_inventory,
-    get_fishing_session,
-    get_inventory_qty,
-    remove_inventory,
-)
+from ..database.models import add_inventory, get_inventory_qty, remove_inventory
+from .models import get_fishing_session
 from ..entertainment.currency.exceptions import CurrencyBalanceNotEnough
 from ..entertainment.currency.models import add_mohui_coin, remove_mohui_coin
 
@@ -108,14 +104,15 @@ async def spend_coins(session, user_id: str, amount: int) -> bool:
 
 
 # ================= 定时推送：鱼上钩 =================
-async def _send_bite(user_id: str, group_id: str, wait: int):
-    """抛竿后 bite_at 时刻触发：向玩家所在群推送"鱼上钩"（纯消息，无 DB 依赖）。"""
+async def _send_bite(user_id: str, group_id: str, wait: int, window_len: int):
+    """抛竿后 bite_at 时刻触发：向玩家所在群推送"鱼上钩"（告知等待秒数与窗口长度）。"""
     try:
         from nonebot import get_bot
         bot = get_bot()
         await bot.send_group_msg(
             group_id=int(group_id),
-            message=f"🐟 鱼上钩了！正在溜鱼，预计约 {max(1, wait)} 秒后进入收竿窗口，请在窗口期内发送「收竿」！",
+            message=f"🐟 鱼上钩了！请在 {max(1, wait)} 秒后进入收竿窗口，窗口持续 {max(1, window_len)} 秒，"
+                    f"请在此期间发送「收竿」！",
         )
     except Exception:
         pass
@@ -128,8 +125,28 @@ def _cancel_bite_job(user_id: str):
         pass
 
 
+async def _send_timeout(user_id: str, group_id: str):
+    """窗口结束仍未收竿：主动推送跑鱼反馈。"""
+    try:
+        from nonebot import get_bot
+        bot = get_bot()
+        await bot.send_group_msg(
+            group_id=int(group_id),
+            message="……鱼已经挣脱跑掉了！你错过了收竿窗口，下次记得在窗口期内收竿哦",
+        )
+    except Exception:
+        pass
+
+
+def _cancel_timeout_job(user_id: str):
+    try:
+        scheduler.remove_job(f"fishing_timeout_{user_id}")
+    except Exception:
+        pass
+
+
 # ================= 命令 =================
-_cast = on_command("钓鱼", block=True)
+_cast = on_command("钓鱼", aliases={"抛竿", "下竿", "开钓"}, block=True)
 _pull = on_command("收竿", aliases={"提竿"}, block=True)
 _buy_rod = on_command("购买鱼竿", block=True)
 _buy_hook = on_command("购买鱼钩", block=True)
@@ -183,6 +200,9 @@ async def _handle_cast(matcher: Matcher, event: GroupMessageEvent,
     window_len = max(MIN_WINDOW, rd.randint(*WINDOW_BASE_RANGE) + rod_bonus - debuff)
     window_end = window_start + window_len
     s.group_id = str(event.group_id)
+    # commit 前取值，避免 commit 后访问失效属性（MissingGreenlet）
+    group_id = s.group_id
+    rod_broken = s.rod_durability <= 0
     s.state = "fishing"
     s.cast_at = now
     s.bite_at = bite_at
@@ -190,14 +210,16 @@ async def _handle_cast(matcher: Matcher, event: GroupMessageEvent,
     s.window_end = window_end
     s.outcome = outcome
     await session.commit()
-    # 定时推送上钩（wait = 溜鱼秒数）
+    # 定时推送：上钩（wait=溜鱼秒数） + 超时跑鱼（窗口结束后仍未收竿）
     scheduler.add_job(
         _send_bite, "date", run_date=datetime.fromtimestamp(bite_at),
-        args=[user_id, s.group_id, wait], id=f"fishing_bite_{user_id}", replace_existing=True,
+        args=[user_id, group_id, wait, window_len], id=f"fishing_bite_{user_id}", replace_existing=True,
     )
-    broken = ""
-    if s.rod_durability <= 0:
-        broken = "\n（你的鱼竿耐久耗尽，已经损毁了！）"
+    scheduler.add_job(
+        _send_timeout, "date", run_date=datetime.fromtimestamp(window_end + 3),
+        args=[user_id, group_id], id=f"fishing_timeout_{user_id}", replace_existing=True,
+    )
+    broken = "\n（你的鱼竿耐久耗尽，已经损毁了！）" if rod_broken else ""
     await matcher.finish(MessageSegment.reply(event.message_id) +
                          f"🎣 你抛出了鱼钩，静静等待鱼儿上钩…（预计 10~30 秒后会有动静）{broken}")
 
@@ -214,6 +236,7 @@ async def _handle_pull(matcher: Matcher, event: GroupMessageEvent,
         # 过早
         s.state = None
         _cancel_bite_job(user_id)
+        _cancel_timeout_job(user_id)
         await session.commit()
         await matcher.finish(MessageSegment.reply(event.message_id) +
                              "太心急了！鱼被你吓跑了…（下次等窗口开启后再收竿哦）")
@@ -221,19 +244,21 @@ async def _handle_pull(matcher: Matcher, event: GroupMessageEvent,
         # 过晚
         s.state = None
         _cancel_bite_job(user_id)
+        _cancel_timeout_job(user_id)
         await session.commit()
         await matcher.finish(MessageSegment.reply(event.message_id) +
                              "收竿太晚了！鱼已经挣脱溜走了…")
     # 窗口期内：上鱼！
     s.state = None
     _cancel_bite_job(user_id)
+    _cancel_timeout_job(user_id)
     outcome = s.outcome
     if outcome.startswith("fish:"):
         fish = _FISH_BY_ID[outcome.split(":", 1)[1]]
         await add_mohui_coin(session, user_id, fish["price"])
         await session.commit()
         await matcher.finish(MessageSegment.reply(event.message_id) +
-                             f"🎣 上鱼了！你钓到了【{fish['name']}】！价值 {fish['price']} 墨辉币，已自动出售！")
+                             f"🎣 上鱼了！你钓到了【{fish['name']}】！价值 {fish['price']} 墨辉币！")
     elif outcome == "item:chest":
         coins = rd.randint(100, 500)
         await add_mohui_coin(session, user_id, coins)
