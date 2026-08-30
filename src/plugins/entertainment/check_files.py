@@ -8,15 +8,7 @@ path_header = Path.cwd() / "data"
 ########################
 #      结婚系统自检      #
 ########################
-# 定义路径变量
-marry_json_path = path_header / "entertainment" / "marry_system" / 'marry.json'
-utils.ensure_files_exist(
-    [
-        marry_json_path,
-    ],
-    "结婚系统自检",
-    [{}]
-)
+# 结婚系统数据已迁移至 SQLite（见 marry_system.models.MarryRecord），无需本地 JSON 自检
 
 ########################
 #      制作表情包自检        #
