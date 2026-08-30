@@ -1,4 +1,6 @@
 from . import (
+    farm,
+    fishing,
     marry_system,
     drift_bottle,
     # wolfkill,
