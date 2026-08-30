@@ -1,6 +1,6 @@
+import asyncio
 import json
 from datetime import datetime as dt
-from pathlib import Path
 from typing import Dict, Set
 
 import ahocorasick
@@ -15,43 +15,31 @@ from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.rule import Rule
+from nonebot_plugin_orm import async_scoped_session
 
 from .command import cmd_add, cmd_del, cmd_list, cmd_group
-from ..utils import handle_json
-
-# 配置文件路径
-DATA_DIR = Path() / "data" / "sensitive_manager"
-SENSITIVE_DATA_PATH = DATA_DIR / "sensitive_data.json"
-GROUP_SETTINGS_PATH = DATA_DIR / "group_settings.json"
-USER_VIOLATIONS_PATH = DATA_DIR / "user_violations.json"
-
-# 确保目录存在
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+from .exceptions import (
+    SensitiveError,
+    SensitiveGroupNotConfigured,
+    SensitivePermissionDenied,
+    SensitiveWordExists,
+    SensitiveWordNotFound,
+)
+from .models import (
+    add_sensitive_admin,
+    add_sensitive_word,
+    delete_violation,
+    get_violation,
+    load_sensitive_settings,
+    load_sensitive_words,
+    remove_sensitive_word,
+    set_sensitive_enabled,
+)
+from ..utils import handle_errors
 
 config = get_driver().config
 sensitive_admins = getattr(config, "sensitiveadmin", '[1097740481,1692719245]')
 logger.info(f"敏感词管理员列表: {sensitive_admins}")
-
-
-def ensure_file_exists(file_path: Path, default_content: dict = None):
-    """确保文件存在，如果不存在则创建并初始化默认内容"""
-    if not file_path.exists():
-        logger.warning(f"文件 {file_path} 不存在，正在创建...")
-        try:
-            # 确保父目录存在
-            file_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # 写入默认内容
-            with open(file_path, 'w', encoding='utf-8') as f:
-                if default_content is None:
-                    json.dump({}, f, ensure_ascii=False, indent=4)
-                else:
-                    json.dump(default_content, f, ensure_ascii=False, indent=4)
-            logger.info(f"已创建文件 {file_path} 并初始化默认内容")
-        except Exception as e:
-            logger.error(f"创建文件 {file_path} 失败: {e}")
-            raise
-    return file_path
 
 
 def is_admin(user_id: str) -> bool:
@@ -59,42 +47,31 @@ def is_admin(user_id: str) -> bool:
 
 
 class SensitiveManager:
+    """敏感词管理器：AC 自动机常驻内存，词库/开关/违规记录持久化于 SQLite。"""
+
     def __init__(self):
         self.ac_dict: Dict[str, ahocorasick.Automaton] = {}
-        self.sensitive_words: Dict[str, Set[str]] = {}
+        self.sensitive_words: Dict[str, dict] = {}
+        self.group_settings: Dict[str, bool] = {}
+        self._loaded = False
+        self._lock = asyncio.Lock()
 
-        # 确保所有必需文件都存在
-        ensure_file_exists(SENSITIVE_DATA_PATH, {})
-        ensure_file_exists(GROUP_SETTINGS_PATH, {})
-        ensure_file_exists(USER_VIOLATIONS_PATH, {})
-
-        self.load_data()
-        self.build_all_ac()
-
-        self.group_settings = handle_json(GROUP_SETTINGS_PATH, 'r') or {}
-        # 直接加载新格式的违规记录
-        self.group_violations = handle_json(USER_VIOLATIONS_PATH, 'r') or {}
-
-        # 初始化时遍历所有群组构建 AC 自动机
-        self.build_all_ac()
-
-        self.group_settings = handle_json(GROUP_SETTINGS_PATH, 'r') or {}
-        self.user_violations = handle_json(USER_VIOLATIONS_PATH, 'r') or {}
-
-    def load_data(self):
-        data = handle_json(SENSITIVE_DATA_PATH, 'r') or {}
-        self.sensitive_words = {}
-        for group_id, content in data.items():
-            if isinstance(content, list):
-                self.sensitive_words[group_id] = {
-                    "words": set(content),
-                    "admin": []
-                }
-            else:
-                self.sensitive_words[group_id] = {
-                    "words": set(content.get("words", [])),
-                    "admin": content.get("admin", [])
-                }
+    async def ensure_loaded(self, session: async_scoped_session) -> None:
+        """首次访问时从数据库加载词库与开关，后续直接命中内存缓存。"""
+        if self._loaded:
+            return
+        async with self._lock:
+            if self._loaded:
+                return
+            try:
+                self.sensitive_words = await load_sensitive_words(session)
+                self.group_settings = await load_sensitive_settings(session)
+                self.build_all_ac()
+                self._loaded = True
+                logger.info(f"敏感词数据已从数据库加载：{len(self.sensitive_words)} 个群")
+            except Exception as e:
+                # 数据库表可能尚未就绪，保留未加载状态以便下次重试
+                logger.warning(f"敏感词数据加载失败，将在下次访问时重试：{e}")
 
     def build_all_ac(self):
         """初始化时构建所有群组的 AC 自动机"""
@@ -119,7 +96,8 @@ class SensitiveManager:
 manager = SensitiveManager()
 
 
-async def check_enabled(event: GroupMessageEvent) -> bool:
+async def check_enabled(event: GroupMessageEvent, session: async_scoped_session) -> bool:
+    await manager.ensure_loaded(session)
     group_id = str(event.group_id)
     return manager.group_settings.get(group_id, False)
 
@@ -132,7 +110,9 @@ sensitive_matcher = on_message(
 
 
 @sensitive_matcher.handle()
-async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
+async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent,
+                       session: async_scoped_session):
+    await manager.ensure_loaded(session)
     # 跳过管理员的消息
     if is_admin(str(event.user_id)):
         return
@@ -153,18 +133,9 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     if not found_words:
         return
 
-    # 更新违规记录（使用新的以群组为键的数据结构）
-    if group_id not in manager.group_violations:
-        manager.group_violations[group_id] = {}
-
-    if user_id not in manager.group_violations[group_id]:
-        manager.group_violations[group_id][user_id] = {
-            "count": 0,
-            "warnings": 0,
-            "records": []
-        }
-
-    violations = manager.group_violations[group_id][user_id]
+    # 取或建违规记录
+    violation = await get_violation(session, group_id, user_id)
+    records = json.loads(violation.records) if violation.records else []
 
     # 获取管理员列表并发送通知
     group_info = manager.sensitive_words.get(group_id, {})
@@ -173,7 +144,13 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
         try:
             await bot.send_private_msg(
                 user_id=int(admin_id),
-                message=f"群{group_id}有用户触发敏感词:\n用户：{event.user_id}\n内容：{text}\n触发词汇：{','.join(found_words)}\n用户已违规次数：{violations["count"] + 1}"
+                message=(
+                    f"群{group_id}有用户触发敏感词:\n"
+                    f"用户：{event.user_id}\n"
+                    f"内容：{text}\n"
+                    f"触发词汇：{','.join(found_words)}\n"
+                    f"用户已违规次数：{violation.count + 1}"
+                ),
             )
         except Exception as e:
             logger.error(f"通知管理员失败：{e}")
@@ -182,173 +159,198 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     dt_object = dt.fromtimestamp(timestamp)  # 转换为 datetime 对象
     formatted_time = dt_object.strftime("%Y-%m-%d %H:%M:%S")  # 格式化时间
 
-    violations["count"] += 1
-    violations["records"].append({
+    violation.count += 1
+    records.append({
         "time": formatted_time,
         "content": text
     })
+    violation.records = json.dumps(records, ensure_ascii=False)
 
     # 处理惩罚逻辑
     action_taken = False
-    if violations["count"] % 3 == 0:
-        violations["warnings"] += 1
-        warn_level = violations["warnings"]
+    if violation.count % 3 == 0:
+        violation.warnings += 1
+        warn_level = violation.warnings
         try:
             role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
             role = role['role']
             if role not in "member":
                 if warn_level == 1:
+                    await session.flush()
+                    await session.commit()
                     await bot.set_group_ban(group_id=int(group_id), user_id=event.user_id, duration=7 * 24 * 60 * 60)
                     action_taken = True
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计3次违规，禁言7天")
                 elif warn_level == 2:
+                    await session.flush()
+                    await session.commit()
                     await bot.set_group_ban(group_id=int(group_id), user_id=event.user_id, duration=30 * 24 * 60 * 60)
                     action_taken = True
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计6次违规，将禁言30天")
                 elif warn_level >= 3:
-                    await bot.set_group_kick(group_id=int(group_id), user_id=event.user_id)
-                    action_taken = True
-                    # 只删除该用户在当前群的记录
-                    if group_id in manager.group_violations and user_id in manager.group_violations[group_id]:
-                        del manager.group_violations[group_id][user_id]
+                    # 删除该用户在当前群的违规记录
+                    await delete_violation(session, group_id, user_id)
                     manager.build_ac(group_id)  # 重建当前群的AC自动机
-                    handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
+                    await session.commit()
+                    action_taken = True
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计9次违规，将踢出该群员")
         except Exception as e:
             logger.error(f"执行惩罚时出错：{e}")
 
     # 保存记录
-    handle_json(USER_VIOLATIONS_PATH, 'w', manager.group_violations)
+    await session.commit()
     if not action_taken:
         await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"检测到敏感词，请文明发言！（累计违规次数：{violations['count']}）")
+            MessageSegment.reply(event.message_id) + f"检测到敏感词，请文明发言！（累计违规次数：{violation.count}）")
 
 
 @cmd_add.handle()
-async def handle_add(event: GroupMessageEvent, args: Message = CommandArg()):
-    if not is_admin(str(event.user_id)):
-        await cmd_add.finish(MessageSegment.reply(event.message_id) + "权限不足")
-    word = args.extract_plain_text().strip()
-    if not word:
-        await cmd_add.finish(MessageSegment.reply(event.message_id) + "请输入要添加的敏感词")
+@handle_errors
+async def handle_add(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
+    try:
+        await manager.ensure_loaded(session)
+        if not is_admin(str(event.user_id)):
+            raise SensitivePermissionDenied()
+        word = args.extract_plain_text().strip()
+        if not word:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "请输入要添加的敏感词")
 
-    group_id = str(event.group_id)
-    if group_id not in manager.sensitive_words:
-        # 初始化数据结构
-        manager.sensitive_words[group_id] = {
-            "words": set(),
-            "admin": []
-        }
+        group_id = str(event.group_id)
+        if group_id not in manager.sensitive_words:
+            # 初始化数据结构
+            manager.sensitive_words[group_id] = {
+                "words": set(),
+                "admin": []
+            }
 
-    # 添加操作者到管理员列表
-    operator_id = str(event.user_id)
-    if operator_id not in manager.sensitive_words[group_id]["admin"]:
-        manager.sensitive_words[group_id]["admin"].append(operator_id)
+        if word in manager.sensitive_words[group_id]["words"]:
+            raise SensitiveWordExists()
 
-    if word in manager.sensitive_words[group_id]["words"]:
-        await cmd_add.finish(MessageSegment.reply(event.message_id) + "该敏感词已存在")
+        # 添加操作者到管理员列表
+        operator_id = str(event.user_id)
+        if operator_id not in manager.sensitive_words[group_id]["admin"]:
+            manager.sensitive_words[group_id]["admin"].append(operator_id)
+            await add_sensitive_admin(session, group_id, operator_id)
 
-    manager.sensitive_words[group_id]["words"].add(word)
+        manager.sensitive_words[group_id]["words"].add(word)
+        await add_sensitive_word(session, group_id, word)
 
-    # 保存到文件
-    save_data = {
-        gid: {
-            "words": list(values["words"]),
-            "admin": values.get("admin", [])
-        }
-        for gid, values in manager.sensitive_words.items()
-    }
-    handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
-
-    # 重建当前群的AC自动机 - 确保立即生效
-    manager.build_ac(group_id)
-    logger.info(f"已为群组 {group_id} 添加敏感词 '{word}'，并重建AC自动机")
-
-    await cmd_add.finish(f"已为当前群组添加敏感词：{word}")
+        # 重建当前群的AC自动机 - 确保立即生效
+        manager.build_ac(group_id)
+        await session.commit()
+        logger.info(f"已为群组 {group_id} 添加敏感词 '{word}'，并重建AC自动机")
+    except SensitiveError as e:
+        await session.rollback()
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
+    await matcher.finish(f"已为当前群组添加敏感词：{word}")
 
 
 @cmd_del.handle()
-async def handle_del(event: GroupMessageEvent, args: Message = CommandArg()):
-    if not is_admin(str(event.user_id)):
-        await cmd_del.finish(MessageSegment.reply(event.message_id) + "权限不足")
-    word = args.extract_plain_text().strip()
-    if not word:
-        await cmd_del.finish(MessageSegment.reply(event.message_id) + "请输入要删除的敏感词")
+@handle_errors
+async def handle_del(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
+    try:
+        await manager.ensure_loaded(session)
+        if not is_admin(str(event.user_id)):
+            raise SensitivePermissionDenied()
+        word = args.extract_plain_text().strip()
+        if not word:
+            await matcher.finish(MessageSegment.reply(event.message_id) + "请输入要删除的敏感词")
 
-    group_id = str(event.group_id)
+        group_id = str(event.group_id)
 
-    if group_id not in manager.sensitive_words:
-        await cmd_del.finish("该群组未设置敏感词")
-    group_words = manager.sensitive_words[group_id]["words"]
+        if group_id not in manager.sensitive_words:
+            raise SensitiveGroupNotConfigured()
+        group_words = manager.sensitive_words[group_id]["words"]
 
-    if word not in group_words:
-        await cmd_del.finish("该敏感词不存在")
+        if word not in group_words:
+            raise SensitiveWordNotFound()
 
-    group_words.remove(word)
+        group_words.remove(word)
+        await remove_sensitive_word(session, group_id, word)
 
-    if not group_words:
-        del manager.sensitive_words[group_id]
-        if group_id in manager.ac_dict:
-            del manager.ac_dict[group_id]
-        logger.info(f"群组 {group_id} 的所有敏感词已删除，AC自动机已移除")
-    else:
-        # 重建当前群的AC自动机 - 确保立即生效
-        manager.build_ac(group_id)
-        logger.info(f"已从群组 {group_id} 删除敏感词 '{word}'，并重建AC自动机")
+        if not group_words:
+            del manager.sensitive_words[group_id]
+            if group_id in manager.ac_dict:
+                del manager.ac_dict[group_id]
+            logger.info(f"群组 {group_id} 的所有敏感词已删除，AC自动机已移除")
+        else:
+            # 重建当前群的AC自动机 - 确保立即生效
+            manager.build_ac(group_id)
+            logger.info(f"已从群组 {group_id} 删除敏感词 '{word}'，并重建AC自动机")
 
-    save_data = {
-        gid: {
-            "words": list(words["words"]),
-            "admin": words.get("admin", [])
-        }
-        for gid, words in manager.sensitive_words.items()
-    }
-    handle_json(SENSITIVE_DATA_PATH, 'w', save_data)
-
-    await cmd_del.finish(MessageSegment.reply(event.message_id) + f"已删除敏感词：{word}")
+        await session.commit()
+    except SensitiveError as e:
+        await session.rollback()
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"已删除敏感词：{word}")
 
 
 @cmd_list.handle()
-async def handle_list(event: GroupMessageEvent):
+@handle_errors
+async def handle_list(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session
+):
+    await manager.ensure_loaded(session)
     group_id = str(event.group_id)
     words = manager.sensitive_words.get(group_id, {}).get("words", set())
     word_list = "\n".join(words) if words else "当前群聊暂无敏感词"
-    await cmd_list.finish(MessageSegment.reply(event.message_id) + MessageSegment.text(
+    await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.text(
         f"当前群组敏感词列表（共{len(words)}个）：\n{word_list}"))
 
 
 @cmd_group.handle()
-async def handle_toggle(event: GroupMessageEvent, args: Message = CommandArg()):
-    group_id = str(event.group_id)
-    user_id = str(event.user_id)
-    action = args.extract_plain_text().strip()
+@handle_errors
+async def handle_toggle(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
+    try:
+        await manager.ensure_loaded(session)
+        group_id = str(event.group_id)
+        user_id = str(event.user_id)
+        action = args.extract_plain_text().strip()
 
-    if not action:
-        current_status = "开启" if manager.group_settings.get(group_id, False) else "关闭"
-        await cmd_group.finish(MessageSegment.reply(event.message_id) + f"当前群聊的敏感词检测状态：{current_status}")
-        return
+        if not action:
+            current_status = "开启" if manager.group_settings.get(group_id, False) else "关闭"
+            await matcher.finish(MessageSegment.reply(event.message_id) + f"当前群聊的敏感词检测状态：{current_status}")
 
-    if not is_admin(user_id):
-        await cmd_group.finish(MessageSegment.reply(event.message_id) + "权限不足，只有敏感词管理员可以操作开关")
+        if not is_admin(user_id):
+            raise SensitivePermissionDenied()
 
-    logger.info(f"敏感词检测开关操作：{action}")
-    if action in ("开", "开启"):
-        manager.group_settings[group_id] = True
-        msg = "已在本群启用敏感词检测"
-    elif action in ("关", "关闭"):
-        manager.group_settings[group_id] = False
-        msg = "已在本群禁用敏感词检测"
-    else:
-        current_status = "开启" if manager.group_settings.get(group_id, False) else "关闭"
-        await cmd_group.finish(
-            MessageSegment.reply(event.message_id) +
-            f"参数错误！当前状态：{current_status}\n"
-            f"请使用【开启】或【关闭】"
-        )
-        return
+        logger.info(f"敏感词检测开关操作：{action}")
+        if action in ("开", "开启"):
+            manager.group_settings[group_id] = True
+            msg = "已在本群启用敏感词检测"
+        elif action in ("关", "关闭"):
+            manager.group_settings[group_id] = False
+            msg = "已在本群禁用敏感词检测"
+        else:
+            current_status = "开启" if manager.group_settings.get(group_id, False) else "关闭"
+            await matcher.finish(
+                MessageSegment.reply(event.message_id) +
+                f"参数错误！当前状态：{current_status}\n"
+                f"请使用【开启】或【关闭】")
 
-    handle_json(GROUP_SETTINGS_PATH, 'w', manager.group_settings)
-    await cmd_group.finish(MessageSegment.reply(event.message_id) + msg)
+        await set_sensitive_enabled(session, group_id, manager.group_settings[group_id])
+        await session.commit()
+    except SensitiveError as e:
+        await session.rollback()
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
+    await matcher.finish(MessageSegment.reply(event.message_id) + msg)
