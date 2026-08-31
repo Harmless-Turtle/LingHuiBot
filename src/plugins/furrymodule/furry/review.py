@@ -9,7 +9,7 @@ from ..commands import check_upload,check_upload_decide
 from src.plugins.utils import handle_errors,handle_json
 from .upload import UPLOAD_CACHE_DIR
 from ...utils import batch_get
-
+from .models import add_furry_picture
 
 
 @check_upload.handle()
@@ -81,10 +81,20 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
         if not group_id == event.group_id:
             await matcher.finish(MessageSegment.reply(event.message_id) + f"已拒绝上传第{review_id + 1}张图片，文件已删除。已告知上传者。")
         await matcher.finish()
-    # 将图片移动到正式目录
+    # 生成临时目录与正式目录
     original_file_path = review_list[review_id]['file_path']
     new_save_data = furry_pic_data_path / os.path.basename(original_file_path)
-
+    # 写入SQL
+    await add_furry_picture(
+        session,
+        file_name=review_list[review_id]['filename'],
+        file_path=new_save_data,
+        furry_name=review_list[review_id]['furryname'],
+        type=review_list[review_id]['type'],
+        uploader_id=review_list[review_id]['user_id'],
+        group_id=review_list[review_id]['group_id']
+    )
+    # 移动文件到正式目录
     os.rename(original_file_path, new_save_data)
     # 更新manifest.json
     review_list.pop(review_id)
