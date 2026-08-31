@@ -60,18 +60,6 @@ bank_money = on_command("存款", aliases={"我的存款"}, block=True)
 bank_robbery = on_command("抢银行", block=True)
 
 #########################
-#             货币子系统<钓鱼> 触发器               #
-#########################
-fishing_downswing = on_command("钓鱼", block=True)
-fishing_pull = on_command("收竿", aliases={"提竿"}, block=True)
-buy_fishing_hook = on_command("购买鱼钩")
-buy_fishing_rod = on_command("购买鱼竿")
-buy_fishing_bait = on_command("购买饵料")
-fishing_hook_attribute = on_command("鱼钩属性")
-fishing_rod_attribute = on_command("鱼竿属性")
-fishing_bait_attribute = on_command("饵料属性")
-
-#########################
 #                 表情包制作 触发器                   #
 #########################
 meme_matcher = on_command("制作表情", aliases={"表情制作", "摸"})
