@@ -2,7 +2,7 @@ import os
 
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot,MessageSegment
 from nonebot.matcher import Matcher
-from nonebot import logger
+from nonebot_plugin_orm import async_scoped_session
 
 from ..check_file import furry_pic_data_path
 from ..commands import check_upload,check_upload_decide
@@ -11,12 +11,13 @@ from .upload import UPLOAD_CACHE_DIR
 from ...utils import batch_get
 
 
+
 @check_upload.handle()
 @handle_errors
 async def check_upload_function(
         matcher: Matcher,
         event: GroupMessageEvent,
-        bot: Bot
+        bot: Bot,
 ):
     """
     处理待审核列表命令，获取待审核的图片列表并发送给用户。
@@ -47,6 +48,7 @@ async def check_upload_function(
 async def check_upload_decide_function(
         matcher: Matcher,
         event: GroupMessageEvent,
+        session: async_scoped_session,
         bot: Bot
 ):
     status = True
@@ -81,9 +83,9 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
         await matcher.finish()
     # 将图片移动到正式目录
     original_file_path = review_list[review_id]['file_path']
-    suffix = os.path.splitext(original_file_path)[1]
-    new_save_data = furry_pic_data_path / f"{review_id+1} {review_list[review_id]['furryname']}{suffix}"
-    os.rename(original_file_path,new_save_data)
+    new_save_data = furry_pic_data_path / os.path.basename(original_file_path)
+
+    os.rename(original_file_path, new_save_data)
     # 更新manifest.json
     review_list.pop(review_id)
     handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'w', review_list)
