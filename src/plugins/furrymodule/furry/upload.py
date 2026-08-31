@@ -84,7 +84,7 @@ async def upload_furry_image(
             file_md5 = Path(image_segment.data["file"]).stem.lower()
             if not image_url:
                 await matcher.finish("无法获取图片 URL，请检查图片是否有效。")
-            if (UPLOAD_CACHE_DIR / f"{file_md5}.jpg").exists():
+            if any(UPLOAD_CACHE_DIR.glob(f"{file_md5}.*")):
                 duplicate_sum += 1
                 continue
             task = download_image(client, image_url,file_md5, UPLOAD_CACHE_DIR)
