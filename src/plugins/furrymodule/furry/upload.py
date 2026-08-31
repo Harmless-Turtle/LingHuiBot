@@ -43,9 +43,9 @@ async def upload_furry_function(
 
     # 检查用户是否提供了类型参数
     if len(user_input) < 2:
-        await matcher.finish("请按照“投图 图片类型 投图名称”格式输入。")
+        await matcher.finish("请按照“投图 兽图名称 图片类型 ”格式输入。\n图片类型：（1: 毛照, 2: 稿子）")
     if user_input[1] not in FURRY_TYPE_MAP.keys():
-        await matcher.finish("请提供图片类型参数（1: 毛照, 2: 稿子）。")
+        await matcher.finish("请提供图片类型（1: 毛照, 2: 稿子）。")
     # 获取图片类型
     furry_type = FURRY_TYPE_MAP[user_input[1]]
     matcher.set_arg("furryname", Message(user_input[0]))

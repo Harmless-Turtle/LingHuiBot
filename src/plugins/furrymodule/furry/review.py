@@ -4,6 +4,7 @@ from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot,MessageSegment
 from nonebot.matcher import Matcher
 from nonebot import logger
 
+from ..check_file import furry_pic_data_path
 from ..commands import check_upload,check_upload_decide
 from src.plugins.utils import handle_errors,handle_json
 from .upload import UPLOAD_CACHE_DIR
@@ -77,3 +78,13 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
         os.remove(picture_path)
         if not group_id == event.group_id:
             await matcher.finish(MessageSegment.reply(event.message_id) + f"已拒绝上传第{review_id + 1}张图片，文件已删除。已告知上传者。")
+        await matcher.finish()
+    # 将图片移动到正式目录
+    original_file_path = review_list[review_id]['file_path']
+    suffix = os.path.splitext(original_file_path)[1]
+    new_save_data = furry_pic_data_path / f"{review_id+1} {review_list[review_id]['furryname']}{suffix}"
+    os.rename(original_file_path,new_save_data)
+    # 更新manifest.json
+    review_list.pop(review_id)
+    handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'w', review_list)
+    await matcher.finish(MessageSegment.reply(event.message_id) + f"已同意上传第{review_id + 1}张图片，文件已移动到正式目录。")
