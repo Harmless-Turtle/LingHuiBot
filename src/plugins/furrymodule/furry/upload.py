@@ -13,7 +13,7 @@ from .models import FurryPictureData
 from ..commands import upload_furry,modify_furry
 from src.plugins.utils import handle_errors,handle_json
 from ...utils import ensure_files_exist
-from .tools import download_image
+from .tools import download_image, is_picture
 
 # 用户输入 1 -> 毛照，输入 2 -> 稿子
 FURRY_TYPE_MAP = {"1": "毛照", "2": "稿子"}
@@ -66,7 +66,7 @@ async def upload_furry_image(
         await matcher.finish("已取消本次图片上传。")
     image_segments = [
         seg
-        for seg in matcher.get_arg("image")
+        for seg in await matcher.get_arg("image")
         if seg.type == "image"
     ]
     if not image_segments:
@@ -80,18 +80,8 @@ async def upload_furry_image(
             file_md5 = Path(image_segment.data["file"]).stem.lower()
             if not image_url:
                 await matcher.finish("无法获取图片 URL，请检查图片是否有效。")
-            # 检查图片是否已存在
-            if any(UPLOAD_CACHE_DIR.glob(f"{file_md5}.*")):
-                duplicate_sum += 1
-                continue
-            # 查表是否有重复值
-            result = await session.execute(
-                select(FurryPictureData.id)
-                .where(FurryPictureData.file_name == file_md5)
-                .limit(1)
-            )
-
-            if result.scalar_one_or_none() is not None:
+            is_true = await is_picture(file_md5, UPLOAD_CACHE_DIR, session)
+            if is_true:
                 duplicate_sum += 1
                 continue
             task = download_image(client, image_url,file_md5, UPLOAD_CACHE_DIR)
@@ -184,3 +174,5 @@ async def modify_furry_attr(
         modify_data.append(modify_info)
         handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_data)
         await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功修改图片码为 {modify_id} 的 {modify_attr_text[modify_attr]} 属性为 {modify_content}，请等待管理员审核。")
+    async with httpx.AsyncClient() as client:
+        pass

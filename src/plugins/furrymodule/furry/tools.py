@@ -4,6 +4,9 @@ import httpx
 from io import BytesIO
 from PIL import Image
 from nonebot import logger
+from nonebot_plugin_orm import async_scoped_session
+from sqlalchemy import select
+from .models import FurryPictureData
 
 async def download_image(
         client: httpx.AsyncClient,
@@ -32,3 +35,19 @@ async def download_image(
         with open(file_path, "wb") as f:
             f.write(response.content)
     return file_path,md5
+
+async def is_picture(
+        file_md5: str,
+        path: Path,
+        session: async_scoped_session
+):
+    # 查表是否有重复值
+    result = await session.execute(
+        select(FurryPictureData.id)
+        .where(FurryPictureData.file_name == file_md5)
+        .limit(1)
+    )
+    # 检查图片是否已存在
+    if any(path.glob(f"{file_md5}.*")) or result.scalar_one_or_none() is not None:
+        return True
+    return False
