@@ -4,17 +4,11 @@ from nonebot.rule import to_me
 
 # ================= Foxtail-Furry 兽云祭服务 =================
 # 随机兽图
-furry_random = on_command("来只兽兽", aliases={"来只毛", "来只", "来只兽"}, priority=10, block=True)
-# 指定兽图
-furry_picture = on_command("指定", aliases={"指定#"}, priority=10, block=True)
+furry_random = on_command("来只", aliases={"来只毛", "来只兽兽", "来只兽"}, priority=10, block=True)
 # 获取列表
 furry_list = on_command("查列表", aliases={"查列表#", "查兽兽"}, priority=10, block=True)
-# 兽图状态
-furry_status = on_command("兽图状态", aliases={"兽图状态#"}, priority=10, block=True)
 # 鉴毛
 see_furry = on_command("鉴毛", aliases={"每日鉴毛"}, priority=10, block=True)
-# 获取服务器信息
-# service_status = on_command("服务器状态", aliases={"兽云祭信息", "兽云祭状态", "服务状态"}, priority=10, block=True)
 
 # ================= 投图审核系统（仅SUPERUSER） =================
 # 获取审核列表
@@ -32,18 +26,10 @@ check_upload_decide = on_command(
     block=True,
     permission=SUPERUSER
 )
-# 清空上传数据
-upload_clear = on_command("清空上传数据", aliases={"清除上传"}, permission=SUPERUSER)
 
 # ================= FurryPic.upload 兽云祭上传子模块 =================
 # 一键上传
 upload_furry = on_command("上传", aliases={"投图"}, priority=10, block=True)
-# 批量上传
-batch_upload = on_command("批量投图", aliases={"批量上传"}, block=True)
-# 定义批量上传
-batch_set = on_command("定义#", aliases={"定义"}, priority=10, block=True)
-# 上传调试（仅SUPERUSER）
-debugger_upload = on_command("调试", aliases={"上传调试", "上图调试"}, priority=1, permission=SUPERUSER)
 # 修改图片（仅SUPERUSER）
 modify_furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)
 
