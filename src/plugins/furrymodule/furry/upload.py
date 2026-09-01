@@ -1,19 +1,13 @@
 import asyncio
-import json
 from datetime import datetime
-import hashlib
 from pathlib import Path
 
 import httpx
-from PIL import Image
-from nonebot import logger
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, Bot, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot.rule import Rule
 
-from ..commands import upload_furry, modify_furry
-from ..check_file import furry_pic_data_path
+from ..commands import upload_furry
 from src.plugins.utils import handle_errors,handle_json
 from ...utils import ensure_files_exist
 from .tools import download_image
