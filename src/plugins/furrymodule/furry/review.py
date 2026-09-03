@@ -175,7 +175,7 @@ async def check_modify_decide_function(
     if del_review['attr'] == "图片":
         # 移动文件到正式目录
         original_file_path = del_review['file_path']
-        new_save_data = furry_pic_data_path / os.path.basename(del_review['new_value'])
+        new_save_data = furry_pic_data_path / os.path.basename(del_review['file_path'])
         os.rename(original_file_path, new_save_data)
         del_review['new_value'] = str(new_save_data)
         nb_picture = MessageSegment.image(f"file:///{new_save_data}")
