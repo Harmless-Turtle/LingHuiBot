@@ -26,6 +26,12 @@ check_upload_decide = on_command(
     block=True,
     permission=SUPERUSER
 )
+check_modify_decide = on_command(
+    "同意修改#", aliases={"拒绝修改#"},
+    priority=99,
+    block=True,
+    permission=SUPERUSER
+)
 
 # ================= FurryPic.upload 兽云祭上传子模块 =================
 # 一键上传

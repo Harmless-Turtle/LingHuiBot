@@ -5,7 +5,7 @@ from nonebot.matcher import Matcher
 from nonebot_plugin_orm import async_scoped_session
 
 from ..check_file import furry_pic_data_path
-from ..commands import check_upload,check_upload_decide
+from ..commands import check_upload, check_upload_decide, check_modify_decide
 from src.plugins.utils import handle_errors,handle_json
 from .upload import UPLOAD_CACHE_DIR
 from ...utils import batch_get
@@ -24,11 +24,27 @@ async def check_upload_function(
     """
     # 获取待审核的图片列表
     upload_list = handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'r')
-    if not upload_list:
+    modify_list = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
+    if not upload_list and not modify_list:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前没有待审核的图片。")
     final_list = []
+    for index, item in enumerate(modify_list, start=1):
+        picture = None
+        text = f"""第{index}张图片 -> 图片修改请求
+修改图片码：{item['id']}
+修改的属性： {item['attr']}
+新属性：{item['new_value']}
+时间戳：{item['timestamp']}
+上传者: {item['user_id']}
+上传群聊：{item['group_id']}
+管理员可通过命令“同意修改#{index}”或“拒绝修改#{index}”进行审核。
+"""
+        if item['attr'] == "图片":
+            picture = item['file_path']
+        batch_text = await batch_get(text, picture, item['user_id'], "待审核图片")
+        final_list.append(batch_text)
     for index, item in enumerate(upload_list, start=1):
-        message = f"""第{index}张图片 
+        message = f"""第{index}张图片 -> 新图片上传请求
 名称: {item['furryname']}
 文件名: {item['filename']}
 类型: {item['type']}
@@ -100,3 +116,41 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
     review_list.pop(review_id)
     handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'w', review_list)
     await matcher.finish(MessageSegment.reply(event.message_id) + f"已同意上传第{review_id + 1}张图片，文件已移动到正式目录。")
+
+@check_modify_decide.handle()
+@handle_errors
+async def check_modify_decide_function(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+        bot: Bot
+):
+    status = True
+    if "拒绝" in str(event.original_message):
+        status = False
+    # 读取json文件
+    review_list = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
+    args = str(event.get_message()).split("#")
+    review_id = int(args[1]) - 1
+    # 判断列表是否已清空
+    if not review_list:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "当前没有待审核的图片。")
+    # 检查status状态
+    if not status:
+        del_review = review_list.pop(review_id)
+        picture = ""
+        if del_review['attr'] == "图片":
+            picture_path = del_review['file_path']
+            picture = MessageSegment.image(f"file:///{picture_path}")
+        user_id = del_review['user_id']
+        group_id = del_review['group_id']
+        handle_json(UPLOAD_CACHE_DIR / "modify.json", 'w', review_list)
+        reason = "管理员拒绝修改。"
+        if len(args) > 2:
+            reason = args[2]
+        await bot.call_api(
+            "send_group_msg",
+            group_id=group_id,
+            message=MessageSegment.at(user_id) +
+                    f" 您的图片修改请求已被管理员拒绝修改。\n修改图片码：{del_review['id']}\n拒绝理由：{reason}" +
+                    picture)
