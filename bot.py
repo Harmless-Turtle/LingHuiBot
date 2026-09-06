@@ -28,8 +28,6 @@ from nonebot import require
 from nonebot.adapters.onebot.v11 import Adapter
 import bilichat_request
 
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "/home/LingHui/NoneBot/LingHuiBot/data/nonebot_plugin_htmlrender"
-
 nonebot.init()
 
 driver = nonebot.get_driver()
