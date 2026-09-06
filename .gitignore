@@ -135,3 +135,5 @@ menu_config/
 *.png
 /cache/
 config
+
+upload

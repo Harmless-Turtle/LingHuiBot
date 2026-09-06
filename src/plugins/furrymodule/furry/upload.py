@@ -1,415 +1,206 @@
-import os
-import time
+import asyncio
+from datetime import datetime
+from pathlib import Path
 
 import httpx
-from nonebot import logger
-from nonebot.adapters.onebot.v11 import (
-    Bot,
-    GroupMessageEvent,
-    Message,
-    MessageEvent,
-    MessageSegment,
-)
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
+from nonebot_plugin_orm import async_scoped_session
 
-from ..check_file import (
-    DATA_PATH,
-    json_path,
-    batch_path
-)
-from ..commands import (
-    upload_furry,
-    batch_upload,
-    batch_set,
-    modify_furry
-)
-from ...utils import get_config_item, handle_errors, handle_json, batch_get
+from src.plugins.utils import handle_errors, handle_json
+from .models import FurryPictureData
+from .tools import download_image, is_picture
+from ..commands import upload_furry, modify_furry
+from ...utils import ensure_files_exist
 
-# ================= 配置与常量 =================
+# 用户输入 1 -> 毛照，输入 2 -> 稿子
+FURRY_TYPE_MAP = {"1": "毛照", "2": "稿子"}
 
-# 定义全局常量
-API_BASE = "https://cloud.foxtail.cn/api"
-
-# 定义全局变量
-LOGIN_COOKIE = {}
-TIMEOUT = None  # 建议设置具体的超时时间，例如 30
-
-# 读取配置项
-TOKEN = get_config_item("furry_token", default="未获取到数据", required=True, desc="Foxtail API Token")
-ACCOUNT = get_config_item("furry_user", default="未获取到数据", required=True, desc="Foxtail 账号")
-PASSWORD = get_config_item("furry_password", default="未获取到数据", required=True, desc="Foxtail 密码")
-
-# 检查配置
-if all([TOKEN != "未获取到数据", ACCOUNT != "未获取到数据", PASSWORD != "未获取到数据"]):
-    logger.success("✅已成功加载Furry模块的相关配置！")
-    logger.info(f"获取到的信息：\ntoken：{TOKEN}\naccount：{ACCOUNT}\npassword：{PASSWORD}\napi_base：{API_BASE}")
-else:
-    logger.warning("请注意，当前功能受限制！")
-    logger.warning("您没有填写token/account/password，这将导致“投图”功能不可用！")
-
-
-# ================= 处理函数 =================
-
+# 缓存目录
+UPLOAD_CACHE_DIR = Path(__file__).parent / "upload"
+UPLOAD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+ensure_files_exist([UPLOAD_CACHE_DIR / "manifest.json",UPLOAD_CACHE_DIR / "modify.json"], normal_data=[[],[]],description="图床临时存放目录")
 
 @upload_furry.handle()
 @handle_errors
+async def upload_furry_function(
+        matcher: Matcher,
+        args: Message = CommandArg()):
+    """
+    处理上传命令，接收用户输入的图片和类型，并将其保存到缓存目录中。
+    """
+    # 获取用户输入的消息内容
+    user_input = args.extract_plain_text().split()
+
+    # 检查是否有图片附件
+    image_segments = [seg for seg in args if seg.type == "image"]
+
+    # 检查用户是否提供了类型参数
+    if len(user_input) < 2:
+        await matcher.finish("请按照“投图 兽图名称 图片类型 图片留言（可选，不用请留空）”格式输入。\n图片类型：（1: 毛照, 2: 稿子）")
+    if user_input[1] not in FURRY_TYPE_MAP.keys():
+        await matcher.finish("请提供图片类型（1: 毛照, 2: 稿子）。")
+    # 获取图片类型
+    furry_type = FURRY_TYPE_MAP[user_input[1]]
+    matcher.set_arg("furryname", Message(user_input[0]))
+    matcher.set_arg("image_type", Message(furry_type))
+    matcher.set_arg("message", Message(user_input[2] if len(user_input) > 2 else ""))
+    if image_segments:
+        matcher.set_arg("image", Message(image_segments))
+
+@upload_furry.got("image", prompt="请发送图片，注意不要上传群文件。\n想要取消上传，请发送”结束“")
+@handle_errors
 async def upload_furry_image(
         matcher: Matcher,
-        event: MessageEvent,
-        bot: Bot,
-        group: GroupMessageEvent,
-        args: Message = CommandArg(),
+        event: GroupMessageEvent,
+        session:async_scoped_session
 ):
-    if "#" not in str(args):
-        await matcher.finish()
-    data = str(args).split("#")
-    # 路径检查
-    if not os.path.exists(DATA_PATH):
-        os.makedirs(DATA_PATH)
+    # 取得Step1中获得的Arg
+    upload_furry_data = handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'r')
+    furryname = matcher.get_arg("furryname").extract_plain_text()
+    furry_type = matcher.get_arg("image_type").extract_plain_text()
+    image_message = matcher.get_arg("image")
+    message = matcher.get_arg("message").extract_plain_text()
+    text = image_message.extract_plain_text().strip()
+    if text == "结束":
+        await matcher.finish("已取消本次图片上传。")
+    image_segments = [
+        seg
+        for seg in matcher.get_arg("image")
+        if seg.type == "image"
+    ]
+    if not image_segments:
+        await matcher.reject_arg("image", "请发送图片，注意不要上传群文件。\n想要取消上传，请发送”结束“")
+    name_list,tasks = [],[]
+    duplicate_sum = 0
+    # 下载图片并保存到缓存目录
+    async with httpx.AsyncClient() as client:
+        for image_segment in image_segments:
+            image_url = image_segment.data.get("url")
+            file_md5 = Path(image_segment.data["file"]).stem.lower()
+            if not image_url:
+                await matcher.finish("无法获取图片 URL，请检查图片是否有效。")
+            is_true = await is_picture(file_md5, UPLOAD_CACHE_DIR, session)
+            if is_true:
+                duplicate_sum += 1
+                continue
+            task = download_image(client, image_url,file_md5, UPLOAD_CACHE_DIR)
 
-    error_msg_format = (
-        "错误：请按照#名字#类型#留言#图片的格式重新上传\n"
-        "（类型：数字0为设定，1为毛图，2为插画）"
-    )
+            tasks.append(task)
+        results = await asyncio.gather(*tasks)
 
-    if len(data) != 5:
-        await matcher.finish(MessageSegment.reply(event.message_id) + error_msg_format)
-
-    name = data[1]
-    pic_type = data[2]
-    suggest = data[3]
-    pic = data[4]
-
-    # 参数校验
-    if name == "":
-        await matcher.finish(MessageSegment.reply(event.message_id) + "错误：您似乎并没有填写名字，" + error_msg_format)
-    elif pic_type == "":
-        await matcher.finish(MessageSegment.reply(event.message_id) + "错误：您似乎并没有填写类型，" + error_msg_format)
-    elif pic == "":
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + "错误：您似乎并没有发送图片，请按照#名字#类型#留言#图片的格式重新上传")
-
-    if not pic_type.isdigit() or int(pic_type) > 3 or int(pic_type) < 0:
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + "遇到问题：类型并非纯数字或超出了限定范围（0为设定，1为毛图，2为插画）")
-
-    # 图片下载逻辑
-    msg_group = event.get_message()
-    url = msg_group["image"]
-    upload_account_number = event.user_id
-    group_number = group.group_id
-    timestamp = int(time.time())
-    file_path = DATA_PATH / f"{timestamp}.jpg"
-
-    async with httpx.AsyncClient(http2=True, timeout=TIMEOUT) as client:
-        # 注意：这里假设 list(url)[-1] 是正确的图片对象逻辑，保持原样
-        resp = await client.get(list(url)[-1].data["url"])
-        with open(file_path, "wb") as f:
-            f.write(resp.content)
-
-    # 文件大小检查
-    file_size = os.stat(file_path)
-    if file_size.st_size >= 20000000:  # 20MB
-        os.remove(file_path)
-        await matcher.finish(MessageSegment.reply(event.message_id) + "上传失败：文件过大！（大于20MB）")
-
-    # 构造数据
-    data_dict = {
-        "name": f"{name}",
-        "type": f"{pic_type}",
-        "power": 1,
-        "suggest": f"{suggest}",
-        "model": 1,
-        "token": f"{TOKEN}",
-        "token_user": f"{ACCOUNT}",
-        "token_key": f"{PASSWORD}",
-        "time": f"{timestamp}",
-        "picture_url": str(file_path),
-        "upload_account": f"{upload_account_number}",
-        "group_id": f"{group_number}",
-    }
-
-    upload_list = []
-
-    if os.path.exists(json_path):
-        upload_list = handle_json(json_path, "r")
-
-    upload_list.append(data_dict)
-    handle_json(json_path, "w", upload_list)
-
-    count = len(upload_list)
-    # 管理员通知
-    await bot.call_api(
-        "send_private_msg",
-        message=f"有人投图，请审核\n当前共有{count}张图片待审核",
-        user_id="1097740481",
-        time_noend=True,
-    )
-    await matcher.finish(
-        MessageSegment.reply(event.message_id) + "您的投图请求已提交给凌辉Bot管理员并进入等待审核状态。"
-    )
-
-
-async def get_batch_pic_list(user_qq):
-    """辅助函数：获取批量图片列表"""
-    batch_data_path = batch_path / str(user_qq) / "upload.json"
-    pic_url = handle_json(batch_data_path, "r")
-    pic_list = []
-    logger.debug(f"debug message:{pic_url}")
-    logger.debug(f"picture count:{len(pic_list)}")
-
-    for i in range(0, len(pic_url)):
-        image = pic_url[i]
-        text = f"这是第{i + 1}张图片，通过命令“定义”来定义开始该图片的信息。"
-        # 注意：这里调用了 batch_get，需要确保该函数存在
-        data = await batch_get(text, image, user_qq, "凌辉Bot")
-        pic_list.append(data)
-
-    logger.debug(f"Return:{pic_list}")
-    return pic_list
-
-
-@batch_upload.got(
-    "Upload",
-    prompt="请一次性发送您要上传的图片。\n当您在发送上传图片时，请在聊天框键入一个空格以将所有图片包含进1个Message中。",
-)
-@handle_errors
-async def get_upload_mode(matcher: Matcher, event: GroupMessageEvent, bot: Bot):
-    args = str(event.get_message())
-    msg_group = event.get_message()
-    url = msg_group["image"]
-    url_list = []
-    temp_path = batch_path / str(event.user_id)
-    cycle_count = 0
-
-    if not os.path.exists(temp_path):
-        os.makedirs(temp_path)
-
-    if os.path.exists(json_path):
-        data = handle_json(json_path, "r")
-        cycle_count = len(data)
-        for i in data:
-            url_list.append(i)
-
-    j = 0
-    for i in range(cycle_count, len(url) + cycle_count):
-        pic_url = list(url)[j].data["url"]
-        j += 1
-        file_path = temp_path / f"Upload_{i + 1}.jpg"
-
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            data = await client.get(pic_url)
-            with open(file_path, "wb") as f:
-                f.write(data.content)
-
-        url_list.append(str(file_path))
-        file_size = os.stat(file_path)
-        if file_size.st_size >= 20000000:
-            await matcher.send(f"第{i + 1}张图片被拒绝上传：文件过大，拒绝处理。")
-            os.remove(file_path)
-            url_list.remove(str(file_path))
-
-    if not url_list:
-        count = 0
-        if "取消" in args or "退出" in args:
-            await matcher.finish(MessageSegment.reply(event.message_id) + "已退出批量投图。")
-        else:
-            if count == 0:
-                await matcher.reject(
-                    MessageSegment.reply(event.message_id) +
-                    "输入有误，请重新输入。\n"
-                    "取消上传请发送“取消”或“退出”"
-                )
-            else:
-                await matcher.finish(MessageSegment.reply(event.message_id) + "已退出批量投图。")
-
-    handle_json(json_path, "w", url_list)
-
-    forward_msg_list = await get_batch_pic_list(event.user_id)
-    await bot.call_api(
-        "send_group_forward_msg", group_id=event.group_id, message=forward_msg_list, time_noend=True
-    )
-    await matcher.finish(
-        MessageSegment.reply(event.message_id) +
-        "生成图片链接列表已完成，但图片对应信息尚未设置\n"
-        "请通过命令“定义”来定义对应图片的信息。"
-    )
-
-
-@batch_set.got(
-    "Set_Message",
-    prompt="请定义图片信息（定义实例：定义#1#名字#类别#留言）\n结束定义可发送“取消”或“退出”"
-)
-@handle_errors
-async def receive_batch(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
-    # 注意：matcher state 管理 set_count 会更合适，此处保持局部变量逻辑可能导致死循环 reject
-    set_count = 0
-    temp_path = batch_path / str(event.user_id) / "upload.json"
-
-    if not os.path.exists(temp_path):
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "遇到问题：未找到文件\n"
-            "请检查是否已经批量投图图片。"
-        )
-
-    items = handle_json(temp_path, "r")
-    message_text = str(event.get_message())
-
-    if "取消" in message_text or "退出" in message_text:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "已退出批量投图。")
-
-    if message_text.count("#") == 0:
-        if set_count == 0:
-            await matcher.reject(
-                MessageSegment.reply(event.message_id) +
-                "输入了一个错误的图片张数，请重新输入（仅接受数字）。\n"
-                "取消上传请发送“取消”或“退出”"
-            )
-        else:
-            await matcher.finish(MessageSegment.reply(event.message_id) + "多次非法请求，已自动退出批量投图。")
-
-    message_text = message_text.split("#")
-    if len(message_text) != 5:
-        if set_count == 0:
-            await matcher.reject(
-                MessageSegment.reply(event.message_id) +
-                "输入有误，请重新输入。\n"
-                "取消上传请发送“取消”或“退出”"
-            )
-        else:
-            await matcher.finish(MessageSegment.reply(event.message_id) + "多次非法请求，已自动退出批量投图。")
-
-    pic_id, name, field_type, suggest = message_text[1], message_text[2], message_text[3], message_text[4]
-
-    if not pic_id.isdigit():
-        if set_count == 0:
-            await matcher.reject(
-                MessageSegment.reply(event.message_id) +
-                "输入的数据长度有误，请重新输入。\n"
-                "取消上传请发送“取消”或“退出”"
-            )
-        else:
-            await matcher.finish(MessageSegment.reply(event.message_id) + "多次非法请求，已自动退出批量投图。")
-
-    if int(pic_id) > len(items):
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "遇到问题：似乎超出了列表长度\n"
-            "已自动退出"
-        )
-
-    pic_id = int(pic_id) - 1
-    upload_account_number = event.user_id
-    group_number = event.group_id
-
-    data = {
-        "name": f"{name}",
-        "type": f"{field_type}",
-        "power": 1,
-        "suggest": f"{suggest}",
-        "model": 1,
-        "token": f"{TOKEN}",
-        "token_user": f"{ACCOUNT}",
-        "token_key": f"{PASSWORD}",
-        "time": int(time.time()),
-        "picture_url": f"{items[pic_id]}",
-        "upload_account": f"{upload_account_number}",
-        "group_id": f"{group_number}",
-    }
-
-    logger.info(data)
-    del items[pic_id]
-
-    if len(items) != 0:
-        upload_data = handle_json(json_path, "r")
-        upload_data.append(data)
-
-        handle_json(temp_path, "w", items)
-        # 更新 forward message list
-        new_items = await get_batch_pic_list(event.user_id)
-        handle_json(json_path, "w", upload_data)
-
-        logger.info(new_items)
-        await bot.call_api(
-            "send_group_forward_msg",
-            group_id=event.group_id,
-            message=new_items,
-            time_noend=True
-        )
-        await batch_set.reject(
-            MessageSegment.reply(event.message_id) +
-            "写入文件完成，请根据列表继续修改图片信息"
-        )
-    else:
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...您似乎已经成功为全部的图片提供了信息\n"
-            "您全部的图片均已提交给凌辉Bot管理员进行审核，请您耐心等待~"
-        )
-
+    for file_path,file_name in results:
+        name_list.append(file_name)
+        upload_info = {
+            "furryname": furryname,
+            "filename": file_name,
+            "type": furry_type,
+            "timestamp": datetime.now().isoformat(),
+            "user_id": event.user_id,
+            "group_id": event.group_id,
+            "file_path": str(file_path),
+            "message": message
+        }
+        upload_furry_data.append(upload_info)
+    handle_json(UPLOAD_CACHE_DIR / "manifest.json", "w", upload_furry_data)
+    format_str = '，文件名：' +  '、'.join(name_list)
+    if len(name_list) >= 2:
+        format_str = ""
+    if len(image_segments) == duplicate_sum:
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"上传失败，所有图片均为重复图片")
+    if duplicate_sum != 0:
+        await matcher.send(f"本次上传中{duplicate_sum}张图片MD5重复，请确认图片是否已经上传。\n如果需要修改，请使用修改指令而不是重新上传。")
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功上传图片{format_str}")
 
 @modify_furry.handle()
 @handle_errors
-async def modify_furry_image(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
-    files = None
-    message = str(args)
-    after_message = message.split("#")
-    modify_id = int(after_message[1])
-    pic_value = after_message[2]
-    field_type = after_message[3]
-    data = {
-        "picture": f"{modify_id}",
-        "type": "1",
-        "model": "1",
-        "token": f"{TOKEN}",
-        "token_user": f"{ACCOUNT}",
-        "token_key": f"{PASSWORD}",
-    }
-    try:
-        if field_type == "名字":
-            pic_value = str(pic_value)
-            data.update({"name": f"{pic_value}", "type": "0"})
-        elif field_type == "留言":
-            pic_value = str(pic_value)
-            data.update({"suggest": f"{pic_value}", "type": "3"})
-        elif field_type == "类型":
-            pic_value = int(pic_value)
-            data.update({"form": f"{pic_value}", "type": "2"})
-        else:
-            group = event.get_message()
-            url = group["image"]
-            pic_url = list(url)[-1].data["url"]
-            logger.info(pic_url)
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                image_resp = await client.get(pic_url)
-                image_content = image_resp.content
-            files = {"file": ("Modify.png", image_content, "image/png")}
-            data.update({"type": "1"})
-
-    except Exception as e:
-        # 建议打印 e 以便调试
-        logger.error(f"Modification error: {e}")
+async def modify_furry_function(
+        matcher: Matcher,
+        session: async_scoped_session,
+        args: Message = CommandArg()
+):
+    # 获取用户输入的消息内容
+    user_input = args.extract_plain_text().split()
+    # 检查是否有图片码参数
+    if len(user_input) != 2:
         await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "在获取数据时遇到问题，请按照“修改图片#id#名字/留言/类型>#修改类型/图片”的格式重新调用命令。"
-        )
-
-    # 逻辑优化：统一发送请求
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        # 如果 files 存在（即修改图片的情况）
-        if files:
-            resp = await client.post(f"{API_BASE}/function/modify", data=data, files=files)
-        else:
-            resp = await client.post(f"{API_BASE}/function/modify", data=data)
-
-        if resp.status_code != 200:
-            await matcher.finish(
-                MessageSegment.reply(event.message_id) + f"请求图片信息失败，服务器回报状态码：{resp.status_code}"
+            "请按照“修改图片 <图片码> <属性>”格式输入。\n"
+            "可修改属性：\n"
+            "0：名字\n"
+            "1：图片类型（1是毛照，2是稿子）\n"
+            "2：图片留言\n"
+            "3：图片"
             )
+    # 获取要修改图片的图片吗以及要修改的属性
+    modify_id = user_input[0]
+    modify_attr = user_input[1]
+    # 判断属性输入是否合法
+    if modify_attr not in {"0", "1", "2","3"}:
+        await matcher.finish(
+            "请重新使用此命令，并提供正确的属性编号。\n"
+            "0：名字 1：图片类型 2：图片留言 3：图片"
+        )
+    # 与SQL通信，确认图片码是否存在。
+    picture_list = await session.get(FurryPictureData,modify_id)
+    if picture_list is None:
+        await matcher.finish(f"未找到图片码为{modify_id}的图片，请检查输入是否正确。")
+    matcher.set_arg("modify_id", Message(modify_id))
+    matcher.set_arg("modify_attr", Message(modify_attr))
 
-        resp_json = resp.json()
-
-    code, msg = resp_json["code"], resp_json["msg"]
-    await matcher.finish(MessageSegment.reply(event.message_id) + f"平台返回：{msg}[Code:{code}]")
+@modify_furry.got("modify_content", prompt="请发送新的属性值。\n想要取消修改，请发送”结束“\n如果想要删除留言，请发送“无”或者一个空格。")
+@handle_errors
+async def modify_furry_attr(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        session: async_scoped_session,
+):
+    modify_id = matcher.get_arg("modify_id").extract_plain_text()
+    modify_attr = int(matcher.get_arg("modify_attr").extract_plain_text())
+    modify_content = matcher.get_arg("modify_content")
+    if modify_content.extract_plain_text().strip() == "结束":
+        await matcher.finish("已取消本次图片修改。")
+    if modify_attr != 3:
+        modify_data = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
+        modify_attr_text = ["名字", "图片类型", "图片留言"]
+        if not modify_data:
+            modify_data = []
+        modify_info = {
+            "id": modify_id,
+            "attr": modify_attr_text[modify_attr],
+            "new_value": str(modify_content),
+            "timestamp": datetime.now().isoformat(),
+            "user_id": event.user_id,
+            "group_id": event.group_id
+        }
+        modify_data.append(modify_info)
+        handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_data)
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功修改图片码为 {modify_id} 的 {modify_attr_text[modify_attr]} 属性为 {modify_content}，请等待管理员审核。")
+    if modify_attr == 3:
+        async with httpx.AsyncClient() as client:
+            image_message = matcher.get_arg("modify_content")
+            for segment in image_message:
+                if segment.type == "image":
+                    image_url = segment.data.get("url")
+                    file_md5 = Path(segment.data["file"]).stem.lower()
+                else:
+                    await matcher.finish(MessageSegment.reply(event.message_id)+"获取URL失败惹qwq...本次修改请求已结束。请重新尝试此命令。")
+            is_true = await is_picture(file_md5, UPLOAD_CACHE_DIR, session)
+            if is_true:
+                await matcher.finish(MessageSegment.reply(event.message_id)+"上传失败，图片MD5重复，请确认图片是否已经上传。")
+            file_path, file_name = await download_image(client, image_url,file_md5, UPLOAD_CACHE_DIR)
+    modify_json = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
+    if not modify_json:
+        modify_json = []
+    modify_data = {
+        "id": modify_id,
+        "attr": "图片",
+        "new_value": file_name,
+        "timestamp": datetime.now().isoformat(),
+        "user_id": event.user_id,
+        "group_id": event.group_id,
+        "file_path": str(file_path)
+    }
+    modify_json.append(modify_data)
+    handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_json)
+    await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功修改图片码为 {modify_id} 的图片，请等待管理员审核。")
