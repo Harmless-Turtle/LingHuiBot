@@ -89,6 +89,8 @@ async def check_upload_decide_function(
     # 判断列表是否已清空
     if not review_list:
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前没有待审核的图片。")
+    if review_id < 0 or review_id >= len(review_list):
+        await matcher.finish(MessageSegment.reply(event.message_id) + "这个审核ID似乎不在审核列表中...")
     # 根据status的值进行相应的处理
     if not status:
         del_review = review_list.pop(review_id)
@@ -125,9 +127,20 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
     )
     # 移动文件到正式目录
     os.rename(original_file_path, new_save_data)
+    # 获取审核Review_id
+    del_review = review_list[review_id]
+    group_id = del_review['group_id']
+    user_id = del_review['user_id']
     # 更新manifest.json
     review_list.pop(review_id)
     handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'w', review_list)
+    if event.group_id != group_id:
+        await bot.call_api(
+            "send_group_msg",
+            group_id=group_id,
+            message=MessageSegment.at(user_id) +
+                    f" 您的图片“{del_review['furryname']}”已被管理员同意上传"
+        )
     await matcher.finish(MessageSegment.reply(event.message_id) + f"已同意上传第{review_id + 1}张图片，文件已移动到正式目录。")
 
 @check_modify_decide.handle()
