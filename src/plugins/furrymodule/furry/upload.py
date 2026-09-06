@@ -148,7 +148,7 @@ async def modify_furry_function(
     matcher.set_arg("modify_id", Message(modify_id))
     matcher.set_arg("modify_attr", Message(modify_attr))
 
-@modify_furry.got("modify_content", prompt="请发送新的属性值。\n想要取消修改，请发送”结束“")
+@modify_furry.got("modify_content", prompt="请发送新的属性值。\n想要取消修改，请发送”结束“\n如果想要删除留言，请发送“无”或者一个空格。")
 @handle_errors
 async def modify_furry_attr(
         matcher: Matcher,

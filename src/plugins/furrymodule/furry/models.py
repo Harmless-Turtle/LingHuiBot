@@ -19,7 +19,7 @@ class FurryPictureData(Model):
     file_name: Mapped[str] = mapped_column(String,nullable=True)
     furry_name: Mapped[str] = mapped_column(String,nullable=True)
     type: Mapped[str] = mapped_column(String,nullable=True)
-    description: Mapped[str] = mapped_column(String,nullable=True)
+    description: Mapped[str | None] = mapped_column(String,nullable=True)
 
 async def add_furry_picture(session, uploader_id: str, group_id: int, file_path: str, file_name: str, furry_name: str, type: str, description: str):
     new_picture = FurryPictureData(
@@ -56,7 +56,10 @@ async def update_furry_picture(
         if picture:
             picture_db.file_name = os.path.basename(picture)
     elif attr == "图片留言":
-        picture_db.description = new_value
+        if new_value == " " or new_value == "无":
+            picture_db.description = None
+        else:
+            picture_db.description = new_value
     else:
         return False
 
