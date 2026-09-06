@@ -1,6 +1,6 @@
 import random as rd
 import time
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 
 import httpx
 from nonebot import get_driver
@@ -17,6 +17,8 @@ from nonebot_plugin_orm import async_scoped_session
 
 from .check_file import *
 from .commands import *
+from .models import do_sign_in
+from .exceptions import SignInError
 from ..entertainment.currency.models import get_mohui_data, add_mohui_coin
 from ..utils import handle_errors
 
@@ -117,62 +119,20 @@ async def sign_in_function(
 ):
     # 若签到文本后有文本，则直接结束任务
     if args.extract_plain_text(): await matcher.finish()
-    # 打开文件并写入Sign_Dict字典
-    sign_dict = handle_json(sign_in_path, 'r')
-    # 获取触发人QQ号和群聊号
+    # 获取触发人QQ号和群聊号（签到数据已迁移至 SQLite，见 do_sign_in）
     user, group = event.user_id, event.group_id
-    # 获取触发时间
-    from datetime import date
-    time_normal = str(date.today())
-    time_normal = time_normal.split("-")  # 切片->构建基本时间
-    current_day = int(time_normal[-1])  # 获取签到天数
-    month = int(time_normal[-2])  # 获取签到月份
-    # 生成默认参数
-    group_time, group_month, group_count, group_user_list = current_day, month, 0, {}
-    user_time, user_count, user_month, text, user_greenwich_time = current_day, 0, month, "", 0
-    # 判断：群聊是否已经存在数据
-    if sign_dict.get(f"{group}"):  # 如果存在数据，则读取它，顺便处理。
-        logger.info("找到群聊数据，开始处理")
-        group_dict = sign_dict[f'{group}']
-        group_time, group_month, group_count, group_user_list = group_dict['Time'], group_dict['Month'], group_dict[
-            'Count'], group_dict['User_Dict']
-        # 判断：群聊最后一次签到时间是否已经超过一天
-        if current_day != group_time:  # 如果已经超过了一天，则重置状态。
-            group_time, group_month, group_count = current_day, month, 0
-        elif month != group_month:
-            group_time, group_month, group_count, group_user_list = current_day, month, 0, {}
-        # 判断：数据内是否已经存在了用户数据
-        if group_user_list.get(str(user)):  # 如果不为空，则读取数据
-            logger.info("找到个人数据，开始处理")
-            user_info = group_user_list.get(str(user))
-            user_time, user_count, user_month, user_greenwich_time = user_info["Time"], user_info['Count'], user_info[
-                "Month"], user_info['Greenwich_Time']
-            if current_day == user_time and month == user_month:
-                await matcher.finish(MessageSegment.reply(event.message_id) + "你今天已经在本群签到啦~")
-        # 判断：用户最后一次签到时间是否已超过一个月
-        if user_month != month:  # 如果已经超过了一个月，则重置状态
-            user_time, user_count, user_month = current_day, 0, month
-    # 处理数据
-    group_count += 1
-    user_count += 1
-    greenwich_time = int(time.time())
-    # 构建信息
-    new_sign_user_dict = {
-        "Count": user_count,
-        "Time": current_day,
-        "Month": month,
-        "Greenwich_Time": greenwich_time
-    }
-    new_sign_group_dict = {
-        "Time": group_time,
-        "Count": group_count,
-        "Month": group_month,
-        "User_Dict": group_user_list
-    }
-    group_user_list[f"{user}"] = new_sign_user_dict
-    sign_dict[f'{group}'] = new_sign_group_dict
-    # 将构建完成的信息写入本地json文件进行保存
-    handle_json(sign_in_path, 'w', sign_dict)
+    # 执行签到（ORM）：已签到会抛 AlreadySignedToday，由下方 except 统一反馈
+    try:
+        sign_result = await do_sign_in(session, str(group), str(user))
+    except SignInError as e:
+        await session.rollback()
+        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
+    user_count = sign_result.user_count
+    group_count = sign_result.group_count
+    sign_in_at = sign_result.sign_in_at
+    prev_sign_in_at = sign_result.prev_sign_in_at
+    text = ""
+    # 随机一言
     a_word_list = handle_json(aword_path, 'r')
     result = a_word_list[rd.randint(0, len(a_word_list) - 1)]
     # 判断随机给墨辉币的数量
@@ -187,8 +147,10 @@ async def sign_in_function(
         # 生成检测到“好久不见”字样的默认值
         text = "诶...好像也没有太久吧~是不是记错时间了呀~\n"
         pic = sign_in_pic_false
-        # 判断：如果读取用户的格林威治时间戳减去当前时间戳大于或等于259200秒（即3天整），则更改输出条件。
-        if (greenwich_time - user_greenwich_time) >= 259200:
+        # 判断：距上次签到超过 3 天（259200 秒）则按“好久不见”处理；
+        # 新用户 prev 为 None，按 UTC 纪元起算，行为与原逻辑一致
+        prev = prev_sign_in_at or dt(1970, 1, 1)
+        if (sign_in_at - prev) >= timedelta(seconds=259200):
             text = "确实好久不见了诶~抱抱~\n"
             pic = sign_in_pic_true
         # 输出
@@ -299,7 +261,13 @@ async def af_function(bot: Bot, matcher: Matcher, event: FriendRequestEvent):
 
 
 @choice_friend.handle()
-async def cf_function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Message = CommandArg()):
+@handle_errors
+async def cf_function(
+        matcher: Matcher,
+        event: MessageEvent,
+        bot: Bot,
+        args: Message = CommandArg()
+):
     if "同意" in str(event.get_message):
         select = True
     elif "拒绝" in str(event.get_message):
@@ -316,7 +284,13 @@ async def cf_function(matcher: Matcher, event: MessageEvent, bot: Bot, args: Mes
 
 
 @like.handle()
-async def like_function(bot: Bot, matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+@handle_errors
+async def like_function(
+        bot: Bot,
+        matcher: Matcher,
+        event: MessageEvent,
+        args: Message = CommandArg()
+):
     if args.extract_plain_text(): await matcher.finish()  # 若消息后面存在文本则不响应
     try:
         random_number = rd.randint(1, 10)
@@ -330,7 +304,13 @@ async def like_function(bot: Bot, matcher: Matcher, event: MessageEvent, args: M
 
 
 @eat_what.handle()
-async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
+@handle_errors
+async def eat_function(
+        matcher: Matcher,
+        event: GroupMessageEvent,
+        bot: Bot,
+        args: Message = CommandArg()
+):
     if str(args) != "":
         group_member_list = await bot.get_group_member_list(group_id=event.group_id)
         random_choice = group_member_list[rd.randint(0, len(group_member_list) - 1)]
@@ -353,6 +333,7 @@ async def eat_function(matcher: Matcher, event: GroupMessageEvent, bot: Bot, arg
 
 
 @nc_version_info.handle()
+@handle_errors
 async def _version_info(bot: Bot, matcher: Matcher, event: MessageEvent):
     if "凌辉" not in str(MessageEvent.raw_message):
         await matcher.finish()

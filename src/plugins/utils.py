@@ -2,7 +2,7 @@ import json
 import os
 import time
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
@@ -442,3 +442,8 @@ async def at_is_true(event: GroupMessageEvent):
     # 没有真实 AT，但纯文本包含 "@"视为非法复制
     if "@" in plain_text:
         return "illegal"
+
+
+def utc_now() -> datetime:
+    """当前标准 UTC 时间（naive datetime），时区由业务层决定（默认硬编码 UTC+8）。"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)

@@ -14,6 +14,7 @@ from .models import FurryPictureData
 from ...utils import batch_get
 
 
+
 @furry_random.handle()
 @handle_errors
 async def furry_random_function(
