@@ -192,8 +192,7 @@ async def check_modify_decide_function(
     if not success:
         if new_save_data and new_save_data.exists():
             os.rename(str(new_save_data), original_file_path)
-
-        await matcher.finish("修改失败，找不到对应的图片记录。")
+        await matcher.finish(MessageSegment.reply(event.message_id) + "修改失败，找不到对应的图片记录。")
     review_list.pop(review_id)
     handle_json(UPLOAD_CACHE_DIR / "modify.json", 'w', review_list)
     await update_furry_picture(session, int(del_review["id"]), del_review["attr"], del_review["new_value"], new_save_data)

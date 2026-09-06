@@ -160,7 +160,7 @@ async def modify_furry_attr(
     modify_content = matcher.get_arg("modify_content")
     if modify_content.extract_plain_text().strip() == "结束":
         await matcher.finish("已取消本次图片修改。")
-    if modify_attr != 2:
+    if modify_attr != 3:
         modify_data = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
         modify_attr_text = ["名字", "图片类型", "图片留言"]
         if not modify_data:
@@ -176,7 +176,7 @@ async def modify_furry_attr(
         modify_data.append(modify_info)
         handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_data)
         await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功修改图片码为 {modify_id} 的 {modify_attr_text[modify_attr]} 属性为 {modify_content}，请等待管理员审核。")
-    if modify_attr == 2:
+    if modify_attr == 3:
         async with httpx.AsyncClient() as client:
             image_message = matcher.get_arg("modify_content")
             for segment in image_message:

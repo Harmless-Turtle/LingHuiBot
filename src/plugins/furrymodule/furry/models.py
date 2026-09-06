@@ -55,7 +55,7 @@ async def update_furry_picture(
         picture_db.file_path = str(picture)
         if picture:
             picture_db.file_name = os.path.basename(picture)
-    elif attr == "描述":
+    elif attr == "图片留言":
         picture_db.description = new_value
     else:
         return False
