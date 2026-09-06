@@ -3,17 +3,16 @@ from datetime import datetime
 from pathlib import Path
 
 import httpx
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, Bot, MessageSegment
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot_plugin_orm import async_scoped_session, get_session
-from sqlalchemy import select
+from nonebot_plugin_orm import async_scoped_session
 
+from src.plugins.utils import handle_errors, handle_json
 from .models import FurryPictureData
-from ..commands import upload_furry,modify_furry
-from src.plugins.utils import handle_errors,handle_json
-from ...utils import ensure_files_exist
 from .tools import download_image, is_picture
+from ..commands import upload_furry, modify_furry
+from ...utils import ensure_files_exist
 
 # 用户输入 1 -> 毛照，输入 2 -> 稿子
 FURRY_TYPE_MAP = {"1": "毛照", "2": "稿子"}
@@ -39,13 +38,14 @@ async def upload_furry_function(
 
     # 检查用户是否提供了类型参数
     if len(user_input) < 2:
-        await matcher.finish("请按照“投图 兽图名称 图片类型 ”格式输入。\n图片类型：（1: 毛照, 2: 稿子）")
+        await matcher.finish("请按照“投图 兽图名称 图片类型 图片留言（可选，不用请留空）”格式输入。\n图片类型：（1: 毛照, 2: 稿子）")
     if user_input[1] not in FURRY_TYPE_MAP.keys():
         await matcher.finish("请提供图片类型（1: 毛照, 2: 稿子）。")
     # 获取图片类型
     furry_type = FURRY_TYPE_MAP[user_input[1]]
     matcher.set_arg("furryname", Message(user_input[0]))
     matcher.set_arg("image_type", Message(furry_type))
+    matcher.set_arg("message", Message(user_input[2] if len(user_input) > 2 else ""))
     if image_segments:
         matcher.set_arg("image", Message(image_segments))
 
@@ -61,6 +61,7 @@ async def upload_furry_image(
     furryname = matcher.get_arg("furryname").extract_plain_text()
     furry_type = matcher.get_arg("image_type").extract_plain_text()
     image_message = matcher.get_arg("image")
+    message = matcher.get_arg("message").extract_plain_text()
     text = image_message.extract_plain_text().strip()
     if text == "结束":
         await matcher.finish("已取消本次图片上传。")
@@ -98,7 +99,8 @@ async def upload_furry_image(
             "timestamp": datetime.now().isoformat(),
             "user_id": event.user_id,
             "group_id": event.group_id,
-            "file_path": str(file_path)
+            "file_path": str(file_path),
+            "message": message
         }
         upload_furry_data.append(upload_info)
     handle_json(UPLOAD_CACHE_DIR / "manifest.json", "w", upload_furry_data)
@@ -127,16 +129,17 @@ async def modify_furry_function(
             "可修改属性：\n"
             "0：名字\n"
             "1：图片类型（1是毛照，2是稿子）\n"
-            "2：图片"
-        )
+            "2：图片留言\n"
+            "3：图片"
+            )
     # 获取要修改图片的图片吗以及要修改的属性
     modify_id = user_input[0]
     modify_attr = user_input[1]
     # 判断属性输入是否合法
-    if modify_attr not in {"0", "1", "2"}:
+    if modify_attr not in {"0", "1", "2","3"}:
         await matcher.finish(
             "请重新使用此命令，并提供正确的属性编号。\n"
-            "0：名字 1：图片类型 2：图片"
+            "0：名字 1：图片类型 2：图片留言 3：图片"
         )
     # 与SQL通信，确认图片码是否存在。
     picture_list = await session.get(FurryPictureData,modify_id)
@@ -159,7 +162,7 @@ async def modify_furry_attr(
         await matcher.finish("已取消本次图片修改。")
     if modify_attr != 2:
         modify_data = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
-        modify_attr_text = ["名字", "图片类型"]
+        modify_attr_text = ["名字", "图片类型", "图片留言"]
         if not modify_data:
             modify_data = []
         modify_info = {

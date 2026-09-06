@@ -120,7 +120,8 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
         furry_name=review_list[review_id]['furryname'],
         type=review_list[review_id]['type'],
         uploader_id=review_list[review_id]['user_id'],
-        group_id=review_list[review_id]['group_id']
+        group_id=review_list[review_id]['group_id'],
+        description=review_list[review_id]['message'],
     )
     # 移动文件到正式目录
     os.rename(original_file_path, new_save_data)
@@ -190,7 +191,7 @@ async def check_modify_decide_function(
     )
     if not success:
         if new_save_data and new_save_data.exists():
-            os.rename(new_save_data, original_file_path)
+            os.rename(str(new_save_data), original_file_path)
 
         await matcher.finish("修改失败，找不到对应的图片记录。")
     review_list.pop(review_id)

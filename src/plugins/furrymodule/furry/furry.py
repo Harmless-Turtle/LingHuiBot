@@ -34,8 +34,10 @@ async def furry_random_function(
             select(FurryPictureData).where(FurryPictureData.furry_name == furry_name).order_by(func.random()).limit(1))
     picture = result.scalar_one_or_none()
     if picture:
-        text = f"""这只兽兽叫做”{picture.furry_name}”~
-图片码为：{picture.id}"""
+        description = ""
+        if picture.description:
+            description = f"ta的留言是：{picture.description}\n"
+        text = f"这只兽兽叫做”{picture.furry_name}”~\n{description}图片码为：{picture.id}"
         await matcher.finish(MessageSegment.reply(event.message_id)+f"{text}" + MessageSegment.image(picture.file_path)+"您也想上传图片？发送“投图 <崽崽名字> <图片类型 1为毛照 2为稿子>”即可上传图片啦~")
     else:
         text = f"似乎没有找到名字为{furry_name}的图片呢qwq"
@@ -70,5 +72,4 @@ async def furry_list_function(
 """
         batch_text = await batch_get(text,picture.file_path,event.user_id,"furry_list")
         final_list.append(batch_text)
-    # await matcher.finish(MessageSegment.reply(event.message_id)+f"当前共有{len(pictures)}张图片")
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=final_list)
