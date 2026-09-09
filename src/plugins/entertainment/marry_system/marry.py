@@ -63,22 +63,21 @@ async def marry_random_func(
         # 读取本人记录：仅单身（SINGLE）可以随机配对，已婚/求婚中直接结束
         self_rec = await get_marry_record(session, user_qq, group_qq)
         if self_rec is not None:
-            match self_rec.request_mode:
+            match self_rec.marry_mode:
                 case MarryMode.SINGLE:
-                    pass
+                    if self_rec.cp_qq != 0:
+                        stranger_info = await bot.get_stranger_info(user_id=self_rec.cp_qq)
+                        nickname = stranger_info.get('nickname', '昵称获取失败')
+                        await matcher.finish(MessageSegment.reply(event.message_id) + f"你好像正在被{nickname}求婚诶~先去使用“同意求婚”或者“拒绝求婚”处理求婚请求后再试哦~")
+                    else:
+                        pass
                 case MarryMode.MARRIED:
                     await matcher.finish(MessageSegment.reply(event.message_id) + "你似乎已经有对象了吧...？")
-                case MarryMode.ACTIVE_PROPOSE | MarryMode.PASSIVE_PROPOSE:
-                    request = self_rec.request
+                case MarryMode.PENDING:
+                    request = self_rec.cp_qq
                     stranger_info = await bot.get_stranger_info(user_id=request)
                     nickname = stranger_info.get('nickname', '昵称获取失败')
-                    match self_rec.request_mode:
-                        case MarryMode.ACTIVE_PROPOSE:
-                            await matcher.finish(MessageSegment.reply(event.message_id) +
-                                                 f"你当前正在向“{nickname}”求婚中\n请先通过“同意/拒绝求婚”或“取消求婚”命令作出决定后再试。")
-                        case MarryMode.PASSIVE_PROPOSE:
-                            await matcher.finish(MessageSegment.reply(event.message_id) +
-                                                 f"你当前正在被“{nickname}”求婚中\n请先通过“同意/拒绝求婚”或“取消求婚”命令作出决定后再试。")
+                    await matcher.finish(MessageSegment.reply(event.message_id) + f"你似乎正在向“{nickname}”求婚中呢owo")
         # 排除不应该被随机到的用户列表：机器人、bot 自身、用户本身，
         # 以及本群已婚/求婚中的用户（不抢已有对象的群友）
         exclude_ids = {int(user_qq), event.self_id}
@@ -101,11 +100,11 @@ async def marry_random_func(
         # 构建双方数据并写入数据库
         self_rec = await get_or_create_marry_record(session, user_qq, group_qq)
         select_rec = await get_or_create_marry_record(session, str(select_qq), group_qq)
-        self_rec.request_mode = MarryMode.MARRIED
+        self_rec.marry_mode = MarryMode.MARRIED
         self_rec.cp_qq = int(select_qq)
         self_rec.request = 0
         self_rec.time = now_time
-        select_rec.request_mode = MarryMode.MARRIED
+        select_rec.marry_mode = MarryMode.MARRIED
         select_rec.cp_qq = int(user_qq)
         select_rec.request = 0
         select_rec.time = now_time
@@ -138,7 +137,7 @@ async def finish_marry_func(
         # 异常处理：无记录或尚未已婚（单身/仍在求婚中）
         if self_rec is None:
             raise MarryNotMarried()
-        match self_rec.request_mode:
+        match self_rec.marry_mode:
             case MarryMode.MARRIED:
                 pass
             case _:
@@ -166,7 +165,6 @@ async def marry_propose_func(
         event: GroupMessageEvent,
         bot: Bot,
         session: async_scoped_session,
-        args: Message = CommandArg()
 ):
     try:
         # 获取数据
@@ -188,45 +186,41 @@ async def marry_propose_func(
         # 检查目标是否已有对象或正在求婚
         target_rec = await get_marry_record(session, str(user_id), group_id)
         if target_rec is not None:
-            match target_rec.request_mode:
+            match target_rec.marry_mode:
                 case MarryMode.SINGLE:
-                    pass
+                    if target_rec.cp_qq != 0:
+                        stranger_info = await bot.get_stranger_info(user_id=target_rec.cp_qq)
+                        nickname = stranger_info.get('nickname', '昵称获取失败')
+                        await matcher.finish(MessageSegment.reply(
+                            event.message_id) + f"你选择的对象似乎正在被{nickname}求婚诶~请等待选择对象做出决定后再尝试叭~")
                 case MarryMode.MARRIED:
                     raise MarryAlreadyMarried("凌辉Bot小声提醒您：您请求的用户似乎已经有对象了awa")
-                case MarryMode.ACTIVE_PROPOSE | MarryMode.PASSIVE_PROPOSE:
-                    raise MarryAlreadyMarried("凌辉Bot小声提醒您：您请求的用户似乎正在被求婚或者求婚其他人呢awa")
+                case MarryMode.PENDING:
+                    raise MarryAlreadyMarried("凌辉Bot小声提醒您：您请求的用户似乎正在求婚其他人呢awa")
         # 检查自己是否已有对象或正在求婚
         self_rec = await get_marry_record(session, str(self_qq), group_id)
         if self_rec is not None:
-            match self_rec.request_mode:
+            match self_rec.marry_mode:
                 case MarryMode.SINGLE:
                     pass
                 case MarryMode.MARRIED:
                     raise MarryAlreadyMarried("你已经有对象了啦qwq怎么可以一夫多妻呢/_ \\")
-                case MarryMode.ACTIVE_PROPOSE:
-                    response = self_rec.request
+                case MarryMode.PENDING:
+                    response = self_rec.cp_qq
                     stranger_info = await bot.get_stranger_info(user_id=response)
                     await matcher.finish(MessageSegment.reply(event.message_id) +
                                          f"你似乎正在向{stranger_info['nickname']}求婚中呢owo")
-                case MarryMode.PASSIVE_PROPOSE:
-                    response = self_rec.request
-                    stranger_info = await bot.get_stranger_info(user_id=response)
-                    await matcher.finish(MessageSegment.reply(event.message_id) +
-                                         f"你似乎正在被{stranger_info['nickname']}求婚中呢owo")
         # 获取或创建双方记录
         self_count = self_rec.count if self_rec is not None else 0
         cp_count = target_rec.count if target_rec is not None else 0
         self_rec = await get_or_create_marry_record(session, str(self_qq), group_id)
         target_rec = await get_or_create_marry_record(session, str(user_id), group_id)
-        # 主动请求人为 ACTIVE_PROPOSE，被请求人为 PASSIVE_PROPOSE；求婚中无对象（cp_qq=0）
-        self_rec.request_mode = MarryMode.ACTIVE_PROPOSE
-        self_rec.cp_qq = 0
-        self_rec.request = int(user_id)
+        #  设置为 PENDING；求婚中无对象（cp_qq=0）
+        self_rec.marry_mode = MarryMode.PENDING
+        self_rec.cp_qq = int(user_id)
         self_rec.time = timestamp
         self_rec.count = self_count
-        target_rec.request_mode = MarryMode.PASSIVE_PROPOSE
-        target_rec.cp_qq = 0
-        target_rec.request = self_qq
+        target_rec.cp_qq = int(self_qq)
         target_rec.time = timestamp
         target_rec.count = cp_count
         await session.flush()
@@ -256,63 +250,56 @@ async def marry_select_func(
         if self_rec is None:
             raise MarryNotMarried("你似乎没有被求婚或正在向他人求婚呢owo")
         # 只有处于求婚中（ACTIVE/PASSIVE_PROPOSE）才能同意/拒绝/取消
-        mode = self_rec.request_mode
+        mode = self_rec.marry_mode
         match mode:
             case MarryMode.MARRIED:
                 raise MarryAlreadyMarried()
             case MarryMode.SINGLE:
-                raise MarryNotMarried("你似乎没有被求婚或正在向他人求婚呢owo")
-            case MarryMode.ACTIVE_PROPOSE | MarryMode.PASSIVE_PROPOSE:
-                pass
-        request = self_rec.request
+                if self_rec.cp_qq == 0:
+                    raise MarryNotMarried("你似乎没有被求婚或正在向他人求婚呢owo")
+        request = self_rec.cp_qq
         stranger_info = await bot.get_stranger_info(user_id=request)
         nickname = stranger_info.get('nickname', '昵称获取失败')
-        if "拒绝" in text or "取消" in text:
-            if "取消" not in text:
-                # 只有被求婚方（PASSIVE_PROPOSE）可以执行“拒绝”
-                match mode:
-                    case MarryMode.PASSIVE_PROPOSE:
-                        pass
-                    case _:
-                        await matcher.finish(MessageSegment.reply(event.message_id) + "这个命令不是你用的吧owo")
-            await delete_marry_record(session, self_qq, group_id)
-            await delete_marry_record(session, str(request), group_id)
-            await session.commit()
-            temp = "拒绝"
-            temp_1 = ""
-            if "取消" in text:
-                temp = "取消"
-            match mode:
-                case MarryMode.ACTIVE_PROPOSE:
-                    temp_1 = "对"
-            await matcher.finish(
-                MessageSegment.reply(event.message_id) + f"好叭/_ \\你已经{temp}了{temp_1}“{nickname}”的求婚请求了呢~")
-        if "同意" in text:
-            # 主动求婚方（ACTIVE_PROPOSE）不能执行“同意”
-            match mode:
-                case MarryMode.ACTIVE_PROPOSE:
-                    await matcher.finish(MessageSegment.reply(event.message_id) + "这个命令不是你用的吧owo")
-                case _:
-                    pass
+        match text:
+            case "同意" | "同意求婚":
+                if mode is MarryMode.PENDING:
+                    await matcher.finish(MessageSegment.reply(event.message_id) + f"这个命令不是你用的吧owo")
+            case "取消" | "取消求婚":
+                if mode is MarryMode.PENDING:
+                    await delete_marry_record(session, self_qq, group_id)
+                    await delete_marry_record(session, str(request), group_id)
+                    await session.commit()
+                    await matcher.finish(
+                        MessageSegment.reply(event.message_id) + f"好叭/_ \\你已经取消“{nickname}”的求婚请求了呢~")
+                else:
+                    await matcher.finish(MessageSegment.reply(event.message_id) + f"这个命令不是你用的吧owo")
+            case "拒绝" | "拒绝求婚":
+                if mode is MarryMode.PENDING:
+                    await matcher.finish(MessageSegment.reply(event.message_id) + f"这个命令不是你用的吧owo")
+                else:
+                    await delete_marry_record(session, self_qq, group_id)
+                    await delete_marry_record(session, str(request), group_id)
+                    await session.commit()
+                    await matcher.finish(MessageSegment.reply(event.message_id) + f"好叭/_ \\你已经拒绝“{nickname}”的求婚请求了呢~")
         timestamp = utc_now()  # 标准 UTC
         self_count = self_rec.count
         request_rec = await get_marry_record(session, str(request), group_id)
-        # 双向校验：对方应仍处于 ACTIVE_PROPOSE 且 request 指向本人，
+        # 双向校验：对方应仍处于 PENDING 且 request 指向本人，
         # 否则说明求婚已被取消/对方状态已变，本次同意视为失效
-        if request_rec is None or request_rec.request_mode != MarryMode.ACTIVE_PROPOSE \
-                or request_rec.request != int(self_qq):
+        if request_rec is None or request_rec.marry_mode != MarryMode.PENDING \
+                or request_rec.cp_qq != int(self_qq):
             await delete_marry_record(session, self_qq, group_id)
             await delete_marry_record(session, str(request), group_id)
             await session.commit()
             await matcher.finish(MessageSegment.reply(event.message_id) +
                                  "似乎对方已经取消了求婚呢...让TA重新求婚一次吧owo")
         cp_count = request_rec.count
-        self_rec.request_mode = MarryMode.MARRIED
+        self_rec.marry_mode = MarryMode.MARRIED
         self_rec.cp_qq = request
         self_rec.request = 0
         self_rec.time = timestamp
         self_rec.count = self_count
-        request_rec.request_mode = MarryMode.MARRIED
+        request_rec.marry_mode = MarryMode.MARRIED
         request_rec.cp_qq = int(self_qq)
         request_rec.request = 0
         request_rec.time = timestamp
@@ -332,8 +319,7 @@ async def marry_check_func(
         matcher: Matcher,
         event: GroupMessageEvent,
         bot: Bot,
-        session: async_scoped_session,
-        args: Message = CommandArg()
+        session: async_scoped_session
 ):
     try:
         # 读取前置数据
@@ -351,7 +337,7 @@ async def marry_check_func(
             if str(self_qq) != str(event.user_id):
                 raise MarryNotMarried("你查找的群友似乎还没有对象owo")
             raise MarryNotMarried()  # 确定用户合法后读取必要数据
-        match user_rec.request_mode:
+        match user_rec.marry_mode:
             case MarryMode.MARRIED:
                 pass
             case _:
@@ -397,7 +383,7 @@ async def marry_switch_utils(
         # 换老婆的前提：本人已婚
         if self_rec is None:
             raise MarryNotMarried()
-        match self_rec.request_mode:
+        match self_rec.marry_mode:
             case MarryMode.MARRIED:
                 pass
             case _:
@@ -428,7 +414,7 @@ async def marry_switch_utils(
                     "（免打扰模式已开启，您在重置时间前只会看到此消息1次）")
             await matcher.finish()
 
-        # 初步生成排除列表：该群中已婚或求婚中的用户（request_mode != SINGLE），以及 bot 与用户本人
+        # 初步生成排除列表：该群中已婚或求婚中的用户（marry_mode != SINGLE），以及 bot 与用户本人
         exclusion_list = await get_partnered_user_ids_in_group(session, group_id)
         exclusion_set = {int(x) for x in exclusion_list}
         exclusion_set.update({event.self_id, event.user_id})
@@ -445,13 +431,13 @@ async def marry_switch_utils(
         # 写入双方记录
         self_rec = await get_or_create_marry_record(session, self_qq, group_id)
         partner_rec = await get_or_create_marry_record(session, str(random_select), group_id)
-        partner_rec.request_mode = MarryMode.MARRIED
+        partner_rec.marry_mode = MarryMode.MARRIED
         partner_rec.cp_qq = event.user_id
         partner_rec.request = 0
         partner_rec.time = timestamp
         partner_rec.count = 0
         partner_rec.switch = False
-        self_rec.request_mode = MarryMode.MARRIED
+        self_rec.marry_mode = MarryMode.MARRIED
         self_rec.cp_qq = random_select
         self_rec.request = 0
         self_rec.time = timestamp

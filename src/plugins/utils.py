@@ -334,7 +334,7 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         endpoint (str): API 路径（如 'service/screen'）。
         params (dict | None): 查询参数字典，可选，默认为 None。
         service (str): 服务名称，用于区分不同api的请求。
-        request_mode (str): 请求方式，'get' 或 'post'，默认为 'get'。
+        marry_mode (str): 请求方式，'get' 或 'post'，默认为 'get'。
     返回:
         dict: 成功时返回解析后的 JSON 数据；发生错误时抛出 Exception。
     """
