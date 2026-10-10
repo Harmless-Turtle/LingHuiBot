@@ -339,7 +339,7 @@ async def get_api_httpx(endpoint: str, service: str = "None", request_mode: str 
         dict: 成功时返回解析后的 JSON 数据；发生错误时抛出 Exception。
     """
     if service == "furryfusion":
-        url = f"https://api.furryfusion.net/{endpoint}"
+        url = f"https://qqbot.fur-bot.com/{endpoint}"
     elif service == "furry":
         url = f"https://cloud.foxtail.cn/api/{endpoint}"
     else:

@@ -1,9 +1,12 @@
 import datetime
 
+import httpx
 from PIL import Image, ImageDraw, ImageFont
+from nonebot import logger
 
-from ..check_file import FONT_PATH
-from ...utils import get_config_item, get_api_httpx
+from ..check_file import FONT_PATH,furryfusion_login_session
+from ...Exceptions import LingHuiError
+from ...utils import get_config_item, get_api_httpx, handle_json, handle_errors
 
 # 导入特殊兽聚列表
 SPECIAL_EVENTS = get_config_item(
@@ -12,6 +15,27 @@ SPECIAL_EVENTS = get_config_item(
     required=True,
     desc="FurryFusion特殊兽聚列表"
 )
+
+token = get_config_item(
+    'furry_token',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion API Token"
+)
+username = get_config_item(
+    'furryfusion_username',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion API Token"
+)
+password = get_config_item(
+    'furryfusion_password',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion API Token"
+)
+if token == "未获取到数据" or username == "未获取到数据" or password == "未获取到数据":
+    logger.warning("未获取到FurryFusion API Token或用户名或密码，请检查配置文件。")
 
 
 # ========= 工具函数：请求 API =========
@@ -278,3 +302,16 @@ def render_schedule_image(groups: dict):
         y_offset += 20
 
     return img
+
+@handle_errors
+async def get_fur_session():
+    async with httpx.AsyncClient() as client:
+        fur_session = await client.post("https://qqbot.fur-bot.com/api/v1/user/login",
+                                        headers={"Content-Type": "application/json"},
+                                        json={"account": username, "password": password,"login_token": token})
+        if fur_session.status_code == 200 and fur_session.cookies.get("fur_session") and fur_session.json().get("ok"):
+            handle_json(furryfusion_login_session, 'w', {"fur_session": fur_session.cookies.get("fur_session")})
+            return {"fur_session": fur_session.cookies.get("fur_session")}
+        else:
+            logger.error(f"FurryFusion 登录失败，状态码：{fur_session.status_code}，响应内容：{fur_session.text}")
+            raise LingHuiError("登录失败，请检查用户名和密码是否正确。\n调试信息已发送在终端。")
