@@ -21,8 +21,8 @@ FONT_PATH = Path() / 'data' / 'SarasaFixedSlabJ-SemiBoldItalic.ttf'
 FURRY_FUSION_BG_PATH = Path() / 'data' / 'furry_system' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
-# 验证字体包是否存在
-if os.path.exists(FONT_PATH):
+# 验证字体包是否存在（空文件视为缺失，避免 truetype 打开 0 字节字体崩溃）
+if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 0:
     logger.info(f"已找到字体文件: {FONT_PATH}")
 else:
     FONT_PATH = None
@@ -118,7 +118,9 @@ def create_error_reply(error: Exception, event: MessageEvent, buffer_image: Byte
 
 # 根据多行文本和字体生成一张自动排版的图片
 def generate_text_image(error_msg, font_path):
-    font = ImageFont.truetype(font_path, size=30) if font_path.exists() else ImageFont.load_default()
+    font = (ImageFont.truetype(str(font_path), size=30)
+            if font_path and font_path.exists() and font_path.stat().st_size > 0
+            else ImageFont.load_default())
     lines = error_msg.split('\n')
     padding = 20
     line_spacing = 5
