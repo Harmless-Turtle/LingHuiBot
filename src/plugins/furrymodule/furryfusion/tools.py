@@ -6,6 +6,7 @@ import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from playwright.async_api import async_playwright
 from nonebot import logger
+from nonebot.adapters.onebot.v11 import Bot
 
 from ..check_file import furryfusion_login_session
 from ...Exceptions import LingHuiError
@@ -186,6 +187,7 @@ async def _get_timeline_browser():
         return _playwright_browser
 
 
+
 async def render_fursion_timeline_image(events: list[dict]) -> bytes:
     """
     使用 Jinja2 + HTML/CSS + Playwright 渲染 FurryFusion 时间轴。
@@ -217,11 +219,10 @@ async def render_fursion_timeline_image(events: list[dict]) -> bytes:
     try:
         await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
         await page.evaluate("document.fonts.ready")
-        # 活动海报来自外部 URL，网络响应速度可能不稳定；按要求固定等待 60 秒。
+        # 活动海报来自外部 URL，网络响应速度可能不稳定；按要求固定等待 10 秒。
         # CSS background-image 不会出现在 document.images 中，因此这里直接延时，
         # 避免图片尚未下载完成就截图发送。
-        logger.info("FurryFusion 页面已加载，等待 60 秒确保活动背景图加载完成...")
-        await asyncio.sleep(60)
+        await asyncio.sleep(10)
         # 等待延时后的页面绘制完成。
         await page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
         return await page.screenshot(

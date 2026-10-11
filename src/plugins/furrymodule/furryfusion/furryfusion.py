@@ -1,3 +1,4 @@
+import os
 import time
 
 import httpx
@@ -10,7 +11,7 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from ..check_file import furryfusion_login_session
+from ..check_file import furryfusion_login_session,OPENDATA
 
 from ..commands import (
     furryfusion_list,
@@ -23,13 +24,24 @@ from ..commands import (
 from ...utils import get_api_httpx, handle_errors, batch_get, get_config_item, handle_json
 from .tools import get_fur_session, render_fursion_timeline_image
 
+furryfusion_pic = OPENDATA / "data" / "furry_system" / "furryfusion" / "furryfusion_timeline.png"
+
 @furryfusion_list.handle()
-async def furry_fusion_list_handler(matcher: Matcher):
+@handle_errors
+async def furry_fusion_list_handler(bot:Bot,matcher: Matcher, event:GroupMessageEvent, args:Message = CommandArg()):
     """获取 FurryFusion 时间轴并以图片形式发送。"""
     fur_session = handle_json(furryfusion_login_session, 'r')
     if not isinstance(fur_session, dict) or not fur_session.get("fur_session"):
         fur_session = await get_fur_session()
-
+    if args:
+        os.utime(furryfusion_pic, (time.time(), 0))
+    if os.path.exists(furryfusion_pic):
+        creation_time = int(os.path.getmtime(furryfusion_pic))
+        if int(time.time()) - creation_time < 86400:
+            with open(furryfusion_pic, "rb") as f:
+                image_bytes = f.read()
+            await matcher.finish(MessageSegment.reply(event.message_id)+"距离上一次生成时间未超过一天，将使用缓存图片：\n"+MessageSegment.image(image_bytes)+"如需重新生成，请使用“兽聚列表+任意文本”以重置。")
+    await bot.call_api("send_msg", group_id=event.group_id, message=MessageSegment.reply(event.message_id)+"FurryFusion 页面已加载，等待 10 秒确保活动背景图加载完成...")
     async with httpx.AsyncClient(timeout=20) as client:
         response = await client.get(
             "https://qqbot.fur-bot.com/api/v1/fursion/timeline",
@@ -63,5 +75,6 @@ async def furry_fusion_list_handler(matcher: Matcher):
     except Exception:
         logger.exception("FurryFusion 时间轴图片生成失败")
         await matcher.finish("FurryFusion 活动列表图片生成失败，请查看终端日志。")
-
-    await matcher.finish(MessageSegment.image(image_bytes))
+    with open(furryfusion_pic, "wb") as f:
+        f.write(image_bytes)
+    await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes)+"图片已缓存，要重新生成请使用“兽聚列表+任意文本”，例如“兽聚列表1”")
