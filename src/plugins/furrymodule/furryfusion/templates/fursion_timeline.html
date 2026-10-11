@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* 活动状态颜色 */
+  .state-red {
+      color: #ff4d5e;
+  }
+
+  .state-blue {
+      color: #409bff;
+  }
+
+  .state-yellow {
+      color: #ffd34d;
+  }
+
+  .state-white {
+      color: #ffffff;
+  }
+  :root {
+    color-scheme: dark;
+    --bg: #16161c;
+    --panel: #232630;
+    --panel-soft: #1d2028;
+    --text: #f2f3f7;
+    --muted: #a4a8b4;
+    --line: #555b68;
+    --blue: #6fa7f5;
+    --gold: #f0d78c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    width: 1200px;
+    padding: 34px 42px 26px 42px;
+    font-family: "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", sans-serif;
+  }
+  .header { display: flex; justify-content: space-between; align-items: end; margin: 0 0 28px 0; }
+  .eyebrow { color: var(--blue); font-size: 17px; letter-spacing: 2px; margin-bottom: 8px; }
+  h1 { font-size: 34px; margin: 0; font-weight: 750; letter-spacing: 1px; }
+  .summary { color: var(--muted); font-size: 17px; white-space: nowrap; padding-bottom: 4px; }
+  .year-block { position: relative; margin: 0 0 26px 0; padding-left: 32px; }
+  .year-block::before { content: ""; position: absolute; left: 7px; top: 18px; bottom: 8px; width: 2px; background: var(--line); }
+  .year-heading { position: relative; font-size: 27px; font-weight: 750; margin: 0 0 17px -32px; padding-left: 32px; }
+  .year-heading::before {
+    content: ""; position: absolute; left: 0; top: 9px; width: 14px; height: 14px;
+    border-radius: 50%; background: #f4f5f7; border: 3px solid var(--bg);
+  }
+  .month-block { position: relative; margin: 0 0 23px 0; }
+  .month-heading { position: relative; color: #d1d4dc; font-size: 18px; margin: 0 0 13px 0; padding-left: 0; }
+  .month-heading::before {
+    content: ""; position: absolute; left: -29px; top: 5px; width: 10px; height: 10px;
+    border-radius: 50%; border: 2px solid var(--line); background: var(--bg);
+  }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 320px)); gap: 12px; }
+  .card {
+    min-width: 0; position: relative; isolation: isolate; overflow: hidden;
+    background: var(--panel); border: 1px solid #343947; border-radius: 16px; 
+    padding: 9px 10px 8px; box-shadow: 0 5px 15px rgba(0,0,0,.12);
+  }
+  /* 活动海报作为整张卡片的半透明背景，不再作为头像/缩略图显示。 */
+  .card-background {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-position: center; background-size: cover; background-repeat: no-repeat;
+    opacity: .32;
+  }
+  .card > :not(.card-background) { position: relative; z-index: 1; }
+  .card.special { border-color: #927b43; }
+  /* 来源标识使用边框颜色和柔和辉光，保持海报背景与文字可读。 */
+  .card.source-deluxebot {
+    border: 2px solid #409bff;
+    box-shadow: 0 0 5px rgba(64,155,255,.9), 0 0 13px rgba(64,155,255,.48), inset 0 0 5px rgba(64,155,255,.18);
+  }
+  .card.source-fusion {
+    border: 2px solid #ff4d5e;
+    box-shadow: 0 0 5px rgba(255,77,94,.9), 0 0 13px rgba(255,77,94,.48), inset 0 0 5px rgba(255,77,94,.18);
+  }
+  .card.source-dreamcloud {
+    border: 2px solid #ffd34d;
+    box-shadow: 0 0 5px rgba(255,211,77,.9), 0 0 13px rgba(255,211,77,.48), inset 0 0 5px rgba(255,211,77,.18);
+  }
+  .card.special::after {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: linear-gradient(135deg, rgba(43,42,41,.25), rgba(35,38,48,.30) 60%);
+  }
+  .card-top { display: flex; align-items: flex-start; gap: 8px; }
+  .main { flex: 1; min-width: 0; }
+  .event-name { color: var(--blue); font-size: 19px; font-weight: 750; line-height: 1.3; overflow-wrap: anywhere; margin: 0 0 5px; }
+  .special .event-name { color: var(--gold); }
+  .publisher { color: #8f96a5; font-size: 12px; margin-bottom: 8px; }
+  .date { color: #d6d8df; font-size: 13px; line-height: 1.45; margin-bottom: 6px; }
+  .address { color: #b0b4c0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+  .meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .badge { display: inline-block; border-radius: 999px; padding: 4px 7px; background: #343947; color: #d9dce5; font-size: 11px; }
+
+  /* 活动状态颜色：提高选择器优先级，避免被 .badge 的默认文字颜色覆盖 */
+  .badge.state-red { color: #ff4d5e; }
+  .badge.state-blue { color: #409bff; }
+  .badge.state-yellow { color: #ffd34d; }
+  .badge.state-white { color: #ffffff; }
+  .remaining { font-size: 12px; font-weight: 700; }
+  .remaining.future { color: #80b4ff; }
+  .remaining.today { color: #f3d526; }
+  .remaining.past { color: #e18a9e; }
+  .remaining.neutral { color: #a4a8b4; }
+  .brief { border-top: 1px solid #383c47; margin-top: 10px; padding-top: 9px; color: #b8bdc8; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .groups { color: #8991a1; font-size: 11px; margin-top: 7px; }
+  a { color: inherit; text-decoration: none; }
+  .empty { border: 1px dashed #454a57; border-radius: 14px; padding: 35px; text-align: center; color: var(--muted); font-size: 18px; }
+  .footer { border-top: 1px solid #30333d; padding: 16px 10px 0; margin-top: 12px; text-align: center; color: #707582; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+  .footer-sources { max-width: 940px; margin: 0 auto; }
+  .legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 7px; color: #a3a8b4; }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-color { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+  .legend-blue { background: #409bff; box-shadow: 0 0 6px rgba(64,155,255,.8); }
+  .legend-red { background: #ff4d5e; box-shadow: 0 0 6px rgba(255,77,94,.8); }
+  .legend-yellow { background: #ffd34d; box-shadow: 0 0 6px rgba(255,211,77,.8); }
+</style>
+</head>
+<body>
+  <header class="header">
+    <div>
+      <div class="eyebrow">FURRYFUSION · TIMELINE</div>
+      <h1>兽聚活动时间轴</h1>
+    </div>
+    <div class="summary">共 {{ event_count }} 场活动</div>
+  </header>
+
+  {% if groups %}
+    {% for year_group in groups %}
+      <section class="year-block">
+        <h2 class="year-heading">{{ year_group.year }}</h2>
+        {% for month_group in year_group.months %}
+          <section class="month-block">
+            <h3 class="month-heading">{{ month_group.month }}</h3>
+            <div class="cards">
+              {% for event in month_group.events %}
+                <article class="card{% if event.is_special %} special{% endif %}{% if event.source_class %} {{ event.source_class }}{% endif %}">
+                  {% if event.image.startswith('http://') or event.image.startswith('https://') %}
+                    <div class="card-background" style="background-image: url('{{ event.image }}')"></div>
+                  {% endif %}
+                  <div class="card-top">
+                    <div class="main">
+                      {% if event.url.startswith('http://') or event.url.startswith('https://') %}
+                        <a href="{{ event.url }}"><h4 class="event-name">{{ event.name }}</h4></a>
+                      {% else %}
+                        <h4 class="event-name">{{ event.name }}</h4>
+                      {% endif %}
+                      {% if event.publisher %}<div class="publisher">{{ event.publisher }}</div>{% endif %}
+                      <div class="date">{{ event.date_range }}</div>
+                      {% if event.address %}<div class="address">📍 {{ event.address }}</div>{% endif %}
+                    </div>
+                  </div>
+                  <div class="meta">
+                    <span class="remaining {{ event.remaining_class }}">{{ event.remaining }}</span>
+                    {% if event.state %}
+                        <span class="badge
+                            {% if event.state in ['活动结束', '活动中', '活动取消', '活动延期'] %}
+                                state-red
+                            {% elif event.state == '预告中' %}
+                                state-blue
+                            {% elif event.state in ['售票中', '已开票'] %}
+                                state-yellow
+                            {% else %}
+                                state-white
+                            {% endif %}
+                        ">{{ event.state }}</span>
+                    {% endif %}
+                  </div>
+                  {% if event.brief %}<div class="brief">{{ event.brief }}</div>{% endif %}
+                </article>
+              {% endfor %}
+            </div>
+          </section>
+        {% endfor %}
+      </section>
+    {% endfor %}
+  {% else %}
+    <div class="empty">暂时没有可展示的活动</div>
+  {% endif %}
+
+  <footer class="footer">
+    <div class="footer-sources">信息来源：{% if source_labels %}{{ source_labels | join('、') }}{% else %}部分活动未提供来源信息{% endif %}</div>
+    <div class="legend">
+      <span class="legend-item"><i class="legend-color legend-blue"></i>蓝色边框：DeluxeBot</span>
+      <span class="legend-item"><i class="legend-color legend-red"></i>红色边框：兽聚汇总</span>
+      <span class="legend-item"><i class="legend-color legend-yellow"></i>黄色边框：梦想云</span>
+    </div>
+    合成时间：{{ generated_at }}<br>
+    排版制作：Design by LingHui<br>
+    数据仅供参考，请以官方公告为准；如时间临时变动，更新可能不及时。
+  </footer>
+</body>
+</html>
