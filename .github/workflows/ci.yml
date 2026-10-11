@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: 依赖安装与语法检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 uv（Python 3.12.0，与锁文件一致）
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12.0"
+          enable-cache: true
+
+      - name: 安装依赖（验证依赖解析，含 pyncm 本地 zip 源）
+        run: uv sync --frozen --no-install-project
+
+      - name: 全量语法检查
+        run: uv run --no-sync python -m compileall -q src bot.py
