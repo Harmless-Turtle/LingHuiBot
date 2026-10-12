@@ -49,6 +49,7 @@ QQ：1097740481<br>
 <h2><em>怎么使用凌辉Bot(开发者和高级用户)?</em></h2>
 
 所有的高级使用教程均已迁移至 Wiki 页面，详见[Wiki](https://github.com/Harmless-Turtle/LingHuiBot/wiki)
+关于使用 Vibe Coding(AI 开发) 的相关注意事项已写入 Wiki 页面，详见[Vibe Coding](https://github.com/Harmless-Turtle/LingHuiBot/wiki/%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97#%E4%BD%BF%E7%94%A8-vibe-coding-%E8%BF%9B%E8%A1%8C%E8%B4%A1%E7%8C%AE)
 
 <h2>联系开发组</h2>
 
