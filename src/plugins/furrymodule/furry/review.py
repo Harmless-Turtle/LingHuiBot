@@ -68,7 +68,7 @@ async def check_upload_function(
         batch_text = await batch_get(message,item['file_path'],item['user_id'],"待审核图片")
         final_list.append(batch_text)
 
-    await bot.call_api("send_group_forward_msg", group_id=event.group_id, message=final_list, time_noend=True)
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=final_list, time_noend=True)
     await matcher.finish()
 
 @check_upload_decide.handle()
@@ -208,7 +208,6 @@ async def check_modify_decide_function(
         await matcher.finish(MessageSegment.reply(event.message_id) + "修改失败，找不到对应的图片记录。")
     review_list.pop(review_id)
     handle_json(UPLOAD_CACHE_DIR / "modify.json", 'w', review_list)
-    await update_furry_picture(session, int(del_review["id"]), del_review["attr"], del_review["new_value"], new_save_data)
     await bot.call_api(
         "send_group_msg",
         group_id=group_id,

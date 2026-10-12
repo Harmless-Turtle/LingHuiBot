@@ -1,7 +1,7 @@
 name: ✨ 新功能期望或改进旧功能
 description: 提出一个功能建议或改进
-title: "[Feature] 简短描述功能"
-labels: ["enhancement", "needs-triage"]
+title: "[改进/新功能] 简短描述功能"
+labels: ["改进/新功能", "needs-triage"]
 assignees: []
 
 body:
