@@ -21,7 +21,7 @@ from ..commands import (
     furryfusion_information,
     furryfusion_login
 )
-from ...main.check_file import aword_path
+
 from ...utils import get_api_httpx, handle_errors, batch_get, get_config_item, handle_json
 from .tools import get_fur_session, render_fursion_timeline_image
 
