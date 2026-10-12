@@ -12,15 +12,14 @@ from ...database.models import Groups, Users
 class MarryMode(enum.Enum):
     """婚姻/求婚状态：统一 ORM 与业务层的类型。"""
     SINGLE = "single"  # 单身/无对象
-    ACTIVE_PROPOSE = "active_propose"  # 主动求婚中
-    PASSIVE_PROPOSE = "passive_propose"  # 被求婚中
+    PENDING = "pending"  # 主动求婚中
     MARRIED = "married"  # 已婚
 
 
 # ============================================================
 #                       结婚系统
 #   原 data/entertainment/marry_system/marry.json
-#   结构：data[user][group] = {cp_qq, time, request, request_mode, count, switch}
+#   结构：data[user][group] = {cp_qq, time, request, marry_mode, count, switch}
 #   迁移为每 (user, group) 一行；
 # ============================================================
 
@@ -31,10 +30,8 @@ class MarryRecord(Model):
     group_id: Mapped[str] = mapped_column(ForeignKey(Groups.id), primary_key=True)
     # 对象 QQ；仅已婚(MARRIED)时为对象 QQ，否则为 0
     cp_qq: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
-    # 求婚目标 QQ；求婚中(ACTIVE/PASSIVE_PROPOSE)生效，否则为 0
-    request: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     # 婚姻/求婚状态（MarryMode 枚举）：SQLAlchemy Enum 自动转换
-    request_mode: Mapped[MarryMode] = mapped_column(Enum(MarryMode), default=MarryMode.SINGLE)
+    marry_mode: Mapped[MarryMode] = mapped_column(Enum(MarryMode), default=MarryMode.SINGLE)
     # 结婚/求婚时间：标准 UTC（naive datetime），业务层按需 +8 小时转本地
     time: Mapped[datetime] = mapped_column(DateTime(), nullable=True)
     # “换老婆”功能的当日计数与免打扰开关
@@ -78,13 +75,13 @@ async def get_partnered_user_ids_in_group(
         session: async_scoped_session, group_id: str
 ) -> list[str]:
     """
-    返回该群中已有对象或正在求婚（request_mode != SINGLE）的 user_id 列表，
+    返回该群中已有对象或正在求婚（marry_mode != SINGLE）的 user_id 列表，
     等价于原 marry_switch 中构建排除列表的逻辑。
     """
     res = await session.execute(
         select(MarryRecord.user_id).where(
             MarryRecord.group_id == group_id,
-            MarryRecord.request_mode != MarryMode.SINGLE,
+            MarryRecord.marry_mode != MarryMode.SINGLE,
         )
     )
     return [row[0] for row in res.all()]

@@ -1,9 +1,16 @@
+import asyncio
 import datetime
+from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+import httpx
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from playwright.async_api import async_playwright
+from nonebot import logger
+from nonebot.adapters.onebot.v11 import Bot
 
-from ..check_file import FONT_PATH
-from ...utils import get_config_item, get_api_httpx
+from ..check_file import furryfusion_login_session
+from ...Exceptions import LingHuiError
+from ...utils import get_config_item, handle_json, handle_errors
 
 # 导入特殊兽聚列表
 SPECIAL_EVENTS = get_config_item(
@@ -13,268 +20,230 @@ SPECIAL_EVENTS = get_config_item(
     desc="FurryFusion特殊兽聚列表"
 )
 
+token = get_config_item(
+    'furry_token',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion API Token"
+)
+username = get_config_item(
+    'furryfusion_username',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion API Token"
+)
+password = get_config_item(
+    'furryfusion_password',
+    default="未获取到数据",
+    required=True,
+    desc="FurryFusion API Token"
+)
+if token == "未获取到数据" or username == "未获取到数据" or password == "未获取到数据":
+    logger.warning("未获取到FurryFusion API Token或用户名或密码，请检查配置文件。")
 
-# ========= 工具函数：请求 API =========
-async def get_event_list():
-    """
-    访问FurryFusion活动API，获取活动列表
-    """
+
+# ========= FurryFusion 时间轴 HTML 渲染 =========
+_TEMPLATE_DIR = Path(__file__).parent / "templates"
+_TEMPLATE_ENV = Environment(
+    loader=FileSystemLoader(str(_TEMPLATE_DIR)),
+    autoescape=select_autoescape(["html", "xml"]),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
+
+_playwright_manager = None
+_playwright_browser = None
+_playwright_lock = asyncio.Lock()
+
+
+def _timeline_date(value):
+    """把 API 日期尽量统一成 YYYY.MM.DD；无法解析时返回原文本。"""
+    if value is None:
+        return ""
+    value = str(value).strip()
+    if not value:
+        return ""
+    for fmt in (
+        "%Y.%m.%d", "%Y-%m-%d", "%Y/%m/%d",
+        "%Y.%m.%d %H:%M", "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+    ):
+        try:
+            return datetime.datetime.strptime(value, fmt).strftime("%Y.%m.%d")
+        except ValueError:
+            continue
+    return value
+
+
+def _timeline_remaining(start_date):
+    """计算开始日期倒计时；日期格式异常时不阻断整张图。"""
+    normalized = _timeline_date(start_date)
     try:
-        resp = await get_api_httpx("service/activity", service="furryfusion")
-        return resp.get("data", [])
-    except Exception as e:
-        return [
-            {
-                "title": "请求失败！",
-                "address": "遇到了意料外的问题。",
-                "time_start": "1900.01.01",
-                "time_end": "9999.01.01"
-            },
-            {
-                "title": "错误内容",
-                "address": f"{e}",
-                "time_start": "1900.01.01",
-                "time_end": "9999.01.01"
-            }
-        ]
-
-
-# ========= 工具函数：生成倒计时 =========
-def calc_days_remaining(start_date: str):
-    today = datetime.date.today()
-    start = datetime.datetime.strptime(start_date, "%Y.%m.%d").date()
-    days = (start - today).days
-    return days
-
-
-def format_remaining_days(days: int) -> tuple:
-    """格式化剩余天数显示，返回(文本, 颜色)"""
+        start = datetime.datetime.strptime(normalized, "%Y.%m.%d").date()
+    except (TypeError, ValueError):
+        return "日期待确认", "neutral"
+    days = (start - datetime.date.today()).days
     if days < 0:
-        text = f"已开始{abs(days)}天"
-        color = (132, 37, 62)  # 红色
-    elif days == 0:
-        text = "今天开始"
-        color = (243, 213, 22)
-    else:
-        text = f"剩余 {days} 天"
-        color = (120, 180, 255)  # 蓝色
-    return text, color
+        return f"已开始 {abs(days)} 天", "past"
+    if days == 0:
+        return "今天开始", "today"
+    return f"剩余 {days} 天", "future"
 
 
-# ========= 工具函数：按月份分组 =========
-def group_by_year_month(events):
-    groups = {}
-    for e in events:
-        s = e.get("time_start", "")
-        dt = datetime.datetime.strptime(s, "%Y.%m.%d").date()
-        year = str(dt.year)
-        month = f"{dt.year}.{dt.month:02d}"
+def _prepare_timeline_events(events):
+    """清洗 API items，补齐模板所需字段并按开始日期排序。"""
+    prepared = []
+    for raw in events:
+        if not isinstance(raw, dict):
+            continue
 
-        if year not in groups:
-            groups[year] = {}
-        if month not in groups[year]:
-            groups[year][month] = []
+        name = str(raw.get("name") or raw.get("title") or "未命名活动").strip()
+        publisher = str(raw.get("title") or "").strip()
+        start = _timeline_date(raw.get("time_start"))
+        end = _timeline_date(raw.get("time_end"))
+        remaining, remaining_class = _timeline_remaining(raw.get("time_start"))
 
-        groups[year][month].append(e)
-    return groups
+        try:
+            start_dt = datetime.datetime.strptime(start, "%Y.%m.%d")
+            year = start_dt.strftime("%Y")
+            month = start_dt.strftime("%Y.%m")
+            sort_key = start_dt
+        except (TypeError, ValueError):
+            year = "日期待确认"
+            month = "日期待确认"
+            sort_key = datetime.datetime.max
+
+        special_names = SPECIAL_EVENTS
+        if isinstance(special_names, str):
+            # 兼容配置项为逗号/换行分隔字符串的情况。
+            special_names = [
+                item.strip()
+                for item in special_names.replace("，", ",").replace("\n", ",").split(",")
+                if item.strip()
+            ]
+        is_special = name in (special_names or [])
+
+        source_label = str(raw.get("source_label") or raw.get("source") or "").strip()
+        source_key = source_label.casefold().replace(" ", "")
+        if "deluxebot" in source_key:
+            source_class = "source-deluxebot"
+        elif "兽聚汇总" in source_label:
+            source_class = "source-fusion"
+        elif "梦想云" in source_label:
+            source_class = "source-dreamcloud"
+        else:
+            source_class = ""
+
+        prepared.append({
+            "name": name,
+            "publisher": publisher,
+            "time_start": start,
+            "time_end": end,
+            "date_range": f"{start or '日期待确认'} — {end or '日期待确认'}",
+            "address": str(raw.get("address") or "").strip(),
+            "state": str(raw.get("state") or "").strip(),
+            "time_surplus": str(raw.get("time_surplus") or "").strip(),
+            "source_label": source_label,
+            "source_class": source_class,
+            "groups": "、".join(str(group) for group in raw.get("groups", []) if group) if isinstance(raw.get("groups"), list) else str(raw.get("groups") or "").strip(),
+            "url": str(raw.get("url") or "").strip(),
+            "brief": str(raw.get("brief") or "").strip(),
+            "image": str(raw.get("image") or "").strip(),
+            "remaining": remaining,
+            "remaining_class": remaining_class,
+            "is_special": is_special,
+            "year": year,
+            "month": month,
+            "_sort_key": sort_key,
+        })
+
+    prepared.sort(key=lambda item: item["_sort_key"])
+    grouped = []
+    current_year = None
+    current_month = None
+    for event in prepared:
+        if event["year"] != current_year:
+            current_year = event["year"]
+            current_month = None
+            grouped.append({"year": current_year, "months": []})
+        if event["month"] != current_month:
+            current_month = event["month"]
+            grouped[-1]["months"].append({"month": current_month, "events": []})
+        grouped[-1]["months"][-1]["events"].append(event)
+
+    return grouped, len(prepared)
 
 
-def add_custom_footer(img: Image.Image) -> Image.Image:
+async def _get_timeline_browser():
+    """懒加载并复用 Playwright 浏览器，避免每次命令都重新启动浏览器。"""
+    global _playwright_manager, _playwright_browser
+    async with _playwright_lock:
+        if _playwright_browser is not None and _playwright_browser.is_connected():
+            return _playwright_browser
+
+        if _playwright_manager is None:
+            _playwright_manager = await async_playwright().start()
+        _playwright_browser = await _playwright_manager.chromium.launch()
+        return _playwright_browser
+
+
+
+async def render_fursion_timeline_image(events: list[dict]) -> bytes:
     """
-    联动函数：在生成图片的底部正中央添加指定文本
+    使用 Jinja2 + HTML/CSS + Playwright 渲染 FurryFusion 时间轴。
+    返回 PNG 字节，可直接传给 MessageSegment.image()。
     """
-    footer_text = ("                          信息来源：FurryFusion.net\n"
-                   f"                        合成时间：{datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')}\n"
-                   "        排版灵感来源：XME(漠月) Bot | 排版制作：Design by LingHui\n"
-                   f"      数据仅供参考，请以官方公告为准 | 如时间有临时变动，更新可能不及时。"
-                   )
+    groups, event_count = _prepare_timeline_events(events)
+    template = _TEMPLATE_ENV.get_template("fursion_timeline.html")
+    # 汇总本次实际出现的数据来源，去重并保持首次出现顺序。
+    source_labels = []
+    for year_group in groups:
+        for month_group in year_group["months"]:
+            for event in month_group["events"]:
+                source = event.get("source_label", "").strip()
+                if source and source not in source_labels:
+                    source_labels.append(source)
 
-    # 2. 配置参数
-    footer_height = 120  # 底部留白的高度
-    bg_color = (22, 22, 28)  # 保持与主图背景色一致
-    text_color = (100, 100, 110)  # 使用较暗的灰色
+    html = template.render(
+        groups=groups,
+        event_count=event_count,
+        source_labels=source_labels,
+        generated_at=datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S"),
+    )
 
-    # 3. 创建新画布（宽度不变，高度增加）
-    width, height = img.size
-    new_height = height + footer_height
-    final_img = Image.new("RGB", (width, new_height), bg_color)
-
-    # 4. 将原图粘贴上去
-    final_img.paste(img, (0, 0))
-
-    # 5. 绘制文字
-    draw = ImageDraw.Draw(final_img)
+    browser = await _get_timeline_browser()
+    page = await browser.new_page(
+        viewport={"width": 1080, "height": 900},
+        device_scale_factor=1,
+    )
     try:
-        # 使用与小字相同的字体大小
-        font = ImageFont.truetype(FONT_PATH, 20)
-    except (OSError, ValueError):
-        font = ImageFont.load_default()
+        await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
+        await page.evaluate("document.fonts.ready")
+        # 活动海报来自外部 URL，网络响应速度可能不稳定；按要求固定等待 10 秒。
+        # CSS background-image 不会出现在 document.images 中，因此这里直接延时，
+        # 避免图片尚未下载完成就截图发送。
+        await asyncio.sleep(10)
+        # 等待延时后的页面绘制完成。
+        await page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+        return await page.screenshot(
+            type="png",
+            full_page=True,
+            animations="disabled",
+            timeout=30000,
+        )
+    finally:
+        await page.close()
 
-    # 获取文字锚点，确保绝对居中
-    # anchor="mm" 表示文本的中心点对齐到指定的坐标
-    text_x = width // 2
-    text_y = height + (footer_height // 2)
 
-    draw.text((text_x, text_y), footer_text, font=font, fill=text_color, anchor="mm")
-
-    return final_img
-
-
-# ========= 图片生成 =========
-def render_schedule_image(groups: dict):
-    width = 1080
-    padding = 40
-    card_w = 300
-    card_h = 150
-    gap = 30
-
-    # 字体路径
-    font_title = ImageFont.truetype(FONT_PATH, 30)
-    font_small = ImageFont.truetype(FONT_PATH, 20)
-
-    # 先计算总高度
-    y_offset = padding
-    for year in sorted(groups.keys()):  # 按年份顺序排列（旧年份在前）
-        months = groups[year]
-        y_offset += 70  # 年份标题高度
-        for month, events in months.items():
-            y_offset += 50  # 月份标题高度
-            x = padding
-            for idx, e in enumerate(events):
-                x += card_w + gap
-                if x + card_w > width - padding:
-                    x = padding
-                    y_offset += card_h + gap
-            if x != padding:
-                y_offset += card_h + gap
-            y_offset += 60  # 月份间距
-        y_offset += 20  # 年份间距
-
-    # 创建最终尺寸的图片
-    img = Image.new("RGB", (width, y_offset), (22, 22, 28))
-    draw = ImageDraw.Draw(img)
-
-    # 绘制内容 — 带时间树（年份左实心圆，月份左空心圆，直线连接）
-    y_offset = padding
-    timeline_x = padding - 20
-    year_r = 8
-    month_r = 6
-    line_color = (100, 100, 110)
-
-    prev_node_y = None
-    prev_node_r = None
-
-    for year in sorted(groups.keys()):  # 按年份顺序排列
-        months = groups[year]
-        # 年份文本高度与中心
-        year_h = font_title.getbbox(year)[3]
-        year_center_y = y_offset + year_h // 2
-
-        # 若存在前一个节点，画线到当前年份圆的边缘（避免线进入圆内）
-        if prev_node_y is not None:
-            if year_center_y > prev_node_y:
-                start_y = prev_node_y + prev_node_r
-                end_y = year_center_y - year_r
-            else:
-                start_y = prev_node_y - prev_node_r
-                end_y = year_center_y + year_r
-            draw.line((timeline_x, start_y, timeline_x, end_y), fill=line_color, width=3)
-
-        # 年份圆（实心）和文本
-        draw.ellipse((timeline_x - year_r, year_center_y - year_r, timeline_x + year_r, year_center_y + year_r),
-                     fill=(255, 255, 255))
-        draw.text((padding, y_offset), year, font=font_title, fill=(255, 255, 255))
-        y_offset += year_h + 12
-
-        # 更新为当前节点
-        prev_node_y = year_center_y
-        prev_node_r = year_r
-
-        for month, events in months.items():
-            month_h = font_small.getbbox(month)[3]
-            month_center_y = y_offset + month_h // 2
-
-            # 画连接线（从上一个节点到当前月份节点，止于圆边缘）
-            if prev_node_y is not None:
-                if month_center_y > prev_node_y:
-                    start_y = prev_node_y + prev_node_r
-                    end_y = month_center_y - month_r
-                else:
-                    start_y = prev_node_y - prev_node_r
-                    end_y = month_center_y + month_r
-                draw.line((timeline_x, start_y, timeline_x, end_y), fill=line_color, width=3)
-
-            # 月份空心圆和文本
-            draw.ellipse(
-                (timeline_x - month_r, month_center_y - month_r, timeline_x + month_r, month_center_y + month_r),
-                outline=line_color,
-                width=2
-            )
-            draw.text((padding + 20, y_offset), month, font=font_small, fill=(200, 200, 200))
-            y_offset += month_h + 10
-
-            # 更新节点为月份
-            prev_node_y = month_center_y
-            prev_node_r = month_r
-
-            x = padding
-            for idx, e in enumerate(events):
-                # 文本内容
-                name = e["title"]
-                location = e.get("address", "")
-                date_str = f"{e['time_start']} - {e['time_end']}"
-                remain = calc_days_remaining(e["time_start"])
-                remain_str, remain_color = format_remaining_days(remain)
-
-                # 判断是否为特殊聚会
-                is_special = name in SPECIAL_EVENTS
-                name_color = (240, 215, 140) if is_special else (79, 129, 199)  # 金色或蓝色
-
-                # 获取文本高度（bbox = (x0, y0, x1, y1)）
-                name_h = font_title.getbbox(name)[3]
-                location_h = font_small.getbbox(location)[3]
-                date_h = font_small.getbbox(date_str)[3]
-                remain_h = font_small.getbbox(remain_str)[3]
-
-                # 文字间距
-                gap_text = 6
-
-                # 计算总高度，用来垂直居中
-                total_h = name_h + location_h + date_h + remain_h + gap_text * 3
-                start_y = y_offset + (card_h - total_h) // 2
-
-                # 卡片
-                card = (x, y_offset, x + card_w, y_offset + card_h)
-                draw.rounded_rectangle(card, radius=18, fill=(35, 38, 48))
-                # 添加与标题颜色一致的边框
-                draw.rounded_rectangle(card, radius=18, outline=name_color, width=2)
-
-                # 绘制内容（垂直自动排版）
-                cy = start_y
-                draw.text((x + 20, cy), name, font=font_title, fill=name_color)
-                cy += name_h + gap_text
-
-                draw.text((x + 20, cy), location, font=font_small, fill=(180, 180, 180))
-                cy += location_h + gap_text
-
-                draw.text((x + 20, cy), date_str, font=font_small, fill=(180, 180, 180))
-                cy += date_h + gap_text
-
-                draw.text((x + 20, cy), remain_str, font=font_small, fill=remain_color)
-
-                # 多列布局
-                x += card_w + gap
-                if x + card_w > width - padding:
-                    x = padding
-                    y_offset += card_h + gap
-
-            if x != padding:
-                y_offset += card_h + gap
-            y_offset += 60
-
-            # 更新上一个节点为当前月份节点（用于下一次连接）
-            prev_node_y = month_center_y
-
-        y_offset += 20
-
-    return img
+@handle_errors
+async def get_fur_session():
+    async with httpx.AsyncClient() as client:
+        fur_session = await client.post("https://qqbot.fur-bot.com/api/v1/user/login",
+                                        headers={"Content-Type": "application/json"},
+                                        json={"account": username, "password": password,"login_token": token})
+        if fur_session.status_code == 200 and fur_session.cookies.get("fur_session") and fur_session.json().get("ok"):
+            handle_json(furryfusion_login_session, 'w', {"fur_session": fur_session.cookies.get("fur_session")})
+            return {"fur_session": fur_session.cookies.get("fur_session")}
+        else:
+            logger.error(f"FurryFusion 登录失败，状态码：{fur_session.status_code}，响应内容：{fur_session.text}")
+            raise LingHuiError("登录失败，请检查用户名和密码是否正确。\n调试信息已发送在终端。")
