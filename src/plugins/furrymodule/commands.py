@@ -36,8 +36,8 @@ check_modify_decide = on_command(
 # ================= FurryPic.upload 兽云祭上传子模块 =================
 # 一键上传
 upload_furry = on_command("上传", aliases={"投图"}, priority=10, block=True)
-# 修改图片（仅SUPERUSER）
-modify_furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)
+# 修改图片
+modify_furry = on_command("修改图片", priority=99, block=True)
 
 # ================= FurryFusion 兽聚汇总服务 =================
 # 今年兽聚列表
@@ -45,14 +45,8 @@ furryfusion_list = on_command(
     "今年兽聚", aliases={"兽聚列表", "兽聚汇总"}, priority=10, block=True)
 # 兽聚查询
 furryfusion_check = on_command("兽聚查询", block=True)
-# 兽聚倒计时
-furryfusion_countdown = on_command("兽聚倒计时", block=True)
-# 兽聚快讯
-furryfusion_quick_information = on_command("兽聚快讯#", block=True)
 # 兽聚详细信息
 furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
-# 登录API
-furryfusion_login = on_command("兽聚登录", force_whitespace=True, block=True)
 
 # ================= FurryBar =================
 # AI对话（@机器人触发）

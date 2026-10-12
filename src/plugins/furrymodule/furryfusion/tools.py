@@ -1,12 +1,14 @@
 import asyncio
 import datetime
 from pathlib import Path
+import time
+import os
+from typing import Optional
 
 import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from playwright.async_api import async_playwright
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import Bot
 
 from ..check_file import furryfusion_login_session
 from ...Exceptions import LingHuiError
@@ -247,3 +249,65 @@ async def get_fur_session():
         else:
             logger.error(f"FurryFusion 登录失败，状态码：{fur_session.status_code}，响应内容：{fur_session.text}")
             raise LingHuiError("登录失败，请检查用户名和密码是否正确。\n调试信息已发送在终端。")
+
+@handle_errors
+async def generate_furryfusion_pic(events: list[dict]) -> bytes:
+    """
+    生成 FurryFusion 时间轴图片，返回 PNG 字节。
+    """
+    try:
+        image_bytes = await render_fursion_timeline_image(events)
+        return image_bytes
+    except Exception as e:
+        logger.exception("FurryFusion 时间轴图片生成失败")
+        raise LingHuiError("FurryFusion 活动列表图片生成失败，请查看终端日志。\n发送“bug反馈”功能将该问题报告给管理员并等待回复。") from e
+
+@handle_errors
+async def get_http_api(service:str,arg:str|None=None) -> dict:
+    match service:
+        case "timeline":
+            request_url = "https://qqbot.fur-bot.com/api/v1/fursion/timeline"
+        case "address":
+            request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/address?location={arg}"
+        case "day":
+            request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/time?q={arg}"
+        case _:
+            raise LingHuiError(f"未知的服务类型：{service}")
+    logger.info(f"正在访问 FurryFusion API：{request_url}")
+    fur_session = handle_json(furryfusion_login_session, 'r')
+    if not isinstance(fur_session, dict) or not fur_session.get("fur_session"):
+        fur_session = await get_fur_session()
+    async with httpx.AsyncClient(timeout=20) as client:
+        response = await client.get(request_url, cookies=fur_session)
+        if response.status_code == 401:
+            logger.info("FurryFusion 会话过期，正在重新登录...")
+            fur_session = await get_fur_session()
+            logger.success("FurryFusion 登录成功！")
+            response = await client.get(request_url, cookies=fur_session)
+        if response.status_code == 400:
+            resp_json = response.json()
+            if not resp_json.get("ok"):
+                return {
+                    "ok": False,
+                    "message": resp_json.get("message") or resp_json.get("detail") or "未知错误"
+                }
+        if response.status_code != 200:
+            return {
+                "ok": False,
+                "message": f"HTTP {response.status_code} 错误"
+            }
+        return response.json()
+
+@handle_errors
+async def check_cache_expiration(file_path: Path):
+    """
+    检查缓存文件是否存在且未过期。
+    """
+    if not file_path.exists():
+        return False
+    creation_time = int(os.path.getmtime(file_path))
+    if int(time.time()) - creation_time < 86400:
+        with open(file_path, "rb") as f:
+            image_bytes = f.read()
+        return image_bytes
+    return False
