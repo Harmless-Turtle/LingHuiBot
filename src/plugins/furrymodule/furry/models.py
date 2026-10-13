@@ -14,7 +14,7 @@ class FurryUploadRequest(Model):
     __tablename__ = "furry_upload_request"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id),nullable=True)
-    group_id: Mapped[str | None] = mapped_column(ForeignKey(Groups.id), nullable=True)
+    group_id: Mapped[str] = mapped_column(ForeignKey(Groups.id), nullable=True)
     file_path: Mapped[str] = mapped_column(String,nullable=True)
     file_name: Mapped[str] = mapped_column(String,nullable=True)
     furry_name: Mapped[str] = mapped_column(String,nullable=True)
@@ -32,7 +32,7 @@ class FurryModifyRequest(Model):
     new_value: Mapped[str | None] = mapped_column(String,nullable=True)
     file_path: Mapped[str | None] = mapped_column(String,nullable=True)
     uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id),nullable=True)
-    group_id: Mapped[str | None] = mapped_column(ForeignKey(Groups.id), nullable=True)
+    group_id: Mapped[str] = mapped_column(ForeignKey(Groups.id), nullable=True)
     upload_timestamp: Mapped[datetime] = mapped_column(DateTime,default=datetime.now,nullable=True)
 
 
