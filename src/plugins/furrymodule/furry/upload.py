@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 from pathlib import Path
 
 import httpx
@@ -8,19 +7,17 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
-from src.plugins.utils import handle_errors, handle_json
-from .models import FurryPictureData
+from src.plugins.utils import handle_errors
+from .models import FurryPictureData, add_upload_request, add_modify_request
 from .tools import download_image, is_picture
 from ..commands import upload_furry, modify_furry
-from ...utils import ensure_files_exist
 
 # 用户输入 1 -> 毛照，输入 2 -> 稿子
 FURRY_TYPE_MAP = {"1": "毛照", "2": "稿子"}
 
-# 缓存目录
+# 缓存目录（审核队列已迁移至 SQLite，见 furry.models）
 UPLOAD_CACHE_DIR = Path(__file__).parent / "upload"
 UPLOAD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-ensure_files_exist([UPLOAD_CACHE_DIR / "manifest.json",UPLOAD_CACHE_DIR / "modify.json"], normal_data=[[],[]],description="图床临时存放目录")
 
 @upload_furry.handle()
 @handle_errors
@@ -57,7 +54,6 @@ async def upload_furry_image(
         session:async_scoped_session
 ):
     # 取得Step1中获得的Arg
-    upload_furry_data = handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'r')
     furryname = matcher.get_arg("furryname").extract_plain_text()
     furry_type = matcher.get_arg("image_type").extract_plain_text()
     image_message = matcher.get_arg("image")
@@ -92,18 +88,16 @@ async def upload_furry_image(
 
     for file_path,file_name in results:
         name_list.append(file_name)
-        upload_info = {
-            "furryname": furryname,
-            "filename": file_name,
-            "type": furry_type,
-            "timestamp": datetime.now().isoformat(),
-            "user_id": event.user_id,
-            "group_id": event.group_id,
-            "file_path": str(file_path),
-            "message": message
-        }
-        upload_furry_data.append(upload_info)
-    handle_json(UPLOAD_CACHE_DIR / "manifest.json", "w", upload_furry_data)
+        await add_upload_request(
+            session,
+            uploader_id=str(event.user_id),
+            group_id=str(event.group_id),
+            file_path=str(file_path),
+            file_name=file_name,
+            furry_name=furryname,
+            type=furry_type,
+            message=message
+        )
     format_str = '，文件名：' +  '、'.join(name_list)
     if len(name_list) >= 2:
         format_str = ""
@@ -161,20 +155,16 @@ async def modify_furry_attr(
     if modify_content.extract_plain_text().strip() == "结束":
         await matcher.finish("已取消本次图片修改。")
     if modify_attr != 3:
-        modify_data = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
         modify_attr_text = ["名字", "图片类型", "图片留言"]
-        if not modify_data:
-            modify_data = []
-        modify_info = {
-            "id": modify_id,
-            "attr": modify_attr_text[modify_attr],
-            "new_value": str(modify_content),
-            "timestamp": datetime.now().isoformat(),
-            "user_id": event.user_id,
-            "group_id": event.group_id
-        }
-        modify_data.append(modify_info)
-        handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_data)
+        await add_modify_request(
+            session,
+            picture_id=modify_id,
+            attr=modify_attr_text[modify_attr],
+            new_value=str(modify_content),
+            file_path=None,
+            uploader_id=str(event.user_id),
+            group_id=str(event.group_id)
+        )
         await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功修改图片码为 {modify_id} 的 {modify_attr_text[modify_attr]} 属性为 {modify_content}，请等待管理员审核。")
     if modify_attr == 3:
         async with httpx.AsyncClient() as client:
@@ -189,18 +179,13 @@ async def modify_furry_attr(
             if is_true:
                 await matcher.finish(MessageSegment.reply(event.message_id)+"上传失败，图片MD5重复，请确认图片是否已经上传。")
             file_path, file_name = await download_image(client, image_url,file_md5, UPLOAD_CACHE_DIR)
-    modify_json = handle_json(UPLOAD_CACHE_DIR / "modify.json", 'r')
-    if not modify_json:
-        modify_json = []
-    modify_data = {
-        "id": modify_id,
-        "attr": "图片",
-        "new_value": file_name,
-        "timestamp": datetime.now().isoformat(),
-        "user_id": event.user_id,
-        "group_id": event.group_id,
-        "file_path": str(file_path)
-    }
-    modify_json.append(modify_data)
-    handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_json)
+        await add_modify_request(
+            session,
+            picture_id=modify_id,
+            attr="图片",
+            new_value=file_name,
+            file_path=str(file_path),
+            uploader_id=str(event.user_id),
+            group_id=str(event.group_id)
+        )
     await matcher.finish(MessageSegment.reply(event.message_id)+f"已成功修改图片码为 {modify_id} 的图片，请等待管理员审核。")
