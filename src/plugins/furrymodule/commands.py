@@ -4,7 +4,7 @@ from nonebot.rule import to_me
 
 # ================= Foxtail-Furry 兽云祭服务 =================
 # 随机兽图
-furry_random = on_command("来只", aliases={"来只毛", "来只兽兽", "来只兽"}, priority=10, block=True)
+furry_random = on_command("来只", aliases={"来只毛", "来只兽兽", "来只兽","云来只","云来只毛","云来只兽兽","云来只兽"}, priority=10, block=True)
 # 获取列表
 furry_list = on_command("查列表", aliases={"查列表#", "查兽兽"}, priority=10, block=True)
 # 鉴毛

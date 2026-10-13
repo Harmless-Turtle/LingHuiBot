@@ -307,6 +307,13 @@ async def get_http_api(service:str,arg:str|None=None) -> dict:
             request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/time?q={arg}"
         case "detail":
             request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/activity?name={arg}"
+        case "furpic":
+            if arg == "":
+                request_url = f"https://qqbot.fur-bot.com/api/v1/furimg/random"
+            elif arg.isdigit():
+                request_url = f"https://qqbot.fur-bot.com/api/v1/furimg/query?type=1&model=1&data={arg}"
+            else:
+                request_url = f"https://qqbot.fur-bot.com/api/v1/furimg/query?type=1&model=0&data={arg}"
         case _:
             raise LingHuiError(f"未知的服务类型：{service}")
     logger.info(f"正在访问 FurryFusion API：{request_url}")

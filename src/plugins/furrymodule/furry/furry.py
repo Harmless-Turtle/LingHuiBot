@@ -4,6 +4,7 @@ from nonebot_plugin_orm import async_scoped_session
 from nonebot.adapters.onebot.v11 import MessageSegment,GroupMessageEvent,Message
 from sqlalchemy import select, func
 from nonebot.params import CommandArg
+from nonebot import  logger
 
 from ..commands import (
 furry_random,
@@ -12,7 +13,7 @@ furry_list,
 from src.plugins.utils import handle_errors
 from .models import FurryPictureData
 from ...utils import batch_get
-
+from ..furryfusion.tools import get_http_api
 
 
 @furry_random.handle()
@@ -24,6 +25,9 @@ async def furry_random_function(
         args:Message = CommandArg()
 ):
     furry_name = args.extract_plain_text().strip()
+    get_api = False
+    if "云" in str(event.get_message()):
+        get_api = True
     result = await session.execute(select(FurryPictureData).order_by(func.random()).limit(1))
     is_number = False
     if furry_name.isdigit():
@@ -34,17 +38,25 @@ async def furry_random_function(
         result = await session.execute(
             select(FurryPictureData).where(FurryPictureData.furry_name == furry_name).order_by(func.random()).limit(1))
     picture = result.scalar_one_or_none()
-    if picture:
+    if picture and not get_api:
         description = ""
         if picture.description:
             description = f"ta的留言是：{picture.description}\n"
         text = f"这只兽兽叫做”{picture.furry_name}”~\n{description}图片码为：{picture.id}"
-        await matcher.finish(MessageSegment.reply(event.message_id)+f"{text}" + MessageSegment.image(picture.file_path)+"您也想上传图片？发送“投图 <崽崽名字> <图片类型 1为毛照 2为稿子>”即可上传图片啦~")
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"{text}" + MessageSegment.image(picture.file_path)+"来源：本地\n"
+                                                                                                                        "您想上传图片吗？仅需发送“上传”即可开始上传流程（上传到本地）\n"
+                                                                                                                       f"想要从网络获取图片吗？仅需使用命令“云来只{picture.furry_name}“即可~")
     else:
-        text = f"似乎没有找到名字为{furry_name}的图片呢qwq"
-        if is_number:
-            text = f"似乎没有找到图片码为{furry_name}的图片呢qwq"
-        await matcher.finish(MessageSegment.reply(event.message_id)+text)
+        response = await get_http_api("furpic", furry_name)
+        logger.info(f" {furry_name}")
+        if not response.get("ok"):
+            text = f"似乎没有找到名字为{furry_name}的图片呢qwq"
+            if is_number:
+                text = f"似乎没有找到图片码为{furry_name}的图片呢qwq"
+            await matcher.finish(MessageSegment.reply(event.message_id)+text)
+        item = response.get("item")
+        text = f"这只兽兽叫做”{item.get('furry_name')}”~\nta的留言是：{item.get('message')}\n图片码为：{item.get('id')}"
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"{text}" + MessageSegment.image(item.get("image"))+"来源：网络")
 
 @furry_list.handle()
 @handle_errors
