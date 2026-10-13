@@ -1,6 +1,6 @@
 import os
 
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot,MessageSegment
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot_plugin_orm import async_scoped_session
 
@@ -68,9 +68,9 @@ async def check_upload_function(
 时间戳： {item.upload_timestamp}
 上传者: {item.uploader_id}
 上传群聊： {item.group_id}
-管理员可通过命令“同意上传#{index}”或“拒绝上传#{index}”进行审核。
+管理员可通过“同意上传#{index}”或“拒绝上传#{index}”进行审核。
 """
-        batch_text = await batch_get(message,item.file_path,item.uploader_id,"待审核图片")
+        batch_text = await batch_get(message, item.file_path, item.uploader_id, "待审核图片")
         final_list.append(batch_text)
 
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=final_list, time_noend=True)
@@ -96,12 +96,18 @@ async def check_upload_decide_function(
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前没有待审核的图片。")
     if review_id < 0 or review_id >= len(review_list):
         await matcher.finish(MessageSegment.reply(event.message_id) + "这个审核ID似乎不在审核列表中...")
-    # 根据status的值进行相应的处理
+
     del_review = review_list[review_id]
+    picture_path = del_review.file_path
+    user_id = del_review.uploader_id
+    group_id = int(del_review.group_id)
+    file_name = del_review.file_name
+    furry_name = del_review.furry_name
+    furry_type = del_review.type
+    description = del_review.message
+
+    # 根据status的值进行相应的处理
     if not status:
-        picture_path = del_review.file_path
-        user_id = del_review.uploader_id
-        group_id = int(del_review.group_id)
         await session.delete(del_review)
         await session.commit()
         reason = "管理员拒绝上传。"
@@ -111,31 +117,29 @@ async def check_upload_decide_function(
             "send_group_msg",
             group_id=group_id,
             message=MessageSegment.at(user_id)+
-            f" 您的图片“{del_review.furry_name}”已被管理员拒绝上传。拒绝理由：{reason}"+
+            f" 您的图片“{furry_name}”已被管理员拒绝上传。拒绝理由：{reason}"+
             MessageSegment.image(f"file:///{picture_path}"))
-        os.remove(picture_path)
+        if os.path.exists(picture_path):
+            os.remove(picture_path)
         if not group_id == event.group_id:
             await matcher.finish(MessageSegment.reply(event.message_id) + f"已拒绝上传第{review_id + 1}张图片，文件已删除。已告知上传者。")
         await matcher.finish()
     # 生成临时目录与正式目录
-    original_file_path = del_review.file_path
+    original_file_path = picture_path
     new_save_data = furry_pic_data_path / os.path.basename(original_file_path)
     # 写入SQL
     await add_furry_picture(
         session,
-        file_name=del_review.file_name,
+        file_name=file_name,
         file_path=new_save_data,
-        furry_name=del_review.furry_name,
-        type=del_review.type,
-        uploader_id=del_review.uploader_id,
-        group_id=del_review.group_id,
-        description=del_review.message,
+        furry_name=furry_name,
+        type=furry_type,
+        uploader_id=user_id,
+        group_id=group_id,
+        description=description,
     )
     # 移动文件到正式目录
     os.rename(original_file_path, new_save_data)
-    # 获取审核Review_id
-    group_id = int(del_review.group_id)
-    user_id = del_review.uploader_id
     # 从审核队列移除
     await session.delete(del_review)
     await session.commit()
@@ -144,7 +148,7 @@ async def check_upload_decide_function(
             "send_group_msg",
             group_id=group_id,
             message=MessageSegment.at(user_id) +
-                    f" 您的图片“{del_review.furry_name}”已被管理员同意上传"
+                    f" 您的图片“{furry_name}”已被管理员同意上传"
         )
     await matcher.finish(MessageSegment.reply(event.message_id) + f"已同意上传第{review_id + 1}张图片，文件已移动到正式目录。")
 
@@ -168,13 +172,19 @@ async def check_modify_decide_function(
         await matcher.finish(MessageSegment.reply(event.message_id) + "当前没有待审核的图片。")
     if review_id < 0 or review_id >= len(review_list):
         await matcher.finish(MessageSegment.reply(event.message_id) + "这个审核ID似乎不在审核列表中...")
-    # 根据status的值进行相应的处理
+
+    # 提前取出所有字段（避免 session.commit() 后 ORM 实例属性过期触发懒加载导致 MissingGreenlet）
     del_review = review_list[review_id]
-    picture = ""
+    picture_id = del_review.picture_id
+    attr = del_review.attr
+    raw_new_value = del_review.new_value
+    file_path = del_review.file_path
     user_id = del_review.uploader_id
     group_id = int(del_review.group_id)
-    if del_review.attr == "图片":
-        picture_path = del_review.file_path
+
+    picture = ""
+    if attr == "图片":
+        picture_path = file_path
         picture = MessageSegment.image(f"file:///{picture_path}")
     # 检查status状态
     if not status:
@@ -187,28 +197,28 @@ async def check_modify_decide_function(
             "send_group_msg",
             group_id=group_id,
             message=MessageSegment.at(user_id) +
-                    f" 您的图片修改请求已被管理员拒绝修改。\n修改图片码：{del_review.picture_id}\n拒绝理由：{reason}" +
+                    f" 您的图片修改请求已被管理员拒绝修改。\n修改图片码：{picture_id}\n拒绝理由：{reason}" +
                     picture)
         if event.group_id != group_id:
             await matcher.finish(MessageSegment.reply(event.message_id) + f"已拒绝修改第{review_id + 1}张图片，已告知上传者。")
         await matcher.finish()
     new_save_data, new_value = False, ""
-    if del_review.attr == "图片":
+    if attr == "图片":
         # 移动文件到正式目录
-        original_file_path = del_review.file_path
-        new_save_data = furry_pic_data_path / os.path.basename(del_review.file_path)
+        original_file_path = file_path
+        new_save_data = furry_pic_data_path / os.path.basename(file_path)
         os.rename(original_file_path, new_save_data)
         new_value = str(new_save_data)
         nb_picture = MessageSegment.image(f"file:///{new_save_data}")
     else:
-        new_value = del_review.new_value
+        new_value = raw_new_value
         nb_picture = MessageSegment.image(f"file:///{new_save_data}") if new_save_data else ""
-    if del_review.attr == "图片类型":
-        new_value = "毛照" if del_review.new_value == "1" else "稿子"
+    if attr == "图片类型":
+        new_value = "毛照" if raw_new_value == "1" else "稿子"
     success = await update_furry_picture(
         session,
-        int(del_review.picture_id),
-        del_review.attr,
+        int(picture_id),
+        attr,
         new_value,
         new_save_data
     )
@@ -223,7 +233,7 @@ async def check_modify_decide_function(
         "send_group_msg",
         group_id=group_id,
         message=MessageSegment.at(user_id) +
-                f" 您的图片修改请求已被管理员同意修改。\n修改图片码：{del_review.picture_id}" +
+                f" 您的图片修改请求已被管理员同意修改。\n修改图片码：{picture_id}" +
                 nb_picture)
     if event.group_id != group_id:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"已同意修改第{review_id + 1}张图片，已更新数据库记录。")
