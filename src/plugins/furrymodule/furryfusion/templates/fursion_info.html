@@ -1,0 +1,501 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ fields.title | default('兽聚信息', true) }}</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            font-family:
+                "Microsoft YaHei",
+                "Noto Sans CJK SC",
+                sans-serif;
+            color: #edf6ff;
+            background: #081321;
+        }
+
+        .poster {
+            position: relative;
+            width: 720px;
+            height: 1280px;
+            overflow: hidden;
+            background:
+                radial-gradient(
+                    ellipse at 85% 8%,
+                    rgba(39, 129, 190, 0.27),
+                    transparent 42%
+                ),
+                radial-gradient(
+                    ellipse at 5% 65%,
+                    rgba(32, 94, 147, 0.18),
+                    transparent 40%
+                ),
+                linear-gradient(155deg, #101f32 0%, #081321 60%, #0b1929 100%);
+            padding: 42px;
+        }
+
+        .poster::before {
+            content: "";
+            position: absolute;
+            inset: 18px;
+            border: 1px solid rgba(133, 195, 235, 0.16);
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 顶部品牌栏 */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #d8edff;
+        }
+
+        .brand-sub {
+            margin-top: 6px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #779ab8;
+        }
+
+        .source {
+            padding: 9px 14px;
+            border: 1px solid rgba(119, 194, 237, 0.4);
+            border-radius: 5px;
+            color: #a8dcff;
+            font-size: 14px;
+            background: rgba(46, 126, 177, 0.12);
+        }
+
+        /* 标题区域 */
+        .eyebrow {
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: #65c9f5;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 43px;
+            line-height: 1.3;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+            text-shadow: 0 4px 24px rgba(50, 156, 224, 0.18);
+        }
+
+        .event-name {
+            margin-top: 13px;
+            font-size: 20px;
+            line-height: 1.5;
+            color: #9bb7d1;
+            overflow-wrap: anywhere;
+        }
+
+        .status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .status {
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(87, 166, 207, 0.13);
+            border: 1px solid rgba(110, 192, 237, 0.28);
+            color: #a6ddff;
+        }
+
+        .status-warn {
+            background: rgba(231, 177, 87, 0.12);
+            border-color: rgba(231, 177, 87, 0.4);
+            color: #f3cc85;
+        }
+
+        .status-danger {
+            background: rgba(235, 105, 115, 0.12);
+            border-color: rgba(235, 105, 115, 0.4);
+            color: #ffadb3;
+        }
+
+        /* 活动主视觉 */
+        .hero {
+            position: relative;
+            height: 390px;
+            margin-top: 28px;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 1px solid rgba(133, 195, 235, 0.24);
+            background:
+                linear-gradient(145deg, #18344e, #0c1b2d);
+        }
+
+        .hero img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        .hero-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 15px;
+            color: #7399b8;
+        }
+
+        .hero-placeholder .symbol {
+            font-size: 70px;
+            opacity: 0.6;
+        }
+
+        .hero-placeholder .placeholder-text {
+            font-size: 15px;
+            letter-spacing: 3px;
+        }
+
+        .hero-caption {
+            position: absolute;
+            inset: auto 0 0;
+            padding: 45px 24px 20px;
+            background: linear-gradient(
+                transparent,
+                rgba(3, 12, 24, 0.9)
+            );
+        }
+
+        .hero-caption-label {
+            color: #8ed9ff;
+            font-size: 12px;
+            letter-spacing: 3px;
+        }
+
+        .hero-caption-title {
+            margin-top: 8px;
+            font-size: 24px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        /* 信息面板 */
+        .section-heading {
+            margin-top: 29px;
+            margin-bottom: 17px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .section-heading::before {
+            content: "";
+            width: 4px;
+            height: 19px;
+            background: #59c9f4;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .info-card {
+            min-height: 91px;
+            padding: 17px;
+            border-radius: 6px;
+            border: 1px solid rgba(129, 180, 216, 0.17);
+            background: rgba(95, 151, 194, 0.065);
+            overflow: hidden;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #789ab7;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .info-value {
+            font-size: 19px;
+            font-weight: 600;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+            color: #e7f5ff;
+        }
+
+        /* 简介 */
+        .brief {
+            margin-top: 23px;
+            padding: 18px 20px;
+            border-left: 2px solid #4aafd9;
+            background: rgba(66, 132, 176, 0.08);
+        }
+
+        .brief-label {
+            font-size: 13px;
+            color: #7dc9ed;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .brief-text {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #b6cce0;
+            overflow-wrap: anywhere;
+            white-space: pre-line;
+        }
+
+        /* 群号 */
+        .groups {
+            margin-top: 20px;
+            padding: 16px 19px;
+            border-radius: 6px;
+            background: rgba(57, 119, 161, 0.1);
+            border: 1px solid rgba(129, 180, 216, 0.17);
+        }
+
+        .groups-label {
+            font-size: 13px;
+            color: #789ab7;
+            margin-bottom: 9px;
+        }
+
+        .groups-value {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #d3eaff;
+            overflow-wrap: anywhere;
+        }
+
+        /* 底部 */
+        .footer {
+            position: absolute;
+            left: 42px;
+            right: 42px;
+            bottom: 39px;
+            padding-top: 17px;
+            border-top: 1px solid rgba(129, 180, 216, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 15px;
+        }
+
+        .footer-main {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #9cc9e8;
+        }
+
+        .footer-sub {
+            margin-top: 7px;
+            font-size: 11px;
+            color: #607f9b;
+        }
+
+        .footer-link {
+            max-width: 240px;
+            font-size: 12px;
+            color: #789ab7;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .footer-link a {
+            color: #8dd5f7;
+            text-decoration: none;
+        }
+
+        .divider {
+            height: 1px;
+            margin-top: 25px;
+            background: linear-gradient(
+                90deg,
+                #4bbde9,
+                rgba(75, 189, 233, 0.03)
+            );
+        }
+    </style>
+</head>
+
+<body>
+    <main class="poster">
+        <div class="content">
+
+            <!-- 顶部品牌栏 -->
+            <header class="topbar">
+                <div>
+                    <div class="brand">FURRY · EVENT</div>
+                    <div class="brand-sub">兽聚活动信息</div>
+                </div>
+
+                <div class="source">
+                    {{ fields.source_label | default('活动资讯', true) }}
+                </div>
+            </header>
+
+            <!-- 标题 -->
+            <div class="eyebrow">EVENT INFORMATION / 兽聚情报</div>
+
+            <h1 class="title">
+                {{ fields.title | default('未命名兽聚', true) }}
+            </h1>
+
+            {% if fields.name %}
+            <div class="event-name">{{ fields.name }}</div>
+            {% endif %}
+
+            <!-- 状态标签 -->
+            <div class="status-row">
+                {% set zt = fields.state_zt | default('?', true) %}
+                {% set pw = fields.state_pw | default('?', true) %}
+
+                <span class="status
+                    {% if zt in ['解散', '失联'] %}status-danger
+                    {% elif zt == '预告' %}status-warn
+                    {% endif %}">
+                    {{ zt }}
+                </span>
+
+                <span class="status
+                    {% if pw in ['活动取消', '活动延期'] %}status-danger
+                    {% elif pw in ['已开票', '活动中'] %}status-warn
+                    {% endif %}">
+                    {{ pw }}
+                </span>
+            </div>
+
+            <!-- 活动图片 -->
+            <section class="hero">
+                {% if fields.image %}
+                <img
+                    src="{{ fields.image }}"
+                    alt="{{ fields.title | default('兽聚活动图片', true) }}"
+                >
+                {% else %}
+                <div class="hero-placeholder">
+                    <div class="symbol">✧</div>
+                    <div class="placeholder-text">NO IMAGE AVAILABLE</div>
+                </div>
+                {% endif %}
+
+                <div class="hero-caption">
+                    <div class="hero-caption-label">UPCOMING / FURRY EVENT</div>
+                    <div class="hero-caption-title">
+                        {{ fields.title | default('兽聚活动', true) }}
+                    </div>
+                </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- 活动信息 -->
+            <div class="section-heading">活动详情</div>
+
+            <section class="info-grid">
+                <div class="info-card">
+                    <div class="info-label">活动开始</div>
+                    <div class="info-value">
+                        {{ fields.time_start | default('待公布', true) }}
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-label">活动结束</div>
+                    <div class="info-value">
+                        {{ fields.time_end | default('待公布', true) }}
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-label">活动时长</div>
+                    <div class="info-value">
+                        {{ fields.time_day | default('待公布', true) }}
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-label">活动地点</div>
+                    <div class="info-value">
+                        {{ fields.address | default('待公布', true) }}
+                    </div>
+                </div>
+            </section>
+
+            <!-- 简介 -->
+            {% if fields.brief %}
+            <section class="brief">
+                <div class="brief-label">ABOUT THE EVENT / 活动简介</div>
+                <div class="brief-text">{{ fields.brief }}</div>
+            </section>
+            {% endif %}
+
+            <!-- 群聊信息 -->
+            {% if fields.groups %}
+            <section class="groups">
+                <div class="groups-label">COMMUNITY / 活动交流群</div>
+                <div class="groups-value">
+                    {% for group in fields.groups %}
+                        {{ group }}{% if not loop.last %}<br>{% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+        </div>
+
+        <!-- 固定底栏 -->
+        <footer class="footer">
+            <div>
+                <div class="footer-main">FURRY EVENT ARCHIVE</div>
+                <div class="footer-sub">兽聚信息整理 · 以主办方公告为准</div>
+            </div>
+
+            <div class="footer-link">
+                {% if fields.url %}
+                <a href="{{ fields.url }}">查看活动详情 ↗</a>
+                {% else %}
+                INFORMATION
+                {% endif %}
+                {% if fields.location %}
+                <div style="margin-top: 7px;">
+                    {{ fields.location }}
+                </div>
+                {% endif %}
+            </div>
+        </footer>
+    </main>
+</body>
+</html>

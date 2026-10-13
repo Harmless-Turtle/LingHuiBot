@@ -11,7 +11,7 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from ..check_file import furryfusion_login_session,OPENDATA
+from ..check_file import OPENDATA
 
 from ..commands import (
     furryfusion_list,
@@ -43,7 +43,7 @@ async def furry_fusion_list_handler(bot:Bot,matcher: Matcher, event:GroupMessage
     events = payload.get("items", [])
     if not events:
         await matcher.finish(MessageSegment.reply(event.message_id)+"FurryFusion 活动列表为空呢...查询的地区可能没有活动哦~")
-    image_bytes = await generate_furryfusion_pic(events)
+    image_bytes = await generate_furryfusion_pic("timeline", events)
     with open(furryfusion_pic, "wb") as f:
         f.write(image_bytes)
     await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes)+"图片已缓存，要重新生成请使用“兽聚列表+任意文本”，例如“兽聚列表1”")
@@ -62,5 +62,21 @@ async def furry_fusion_check_handler(matcher: Matcher, event:GroupMessageEvent, 
     items = response.get("items", [])
     if not items:
         await matcher.finish(MessageSegment.reply(event.message_id)+f"{response.get('message',"该地区暂未存在有活动的展子哦")}")
-    image_bytes = await generate_furryfusion_pic(items)
+    image_bytes = await generate_furryfusion_pic("timeline", items)
+    await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes))
+
+@furryfusion_information.handle()
+@handle_errors
+async def furry_fusion_information_handler(matcher: Matcher, event:GroupMessageEvent, args:Message = CommandArg()):
+    args = args.extract_plain_text().strip()
+    if not args:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"请在命令后输入展子 ID 以获取详细信息，例如“兽聚信息 1234”")
+    response = await get_http_api("detail", args)
+    if not response.get("ok", False):
+        message = response.get("message") or response.get("detail") or "未知错误"
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"获取 FurryFusion 活动详情失败：{message}")
+    items = response.get("fields", {})
+    if not items:
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"{response.get("message")}" or "该展子不存在哦")
+    image_bytes = await generate_furryfusion_pic("info", items)
     await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes))

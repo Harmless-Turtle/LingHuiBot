@@ -3,7 +3,6 @@ import datetime
 from pathlib import Path
 import time
 import os
-from typing import Optional
 
 import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -190,43 +189,72 @@ async def _get_timeline_browser():
 
 
 
-async def render_fursion_timeline_image(events: list[dict]) -> bytes:
+
+async def render_fursion_timeline_image(
+    service: str,
+    events: list[dict] | dict,
+) -> bytes:
     """
-    使用 Jinja2 + HTML/CSS + Playwright 渲染 FurryFusion 时间轴。
+    使用 Jinja2 + HTML/CSS + Playwright 渲染 FurryFusion 图片。
     返回 PNG 字节，可直接传给 MessageSegment.image()。
     """
-    groups, event_count = _prepare_timeline_events(events)
-    template = _TEMPLATE_ENV.get_template("fursion_timeline.html")
-    # 汇总本次实际出现的数据来源，去重并保持首次出现顺序。
-    source_labels = []
-    for year_group in groups:
-        for month_group in year_group["months"]:
-            for event in month_group["events"]:
-                source = event.get("source_label", "").strip()
-                if source and source not in source_labels:
-                    source_labels.append(source)
+    if service == "timeline":
+        groups, event_count = _prepare_timeline_events(events)
+        template = _TEMPLATE_ENV.get_template("fursion_timeline.html")
 
-    html = template.render(
-        groups=groups,
-        event_count=event_count,
-        source_labels=source_labels,
-        generated_at=datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S"),
-    )
+        # 汇总本次实际出现的数据来源，去重并保持首次出现顺序。
+        source_labels = []
+        for year_group in groups:
+            for month_group in year_group["months"]:
+                for event in month_group["events"]:
+                    source = event.get("source_label", "").strip()
+                    if source and source not in source_labels:
+                        source_labels.append(source)
+
+        html = template.render(
+            groups=groups,
+            event_count=event_count,
+            source_labels=source_labels,
+            generated_at=datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S"),
+        )
+
+        viewport = {"width": 1080, "height": 900}
+
+    elif service == "info":
+        template = _TEMPLATE_ENV.get_template("fursion_info.html")
+        html = template.render(fields=events)
+
+        viewport = {"width": 720, "height": 1280}
+
+    else:
+        raise ValueError("Invalid service type. Must be 'timeline' or 'info'.")
 
     browser = await _get_timeline_browser()
     page = await browser.new_page(
-        viewport={"width": 1080, "height": 900},
+        viewport=viewport,
         device_scale_factor=1,
     )
+
     try:
-        await page.set_content(html, wait_until="domcontentloaded", timeout=15000)
+        await page.set_content(
+            html,
+            wait_until="domcontentloaded",
+            timeout=15000,
+        )
         await page.evaluate("document.fonts.ready")
-        # 活动海报来自外部 URL，网络响应速度可能不稳定；按要求固定等待 10 秒。
-        # CSS background-image 不会出现在 document.images 中，因此这里直接延时，
-        # 避免图片尚未下载完成就截图发送。
+
+        # 等待外部活动图片加载。
         await asyncio.sleep(10)
-        # 等待延时后的页面绘制完成。
-        await page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+
+        # 等待页面绘制完成。
+        await page.evaluate("""
+            () => new Promise(resolve =>
+                requestAnimationFrame(() =>
+                    requestAnimationFrame(resolve)
+                )
+            )
+        """)
+
         return await page.screenshot(
             type="png",
             full_page=True,
@@ -235,6 +263,7 @@ async def render_fursion_timeline_image(events: list[dict]) -> bytes:
         )
     finally:
         await page.close()
+
 
 
 @handle_errors
@@ -251,12 +280,17 @@ async def get_fur_session():
             raise LingHuiError("登录失败，请检查用户名和密码是否正确。\n调试信息已发送在终端。")
 
 @handle_errors
-async def generate_furryfusion_pic(events: list[dict]) -> bytes:
+async def generate_furryfusion_pic(service:str, events: list[dict]) -> bytes:
     """
     生成 FurryFusion 时间轴图片，返回 PNG 字节。
     """
     try:
-        image_bytes = await render_fursion_timeline_image(events)
+        if service == "timeline":
+            image_bytes = await render_fursion_timeline_image("timeline", events)
+        elif service == "info":
+            image_bytes = await render_fursion_timeline_image("info", events)
+        else:
+            raise ValueError("Invalid service type. Must be 'timeline' or 'info'.")
         return image_bytes
     except Exception as e:
         logger.exception("FurryFusion 时间轴图片生成失败")
@@ -271,6 +305,8 @@ async def get_http_api(service:str,arg:str|None=None) -> dict:
             request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/address?location={arg}"
         case "day":
             request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/time?q={arg}"
+        case "detail":
+            request_url = f"https://qqbot.fur-bot.com/api/v1/fursion/activity?name={arg}"
         case _:
             raise LingHuiError(f"未知的服务类型：{service}")
     logger.info(f"正在访问 FurryFusion API：{request_url}")
