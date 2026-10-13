@@ -1,6 +1,6 @@
 import os
 import time
-from datetime import datetime
+from datetime import datetime, date
 
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
@@ -79,8 +79,18 @@ async def furry_fusion_information_handler(matcher: Matcher, event:GroupMessageE
     items = response.get("fields", {})
     if not items:
         await matcher.finish(MessageSegment.reply(event.message_id)+f"{response.get("message")}" or "该展子不存在哦")
+    date_str = items.get("time_end","1999.01.01")
+    groups = items.get("groups", [])
+    url = items.get("url", "暂无URL信息")
+    text = f"快速访问：\n群号：{', '.join(groups) if groups else '暂无群组信息'}\n链接：{url}"
+    target_date = date.fromisoformat(date_str.replace(".", "-"))
+    current_date = date.today()
+    if current_date > target_date:
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + f"该展子尚未有预告，若想了解历史兽聚，请使用“兽聚历史 {args}”命令\n{text}")
     image_bytes = await generate_furryfusion_pic("info", items)
-    await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes)+f"要了解历史兽聚，请使用“兽聚历史 {args}”命令")
+    await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes)+f"要了解历史兽聚，请使用“兽聚历史 {args}”命令\n{text}"
+                                                                                                  )
 
 @furryfusion_history.handle()
 @handle_errors
