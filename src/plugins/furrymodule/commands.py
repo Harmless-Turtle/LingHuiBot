@@ -35,7 +35,7 @@ check_modify_decide = on_command(
 
 # ================= FurryPic.upload 兽云祭上传子模块 =================
 # 一键上传
-upload_furry = on_command("上传", aliases={"投图"}, priority=10, block=True)
+upload_furry = on_command("投图", priority=10, block=True)
 # 修改图片（仅SUPERUSER）
 modify_furry = on_command("修改图片", priority=99, block=True, permission=SUPERUSER)
 
