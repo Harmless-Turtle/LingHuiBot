@@ -47,6 +47,7 @@ furryfusion_list = on_command(
 furryfusion_check = on_command("兽聚查询", block=True)
 # 兽聚详细信息
 furryfusion_information = on_command("兽聚信息", aliases={"兽聚详情"}, block=True)
+furryfusion_history = on_command("兽聚历史", aliases={"历史兽聚"}, block=True)
 
 # ================= FurryBar =================
 # AI对话（@机器人触发）

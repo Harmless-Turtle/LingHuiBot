@@ -17,6 +17,7 @@ from ..commands import (
     furryfusion_list,
     furryfusion_check,
     furryfusion_information,
+    furryfusion_history
 )
 from ...utils import handle_errors, batch_get, get_config_item, handle_json
 from .tools import get_fur_session, render_fursion_timeline_image, generate_furryfusion_pic, get_http_api,check_cache_expiration
@@ -79,4 +80,25 @@ async def furry_fusion_information_handler(matcher: Matcher, event:GroupMessageE
     if not items:
         await matcher.finish(MessageSegment.reply(event.message_id)+f"{response.get("message")}" or "该展子不存在哦")
     image_bytes = await generate_furryfusion_pic("info", items)
-    await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes))
+    await matcher.finish(MessageSegment.reply(event.message_id)+MessageSegment.image(image_bytes)+f"要了解历史兽聚，请使用“兽聚历史 {args}”命令")
+
+@furryfusion_history.handle()
+@handle_errors
+async def furry_fusion_history_handler(bot: Bot, matcher: Matcher, event:GroupMessageEvent, args:Message = CommandArg()):
+    args = args.extract_plain_text().strip()
+    if not args:
+        await matcher.finish(MessageSegment.reply(event.message_id)+"请在命令后输入展子 ID 以获取历史信息，例如“兽聚历史 1234”")
+    response = await get_http_api("detail", args)
+    if not response.get("ok", False):
+        message = response.get("message") or response.get("detail") or "未知错误"
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"获取 FurryFusion 活动历史失败：{message}")
+    history_list = response.get("history", [])
+    if not history_list:
+        await matcher.finish(MessageSegment.reply(event.message_id)+f"{response.get('message',"该展子暂未存在有历史活动哦")}")
+    finnal_list = []
+    for index, item in enumerate(history_list):
+        logger.info(f"历史记录 #{index + 1}: {item!r}")
+        image_bytes = await generate_furryfusion_pic("info", item)
+        data = await batch_get("",image_bytes,event.self_id,"兽聚历史 - "+args)
+        finnal_list.append(data)
+    await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=finnal_list)

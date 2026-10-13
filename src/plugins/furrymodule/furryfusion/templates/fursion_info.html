@@ -16,6 +16,7 @@
             padding: 0;
             width: 100%;
             font-family:
+                "Ark Pixel 12px Prop zh-Hans",
                 "Microsoft YaHei",
                 "Noto Sans CJK SC",
                 sans-serif;
@@ -25,8 +26,8 @@
 
         .poster {
             position: relative;
-            width: 720px;
-            height: 1280px;
+            width: 920px;
+            height: 1380px;
             overflow: hidden;
             background:
                 radial-gradient(
@@ -362,7 +363,7 @@
                 </div>
 
                 <div class="source">
-                    {{ fields.source_label | default('活动资讯', true) }}
+                    {{ "数据来源：" }} {{ fields.source_label | default('活动资讯', true) }}
                 </div>
             </header>
 
@@ -370,7 +371,7 @@
             <div class="eyebrow">EVENT INFORMATION / 兽聚情报</div>
 
             <h1 class="title">
-                {{ fields.title | default('未命名兽聚', true) }}
+                {{ fields.title | default(fields.name | default('未命名兽聚', true), true) }}
             </h1>
 
             {% if fields.name %}
@@ -485,7 +486,6 @@
 
             <div class="footer-link">
                 {% if fields.url %}
-                <a href="{{ fields.url }}">查看活动详情 ↗</a>
                 {% else %}
                 INFORMATION
                 {% endif %}

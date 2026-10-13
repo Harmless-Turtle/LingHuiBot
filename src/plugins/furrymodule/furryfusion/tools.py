@@ -224,7 +224,7 @@ async def render_fursion_timeline_image(
         template = _TEMPLATE_ENV.get_template("fursion_info.html")
         html = template.render(fields=events)
 
-        viewport = {"width": 720, "height": 1280}
+        viewport = {"width": 920, "height": 1380}
 
     else:
         raise ValueError("Invalid service type. Must be 'timeline' or 'info'.")
