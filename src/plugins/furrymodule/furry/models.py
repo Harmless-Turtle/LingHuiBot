@@ -1,8 +1,8 @@
+import os
 from datetime import datetime
 from pathlib import Path
-import os
 
-from nonebot_plugin_orm import Model,async_scoped_session
+from nonebot_plugin_orm import Model, async_scoped_session
 from sqlalchemy import DateTime, ForeignKey, String, select
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,42 +13,44 @@ class FurryUploadRequest(Model):
     """投图审核队列（原 data/furry_system/upload/upload/manifest.json）"""
     __tablename__ = "furry_upload_request"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id),nullable=True)
+    uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id), nullable=True)
     group_id: Mapped[str] = mapped_column(ForeignKey(Groups.id), nullable=True)
-    file_path: Mapped[str] = mapped_column(String,nullable=True)
-    file_name: Mapped[str] = mapped_column(String,nullable=True)
-    furry_name: Mapped[str] = mapped_column(String,nullable=True)
-    type: Mapped[str] = mapped_column(String,nullable=True)
-    message: Mapped[str | None] = mapped_column(String,nullable=True)
-    upload_timestamp: Mapped[datetime] = mapped_column(DateTime,default=datetime.now,nullable=True)
+    file_path: Mapped[str] = mapped_column(String, nullable=True)
+    file_name: Mapped[str] = mapped_column(String, nullable=True)
+    furry_name: Mapped[str] = mapped_column(String, nullable=True)
+    type: Mapped[str] = mapped_column(String, nullable=True)
+    message: Mapped[str | None] = mapped_column(String, nullable=True)
+    upload_timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=True)
 
 
 class FurryModifyRequest(Model):
     """图片修改审核队列（原 data/furry_system/upload/upload/modify.json）"""
     __tablename__ = "furry_modify_request"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    picture_id: Mapped[str] = mapped_column(String,nullable=False)
-    attr: Mapped[str] = mapped_column(String,nullable=False)
-    new_value: Mapped[str | None] = mapped_column(String,nullable=True)
-    file_path: Mapped[str | None] = mapped_column(String,nullable=True)
-    uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id),nullable=True)
+    picture_id: Mapped[str] = mapped_column(String, nullable=False)
+    attr: Mapped[str] = mapped_column(String, nullable=False)
+    new_value: Mapped[str | None] = mapped_column(String, nullable=True)
+    file_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id), nullable=True)
     group_id: Mapped[str] = mapped_column(ForeignKey(Groups.id), nullable=True)
-    upload_timestamp: Mapped[datetime] = mapped_column(DateTime,default=datetime.now,nullable=True)
+    upload_timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=True)
 
 
 class FurryPictureData(Model):
     __tablename__ = "furry_picture_data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id),nullable=True)
+    uploader_id: Mapped[str] = mapped_column(ForeignKey(Users.id), nullable=True)
     group_id: Mapped[int | None] = mapped_column(ForeignKey(Groups.id), nullable=True)
-    file_path: Mapped[str] = mapped_column(String,nullable=True)
-    upload_timestamp: Mapped[datetime] = mapped_column(DateTime,default=datetime.now,nullable=True)
-    file_name: Mapped[str] = mapped_column(String,nullable=True)
-    furry_name: Mapped[str] = mapped_column(String,nullable=True)
-    type: Mapped[str] = mapped_column(String,nullable=True)
-    description: Mapped[str | None] = mapped_column(String,nullable=True)
+    file_path: Mapped[str] = mapped_column(String, nullable=True)
+    upload_timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=True)
+    file_name: Mapped[str] = mapped_column(String, nullable=True)
+    furry_name: Mapped[str] = mapped_column(String, nullable=True)
+    type: Mapped[str] = mapped_column(String, nullable=True)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
 
-async def add_furry_picture(session, uploader_id: str, group_id: int, file_path: str, file_name: str, furry_name: str, type: str, description: str):
+
+async def add_furry_picture(session, uploader_id: str, group_id: int, file_path: str, file_name: str, furry_name: str,
+                            type: str, description: str):
     new_picture = FurryPictureData(
         uploader_id=uploader_id,
         group_id=group_id,
@@ -60,6 +62,7 @@ async def add_furry_picture(session, uploader_id: str, group_id: int, file_path:
     )
     session.add(new_picture)
     await session.commit()
+
 
 async def update_furry_picture(
         session: async_scoped_session,
