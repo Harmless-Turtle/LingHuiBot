@@ -8,7 +8,7 @@ from nonebot_plugin_orm import async_scoped_session
 
 from ...models import get_mohui_data, add_mohui_coin, remove_mohui_coin
 from ....commands import guess_number
-from .....utils import handle_errors
+from .....utils import handle_errors, get_admin_qq
 
 # 定义全局内存字典
 active_games: Dict[int, Dict[str, Any]] = {}
@@ -38,7 +38,7 @@ async def _(
     if mh_coin < bet_amount:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你的墨辉币不足qwq...")
     if bet_amount <= 0:
-        await bot.send_msg(user_id=1097740481,
+        await bot.send_msg(user_id=get_admin_qq(),
                            message=f"在猜数字中发现了非法数据，如有必要请及时处理：\nGroup:{event.group_id}\nUser:{event.user_id}")
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "下注金额必须大于0捏uwu...\n非法的请求将上报给管理员处理。")

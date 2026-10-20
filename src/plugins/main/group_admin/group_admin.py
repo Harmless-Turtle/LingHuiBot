@@ -28,7 +28,7 @@ from src.plugins.main.commands import (
     handle_group,
     add_group,
 )
-from src.plugins.utils import handle_errors, handle_json
+from src.plugins.utils import handle_errors, handle_json, get_admin_qq
 
 
 @GroupExitMember.handle()
@@ -38,7 +38,7 @@ async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, match
     # 处理 Bot 自己被踢的情况
     if event.sub_type == "kick_me":
         await bot.send_private_msg(
-            user_id=1097740481,
+            user_id=get_admin_qq(),
             message=f"⚠️ Bot被踢出群聊！\n"
                     f"时间：{dt.fromtimestamp(event.time).strftime('%Y-%m-%d %H:%M:%S')}\n"
                     f"群号：{event.group_id}"

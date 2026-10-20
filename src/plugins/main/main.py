@@ -20,7 +20,7 @@ from .commands import *
 from .models import do_sign_in
 from .exceptions import SignInError
 from ..entertainment.currency.models import get_mohui_data, add_mohui_coin
-from ..utils import handle_errors
+from ..utils import handle_errors, get_admin_qq
 
 # 获取机器人的名字
 config = get_driver().config
@@ -91,7 +91,7 @@ async def self_join_group_welcome_function(matcher: Matcher, event: GroupIncreas
             "嗷呜~感谢您使用凌辉Bot~我可以给你提供Furry的相关功能，以及一些其他的功能哦~\n"
             "如果您想要了解更多功能，请输入“菜单”来获取帮助信息哦~\n"
             "如果您担心与群里其他Bot的命令冲突，可以通过“凌辉菜单”来使用菜单哦www~希望您能喜欢我~\n"
-            "如果您有任何问题，请随时联系管理员[1097740481]哦~\n"
+            f"如果您有任何问题，请随时联系管理员[{get_admin_qq()}]哦~\n"
             "如果在使用过程中出现了问题，可以通过命令“bug反馈“来直接发送给开发者\n"
             "使用命令“用户协议”可以查看凌辉Bot用户协议")
     else:
@@ -233,7 +233,7 @@ async def lf_function(matcher: Matcher, event: NoticeEvent):
     user_data[f"{user_id}"]['Time'] = day
     handle_json(friend_like_path, 'w', user_data)
     try:
-        if user_id != 1097740481:
+        if user_id != get_admin_qq():
             await bot.send_private_msg(user_id=user_id, message=text)
             logger.info("已经回赞完毕")
     except ActionFailed:
@@ -256,7 +256,7 @@ async def af_function(bot: Bot, matcher: Matcher, event: FriendRequestEvent):
         f"请求唯一id号：{flag}\n"
         f"您可以通过“同意{flag}”或“拒绝{flag}”来处理此请求。"
     )
-    await bot.send_private_msg(user_id=1097740481, message=friend_request_message)
+    await bot.send_private_msg(user_id=get_admin_qq(), message=friend_request_message)
     await matcher.finish()
 
 
