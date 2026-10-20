@@ -182,13 +182,17 @@ async def change_welcome_function(matcher: Matcher, event: GroupMessageEvent):
 @add_group.handle()
 @handle_errors
 async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent):
-    user = await bot.get_stranger_info(user_id=event.user_id)
+    # OneBot v11 的资料卡字段是 nickname（不是 nick），取不到时退回 QQ 号
+    try:
+        stranger_info = await bot.get_stranger_info(user_id=event.user_id)
+        user_name = stranger_info.get("nickname") or str(event.user_id)
+    except ActionFailed:
+        user_name = str(event.user_id)
     data = handle_json(group_join_flag_path, 'r')
     if not data.get(str(event.group_id), False):
         data[str(event.group_id)] = []
     data[str(event.group_id)].append(event.flag)
     handle_json(group_join_flag_path, 'w', data)
-    user = user["nick"]
     comment = event.comment
     if comment is None or comment.strip() == "":
         comment = "未填写入群理由"
@@ -204,7 +208,7 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
             f"似乎有人想要加入我们awa...\n"
             f"请求类型：{event.request_type}\n"
             f"子类型：{event.sub_type}\n"
-            f"申请人信息：{user}[{event.user_id}]\n"
+            f"申请人信息：{user_name}[{event.user_id}]\n"
             f"进群理由:\n"
             f"（思考）...？似乎在凌辉的内置禁止词库中？\n"
             f"⚠️已满足判决条件；自动处理生效，将主动拒绝此入群消息！\n"
@@ -214,8 +218,8 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
         f"似乎有人想要加入我们awa...\n"
         f"请求类型：{event.request_type}\n"
         f"子类型：{event.sub_type}\n"
-        f"申请人信息：{user}[{event.user_id}]\n"
-        f"进群理由:{event.comment}\n"
+        f"申请人信息：{user_name}[{event.user_id}]\n"
+        f"进群理由:{comment}\n"
         f"要同意此人入群嘛awa？\n"
         f"可以通过“允许加群{len(data[str(event.group_id)])}”或“拒绝加群{len(data[str(event.group_id)])}”来处理此请求（请在Bot为群管理员时进行操作~"
     )

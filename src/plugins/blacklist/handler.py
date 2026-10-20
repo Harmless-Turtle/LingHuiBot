@@ -126,7 +126,11 @@ async def del_user(
         )
 
     if user_id == str(event.user_id):
-        del_user_blacklist.finish("?")
+        # 原写法漏了 await，finish() 的协程从未执行，提示语也一直发不出去
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) +
+            "唔...您不能把自己移出黑名单呢。"
+        )
 
     obj = await session.get(UserBlacklist, user_id)
     if obj is None:
