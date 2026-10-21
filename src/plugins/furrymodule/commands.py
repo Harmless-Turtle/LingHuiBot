@@ -70,29 +70,4 @@ cmd_suit_review_modify = on_command(
     block=True,
     permission=SUPERUSER,
 )
-cmd_suit_review_decide = cmd_suit_review_upload
-cmd_suit_modify_decide = cmd_suit_review_modify
 
-# ================= 兼容旧名称别名 =================
-furrybar = cmd_ai_chat
-fb_model_list = cmd_ai_model_list
-user_model_switch = cmd_ai_model_switch
-check_model = cmd_ai_model_current
-reset_furrybar = cmd_ai_chat_reset
-latest = cmd_ai_chat_last
-clear = cmd_ai_chat_clear
-change_config = cmd_ai_user_config
-
-furryfusion_list = cmd_con_list
-furryfusion_check = cmd_con_check
-furryfusion_information = cmd_con_info
-furryfusion_history = cmd_con_history
-
-see_furry = cmd_suit_see
-furry_random = cmd_suit_random
-furry_list = cmd_suit_list
-upload_furry = cmd_suit_upload
-modify_furry = cmd_suit_modify
-check_upload = cmd_suit_review_list
-check_upload_decide = cmd_suit_review_upload
-check_modify_decide = cmd_suit_review_modify

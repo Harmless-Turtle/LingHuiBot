@@ -19,16 +19,6 @@ SUIT_BATCH_DIR = SUIT_UPLOAD_DIR / "batch"
 SUIT_PROCESSED_DIR = FURRY_DATA_DIR / "processed_images"
 SUIT_PICTURE_DATA_DIR = FURRY_DATA_DIR / "furrypic_data"
 
-# 兼容过渡别名
-forward_path = AI_USER_DATA_DIR
-furryfusion_login_session = CON_SESSION_FILE
-furry_pic_data_path = SUIT_PICTURE_DATA_DIR
-DATA_PATH = SUIT_UPLOAD_DIR
-json_path = SUIT_UPLOAD_JSON
-batch_path = SUIT_BATCH_DIR
-allin_pic_prerequisite_path = SUIT_PROCESSED_DIR
-OPENDATA = BASE_DIR
-
 # 校验文件与目录结构
 ensure_files_exist(
     file_path=[
