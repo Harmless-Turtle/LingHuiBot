@@ -79,7 +79,7 @@ async def report_bug(bot: Bot, event: MessageEvent):
     if current_user_id not in feedback_records:
         feedback_records[current_user_id] = []
 
-    # 过滤掉时间窗口（5秒）之前的记录，只保留最近5秒内的
+    # 过滤掉 RATE_LIMIT_WINDOW（当前 60 秒）之前的记录，只保留窗口内的
     feedback_records[current_user_id] = [
         t for t in feedback_records[current_user_id]
         if now - t < RATE_LIMIT_WINDOW
