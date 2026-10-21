@@ -138,7 +138,7 @@ async def report_bug(bot: Bot, event: MessageEvent):
         bot_content = bot_resp['content'] if bot_resp else "(未捕获到对应响应，可能是静默执行或报错中断)"
         final_report += Message("\n\n机器人响应:\n") + Message(bot_content)
 
-        await bot.send(event, "已静默抓取用户日志，正在上传至服务器以及发送给管理员...")
+        await bot.send(event, "已静默抓取用户日志，正在发送给管理员...")
         await bot.send_msg(user_id=get_admin_qq(), message=final_report)
         await bug_report.finish(MessageSegment.reply(
             event.message_id) + f"感谢你的反馈，已将该问题反馈给管理员。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。")
