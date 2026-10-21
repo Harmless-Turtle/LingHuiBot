@@ -318,7 +318,9 @@ async def eat_function(
         user_id = random_choice['user_id']
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"那...就吃{selected_nickname}（{user_id}）吧！（坏笑")
-    a = httpx.get("https://zj.v.api.aa1.cn/api/eats/", timeout=None, verify=False)
+    # 原实现是同步 httpx.get(timeout=None)：既阻塞事件循环，接口不响应时还会永久挂起
+    async with httpx.AsyncClient(timeout=10, verify=False) as client:
+        a = await client.get("https://zj.v.api.aa1.cn/api/eats/")
     if a.status_code != 200:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"好像没有访问成功...？[HTTP {a.status_code}]")
