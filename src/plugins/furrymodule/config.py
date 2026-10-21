@@ -37,30 +37,26 @@ class Config(BaseModel):
 async def print_furry_config():
     config = get_plugin_config(Config)
 
-    # 1. Furry AI 状态
-    ai_fields = [config.FURRY_AI_KEY, config.FURRY_AI_BASE_URL, config.FURRY_AI_MODEL_LIST]
-    if all(ai_fields):
-        logger.info("[FurryModule] Furry AI (FurryBar) 配置已加载")
-    elif any(ai_fields):
-        logger.warning("[FurryModule] Furry AI 配置不完整（部分项缺失），该子功能未启用！")
+    # 1. FurryBar 状态
+    if config.FURRY_AI_KEY and config.FURRY_AI_BASE_URL and config.FURRY_AI_MODEL_LIST:
+        logger.info("[FurryModule] FurryBar 配置已加载")
     else:
-        logger.info("[FurryModule] Furry AI 未配置（子功能未启用）")
+        logger.warning(
+            "[FurryModule] FurryBar 配置不完整，该子功能未启用！"
+        )
 
-    # 2. Furry Con (兽聚) 状态
-    con_fields = [config.FURRY_CON_TOKEN, config.FURRY_CON_USER, config.FURRY_CON_PASSWORD]
-    if all(con_fields):
-        logger.info("[FurryModule] 兽聚 (FurryCon) 配置已加载")
-    elif any(con_fields):
-        logger.warning("[FurryModule] 兽聚 (FurryCon) 配置不完整（部分项缺失），该子功能未启用！")
+    # 2. FurryCon 状态
+    if config.FURRY_CON_TOKEN and config.FURRY_CON_USER and config.FURRY_CON_PASSWORD:
+        logger.info(f"[FurryModule] 兽聚 (FurryCon) 配置已加载")
     else:
-        logger.info("[FurryModule] 兽聚 (FurryCon) 未配置（子功能未启用）")
+        logger.warning(
+            "[FurryModule] FurryCon 配置不完整，该子功能未启用！"
+        )
 
-    # 3. Furry Suit (鉴毛) 状态
-    suit_fields = [config.FURRY_SUIT_BASE_URL, config.FURRY_SUIT_KEY]
-    if all(suit_fields):
+    # 3. FurrySuit (鉴毛) 状态
+    if config.FURRY_SUIT_BASE_URL and config.FURRY_SUIT_KEY:
         logger.info("[FurryModule] 鉴毛 (FurrySuit) 配置已加载")
-    elif any(suit_fields):
-        logger.warning("[FurryModule] 鉴毛 (FurrySuit) 配置不完整（部分项缺失），该子功能未启用！")
     else:
-        logger.info("[FurryModule] 鉴毛 (FurrySuit) 未配置（子功能未启用）")
-
+        logger.warning(
+            "[FurryModule] FurrySuit 配置不完整，该子功能未启用！"
+        )
