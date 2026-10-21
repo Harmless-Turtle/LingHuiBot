@@ -64,6 +64,10 @@ async def upload_order_function(matcher: Matcher, event: MessageEvent, args: Mes
         await matcher.finish(MessageSegment.reply(
             event.message_id) + "输入格式不正确，请重新上传\n正确的格式应该是：上传饮品#饮品名字#饮品图片")
     name = data[1]
+    # name 会直接拼进文件路径，禁止空名与路径分隔符，避免把文件写出 Picture 目录
+    if not name or "/" in name or "\\" in name or name in (".", ".."):
+        await Upload_Order.finish(MessageSegment.reply(
+            event.message_id) + "饮品名称不能为空，也不能包含路径分隔符哦~")
     msg_group = event.get_message()
     # 没附带图片时 msg_group["image"] 返回空 Message，后续 list(...)[-1] 会 IndexError
     if not msg_group["image"]:
