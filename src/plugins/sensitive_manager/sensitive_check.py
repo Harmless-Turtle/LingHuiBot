@@ -203,7 +203,6 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent,
                     await bot.set_group_kick(group_id=int(group_id), user_id=event.user_id)
                     # 删除该用户在当前群的违规记录
                     await delete_violation(session, group_id, user_id)
-                    manager.build_ac(group_id)  # 重建当前群的AC自动机
                     await session.commit()
                     action_taken = True
                     await matcher.finish(
