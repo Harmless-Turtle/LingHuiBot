@@ -1,5 +1,4 @@
 import json
-import os
 import random
 from pathlib import Path
 
@@ -10,6 +9,7 @@ from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     Message,
 )
+from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.plugin import on_command
 
@@ -43,14 +43,18 @@ async def order_function(event: MessageEvent):
 
 
 @Upload_Order.handle()
-async def upload_order_function(event: MessageEvent, args: Message = CommandArg()):
+async def upload_order_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     args = str(args)
     data = args.split("#")
     if len(data) != 3:
-        await Upload_Order.finish(MessageSegment.reply(
+        await matcher.finish(MessageSegment.reply(
             event.message_id) + "输入格式不正确，请重新上传\n正确的格式应该是：上传饮品#饮品名字#饮品图片")
     name = data[1]
     msg_group = event.get_message()
+    # 没附带图片时 msg_group["image"] 返回空 Message，后续 list(...)[-1] 会 IndexError
+    if not msg_group["image"]:
+        await matcher.finish(MessageSegment.reply(
+            event.message_id) + "没有检测到图片，请在命令后附带一张饮品图片~")
     url = msg_group["image"]
     pic_url = list(url)[-1].data["url"]
     with open(f"{Data_Path}/Picture/{name}.jpg", 'wb') as f, open(f"{Data_Path}/List.json", 'r', encoding='utf-8') as F:
@@ -60,20 +64,24 @@ async def upload_order_function(event: MessageEvent, args: Message = CommandArg(
     with open(f"{Data_Path}/List.json", 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False)
 
-    await Upload_Order.finish(MessageSegment.reply(event.message_id) + "操作成功完成。")
+    await matcher.finish(MessageSegment.reply(event.message_id) + "操作成功完成。")
 
 
 @Delete_Order.handle()
-async def delete_order_function(event: MessageEvent, args: Message = CommandArg()):
-    args = str(args)
+async def delete_order_function(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
+    name = args.extract_plain_text().strip()
     with open(f"{Data_Path}/List.json", 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    if data.get(args, None):
-        await Delete_Order.finish(MessageSegment.reply(event.message_id) + f"遇到问题：在饮品列表里没有找到{args}")
-    del data[f'{args}']
-    os.remove(f"{Data_Path}/Picture/{args}.jpg")
+    # 原实现写反了：存在时提示“没有找到”并直接 finish，导致删除永远不执行；
+    # 不存在时又会在 del 处抛 KeyError。
+    if name not in data:
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"遇到问题：在饮品列表里没有找到{name}")
+
+    picture_path = Path(data.pop(name))
+    if picture_path.exists():
+        picture_path.unlink()
     with open(f"{Data_Path}/List.json", 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False)
 
-    await Delete_Order.finish(MessageSegment.reply(event.message_id) + "操作成功完成。")
+    await matcher.finish(MessageSegment.reply(event.message_id) + "操作成功完成。")

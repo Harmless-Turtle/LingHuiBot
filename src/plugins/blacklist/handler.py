@@ -126,7 +126,10 @@ async def del_user(
         )
 
     if user_id == str(event.user_id):
-        del_user_blacklist.finish("?")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) +
+            "?"
+        )
 
     obj = await session.get(UserBlacklist, user_id)
     if obj is None:
