@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from typing import Dict, Set
 
 import ahocorasick
-from nonebot import get_driver, on_message
+from nonebot import get_plugin_config, on_message
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     Bot,
@@ -19,6 +19,7 @@ from nonebot.rule import Rule
 from nonebot_plugin_orm import async_scoped_session
 
 from .command import cmd_add, cmd_del, cmd_list, cmd_group
+from .config import Config
 from .exceptions import (
     SensitiveError,
     SensitiveGroupNotConfigured,
@@ -38,31 +39,12 @@ from .models import (
 )
 from ..utils import handle_errors
 
-config = get_driver().config
-
-
-# 解析敏感词管理员配置，支持列表、逗号分隔字符串或缺省名单
-def _parse_admin_config(raw) -> list[str]:
-    if raw is None:
-        return ["1097740481", "1692719245"]
-    if isinstance(raw, str):
-        return raw.split(",")
-    if isinstance(raw, (list, tuple, set)):
-        return [str(i) for i in raw]
-    return [str(raw)]
-
-
-# 敏感词管理员集合（供权限校验使用）
-sensitive_admins = {
-    item.strip()
-    for item in _parse_admin_config(getattr(config, "sensitiveadmin", None))
-    if item.strip()
-}
-logger.info(f"敏感词管理员列表: {sensitive_admins}")
-
 
 def is_admin(user_id: str) -> bool:
-    return str(user_id) in sensitive_admins
+    """判断用户是否在敏感词管理员列表（SENSITIVEADMIN）里。"""
+    config = get_plugin_config(Config)
+    admins = {str(item).strip() for item in config.SENSITIVEADMIN if str(item).strip()}
+    return str(user_id) in admins
 
 
 class SensitiveManager:

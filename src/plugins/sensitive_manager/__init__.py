@@ -1,4 +1,4 @@
-from . import sensitive_check
+from . import config, sensitive_check
 
 # 导出插件元数据
 __plugin_name__ = "敏感词检测"
