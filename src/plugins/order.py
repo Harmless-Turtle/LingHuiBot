@@ -13,6 +13,8 @@ from nonebot.internal.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.plugin import on_command
 
+from .utils import ensure_files_exist
+
 
 async def chek_rule_at(event: GroupMessageEvent):
     s = event.user_id
@@ -29,11 +31,23 @@ Delete_Order = on_command("删除饮品", rule=chek_rule_at, priority=20)
 opendata = Path.cwd()
 Data_Path = opendata / 'data/Order_System'
 
+# 启动自检：数据目录、图片目录、饮品列表。原来全靠用户先手动建好，
+# 全新部署下“点菜”会直接 FileNotFoundError。
+ensure_files_exist(
+    file_path=[Data_Path, Data_Path / 'Picture', Data_Path / 'List.json'],
+    description="点菜模块自检",
+    normal_data=[None, None, {}]
+)
+
 
 @Order.handle()
 async def order_function(event: MessageEvent):
     with open(f"{Data_Path}/List.json", 'r', encoding='utf-8') as f:
         data = json.load(f)
+
+    if not data:
+        await Order.finish(
+            MessageSegment.reply(event.message_id) + "饮品列表还是空的呢，先让管理员用“上传饮品”加几个吧~")
 
     key, value = list(data.keys()), list(data.values())
     select = random.randint(0, len(key) - 1)
@@ -56,9 +70,18 @@ async def upload_order_function(matcher: Matcher, event: MessageEvent, args: Mes
         await matcher.finish(MessageSegment.reply(
             event.message_id) + "没有检测到图片，请在命令后附带一张饮品图片~")
     url = msg_group["image"]
+    if not url:
+        await Upload_Order.finish(MessageSegment.reply(
+            event.message_id) + "没有检测到图片，请在命令后附带一张饮品图片~")
     pic_url = list(url)[-1].data["url"]
+    # 原实现用同步 httpx.get 下载，会阻塞整个事件循环（项目规范要求异步）
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(pic_url)
+    if response.status_code != 200:
+        await Upload_Order.finish(MessageSegment.reply(
+            event.message_id) + f"图片下载失败：[HTTP {response.status_code}]，请稍后重试~")
     with open(f"{Data_Path}/Picture/{name}.jpg", 'wb') as f, open(f"{Data_Path}/List.json", 'r', encoding='utf-8') as F:
-        f.write(httpx.get(pic_url).content)
+        f.write(response.content)
         data = json.load(F)
     data[f"{name}"] = f"{Data_Path}/Picture/{name}.jpg"
     with open(f"{Data_Path}/List.json", 'w', encoding='utf-8') as f:
