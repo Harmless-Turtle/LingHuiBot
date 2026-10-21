@@ -112,7 +112,7 @@ def create_error_reply(error: Exception, event: MessageEvent, buffer_image: Byte
         return reply_part + "服务器断开了连接且未发送任何数据给凌辉qwq...请稍后再试"
 
     # 默认错误消息
-    return (reply_part + "没有正确处理请求呢qwq...请联系管理员[1097740481]协助解决哦"
+    return (reply_part + f"没有正确处理请求呢qwq...请联系管理员[{get_admin_qq()}]协助解决哦"
             + MessageSegment.image(buffer_image))
 
 
@@ -325,6 +325,24 @@ def get_config_item(key: str, default=None, required=False, desc=None):
     if required:
         logger.warning(f"[Furry模块] 缺少必要配置项: {key} ，{desc or ''}")
     return default
+
+
+DEFAULT_ADMIN_QQ = 1097740481
+
+
+def get_admin_qq() -> int:
+    """Bot 管理员 QQ，用于私聊告警 / bug 反馈等通知目标。
+
+    优先读取配置项 BOT_ADMIN_QQ；未配置时回落到历史硬编码值，行为保持不变。
+    自建部署者可以通过该配置把告警发给自己，而不是原仓库作者。
+    """
+    value = get_config_item("bot_admin_qq", default=DEFAULT_ADMIN_QQ)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        logger.warning(f"BOT_ADMIN_QQ 配置不是合法数字：{value!r}，已回落到 {DEFAULT_ADMIN_QQ}")
+        return DEFAULT_ADMIN_QQ
+
 
 def ensure_files_exist(file_path: list[Path], description: str, normal_data: list) -> None:
     """
