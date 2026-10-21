@@ -358,9 +358,6 @@ def ensure_files_exist(file_path: list[Path], description: str, normal_data: lis
                     elif isinstance(data, str):
                         # 如果是字符串，直接写入（如txt文本等）
                         path.write_text(data, encoding="utf-8")
-                    else:
-                        # 对于 .jpg / .ttf 等非文本文件，或 data 未指定时，只创建空文件实体
-                        path.touch()
 
                     logger.success(f"[{description}] 文件创建成功")
                 except Exception as e:
