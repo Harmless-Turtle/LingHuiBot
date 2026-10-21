@@ -6,7 +6,6 @@ OPENDATA = Path.cwd()
 DATA_PATH = OPENDATA / "data" / "furry_system" / "upload"
 json_path = DATA_PATH / "upload_data.json"
 batch_path = DATA_PATH / "batch"
-temp_image_path = OPENDATA / 'data' / 'furry_system' / 'temp.jpg'
 allin_pic_prerequisite_path = OPENDATA / 'data' / 'furry_system' / 'processed_images'
 forward_path = OPENDATA / "data" / "furry_system" / "furrybar"
 furry_pic_data_path = OPENDATA / "data" / "furry_system" / "furrypic_data"
@@ -22,12 +21,11 @@ ensure_files_exist(
         DATA_PATH,
         json_path,
         batch_path,
-        temp_image_path,
         allin_pic_prerequisite_path,
         forward_path,
         furry_pic_data_path,
         furryfusion_login_session
     ],
     description="furrymodule模块 自检",
-    normal_data=[None, [], None, None, None, None, None, {}]
+    normal_data=[None, [], None, None, None, None, {}]
 )
