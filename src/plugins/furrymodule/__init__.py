@@ -1,5 +1,8 @@
 from . import (
-    furry,
-    furrybar,
-    furryfusion
+    check_files,
+    config,
+    furry_ai,
+    furry_con,
+    furry_suit,
 )
+

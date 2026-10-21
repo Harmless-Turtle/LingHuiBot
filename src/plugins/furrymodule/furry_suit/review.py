@@ -1,20 +1,24 @@
 import os
 
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot,MessageSegment
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot_plugin_orm import async_scoped_session
 
-from ..check_file import furry_pic_data_path
-from ..commands import check_upload, check_upload_decide, check_modify_decide
-from src.plugins.utils import handle_errors,handle_json
+from ..check_files import SUIT_PICTURE_DATA_DIR
+from ..commands import (
+    cmd_suit_review_list,
+    cmd_suit_review_upload,
+    cmd_suit_review_modify,
+)
+from src.plugins.utils import handle_errors, handle_json
 from .upload import UPLOAD_CACHE_DIR
 from ...utils import batch_get
-from .models import add_furry_picture,FurryPictureData,update_furry_picture
+from .models import add_furry_picture, FurryPictureData, update_furry_picture
 
 
-@check_upload.handle()
+@cmd_suit_review_list.handle()
 @handle_errors
-async def check_upload_function(
+async def handle_suit_review_list(
         matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
@@ -41,14 +45,11 @@ async def check_upload_function(
 """
         if item["attr"] == "图片":
             picture = item["file_path"]
-
-            # 修改名字/图片类型时，从 SQL 获取原图片
         else:
             db_picture = await session.get(
                 FurryPictureData,
                 int(item["id"])
             )
-
             if db_picture is None:
                 picture = None
             else:
@@ -65,15 +66,16 @@ async def check_upload_function(
 上传群聊：{item['group_id']}
 管理员可通过命令“同意上传#{index}”或“拒绝上传#{index}”进行审核。
 """
-        batch_text = await batch_get(message,item['file_path'],item['user_id'],"待审核图片")
+        batch_text = await batch_get(message, item['file_path'], item['user_id'], "待审核图片")
         final_list.append(batch_text)
 
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=final_list, time_noend=True)
     await matcher.finish()
 
-@check_upload_decide.handle()
+
+@cmd_suit_review_upload.handle()
 @handle_errors
-async def check_upload_decide_function(
+async def handle_suit_review_upload(
         matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
@@ -104,8 +106,8 @@ async def check_upload_decide_function(
         await bot.call_api(
             "send_group_msg",
             group_id=group_id,
-            message=MessageSegment.at(user_id)+
-f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒绝理由：{reason}"+
+            message=MessageSegment.at(user_id) +
+            f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒绝理由：{reason}" +
             MessageSegment.image(f"file:///{picture_path}"))
         os.remove(picture_path)
         if not group_id == event.group_id:
@@ -113,7 +115,7 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
         await matcher.finish()
     # 生成临时目录与正式目录
     original_file_path = review_list[review_id]['file_path']
-    new_save_data = furry_pic_data_path / os.path.basename(original_file_path)
+    new_save_data = SUIT_PICTURE_DATA_DIR / os.path.basename(original_file_path)
     # 写入SQL
     await add_furry_picture(
         session,
@@ -143,9 +145,10 @@ f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒�
         )
     await matcher.finish(MessageSegment.reply(event.message_id) + f"已同意上传第{review_id + 1}张图片，文件已移动到正式目录。")
 
-@check_modify_decide.handle()
+
+@cmd_suit_review_modify.handle()
 @handle_errors
-async def check_modify_decide_function(
+async def handle_suit_review_modify(
         matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,
@@ -185,11 +188,11 @@ async def check_modify_decide_function(
         if event.group_id != group_id:
             await matcher.finish(MessageSegment.reply(event.message_id) + f"已拒绝修改第{review_id + 1}张图片，已告知上传者。")
         await matcher.finish()
-    new_save_data,nb_picture = False, ""
+    new_save_data, nb_picture = False, ""
     if del_review['attr'] == "图片":
         # 移动文件到正式目录
         original_file_path = del_review['file_path']
-        new_save_data = furry_pic_data_path / os.path.basename(del_review['file_path'])
+        new_save_data = SUIT_PICTURE_DATA_DIR / os.path.basename(del_review['file_path'])
         os.rename(original_file_path, new_save_data)
         del_review['new_value'] = str(new_save_data)
         nb_picture = MessageSegment.image(f"file:///{new_save_data}")

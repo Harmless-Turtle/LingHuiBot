@@ -7,40 +7,12 @@ import os
 import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from playwright.async_api import async_playwright
-from nonebot import logger
+from nonebot import get_plugin_config, logger
 
-from ..check_file import furryfusion_login_session
+from ..check_files import CON_SESSION_FILE
+from ..config import Config
 from ...Exceptions import LingHuiError
-from ...utils import get_config_item, handle_json, handle_errors
-
-# 导入特殊兽聚列表
-SPECIAL_EVENTS = get_config_item(
-    'furry_special_events',
-    default="未获取到数据",
-    required=True,
-    desc="FurryFusion特殊兽聚列表"
-)
-
-token = get_config_item(
-    'furry_token',
-    default="未获取到数据",
-    required=True,
-    desc="FurryFusion API Token"
-)
-username = get_config_item(
-    'furryfusion_username',
-    default="未获取到数据",
-    required=True,
-    desc="FurryFusion API Token"
-)
-password = get_config_item(
-    'furryfusion_password',
-    default="未获取到数据",
-    required=True,
-    desc="FurryFusion API Token"
-)
-if token == "未获取到数据" or username == "未获取到数据" or password == "未获取到数据":
-    logger.warning("未获取到FurryFusion API Token或用户名或密码，请检查配置文件。")
+from ...utils import handle_json, handle_errors
 
 
 # ========= FurryFusion 时间轴 HTML 渲染 =========
@@ -114,15 +86,8 @@ def _prepare_timeline_events(events):
             month = "日期待确认"
             sort_key = datetime.datetime.max
 
-        special_names = SPECIAL_EVENTS
-        if isinstance(special_names, str):
-            # 兼容配置项为逗号/换行分隔字符串的情况。
-            special_names = [
-                item.strip()
-                for item in special_names.replace("，", ",").replace("\n", ",").split(",")
-                if item.strip()
-            ]
-        is_special = name in (special_names or [])
+        plugin_config = get_plugin_config(Config)
+        is_special = name in plugin_config.FURRY_CON_SPECIAL_EVENTS
 
         source_label = str(raw.get("source_label") or raw.get("source") or "").strip()
         source_key = source_label.casefold().replace(" ", "")
@@ -268,12 +233,15 @@ async def render_fursion_timeline_image(
 
 @handle_errors
 async def get_fur_session():
+    plugin_config = get_plugin_config(Config)
+    if not plugin_config.FURRY_CON_TOKEN or not plugin_config.FURRY_CON_USER or not plugin_config.FURRY_CON_PASSWORD:
+        raise LingHuiError("未配置兽聚 (FurryCon) 的 FURRY_CON_TOKEN / FURRY_CON_USER / FURRY_CON_PASSWORD，无法登录。")
     async with httpx.AsyncClient() as client:
         fur_session = await client.post("https://qqbot.fur-bot.com/api/v1/user/login",
                                         headers={"Content-Type": "application/json"},
-                                        json={"account": username, "password": password,"login_token": token})
+                                        json={"account": plugin_config.FURRY_CON_USER, "password": plugin_config.FURRY_CON_PASSWORD, "login_token": plugin_config.FURRY_CON_TOKEN})
         if fur_session.status_code == 200 and fur_session.cookies.get("fur_session") and fur_session.json().get("ok"):
-            handle_json(furryfusion_login_session, 'w', {"fur_session": fur_session.cookies.get("fur_session")})
+            handle_json(CON_SESSION_FILE, 'w', {"fur_session": fur_session.cookies.get("fur_session")})
             return {"fur_session": fur_session.cookies.get("fur_session")}
         else:
             logger.error(f"FurryFusion 登录失败，状态码：{fur_session.status_code}，响应内容：{fur_session.text}")
@@ -317,7 +285,7 @@ async def get_http_api(service:str,arg:str|None=None) -> dict:
         case _:
             raise LingHuiError(f"未知的服务类型：{service}")
     logger.info(f"正在访问 FurryFusion API：{request_url}")
-    fur_session = handle_json(furryfusion_login_session, 'r')
+    fur_session = handle_json(CON_SESSION_FILE, 'r')
     if not isinstance(fur_session, dict) or not fur_session.get("fur_session"):
         fur_session = await get_fur_session()
     async with httpx.AsyncClient(timeout=20) as client:
