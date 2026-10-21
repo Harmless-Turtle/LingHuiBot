@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ..Exceptions import ModuleError
 
 
@@ -16,7 +18,12 @@ class OrderItemNotFoundError(OrderError):
 
 
 class OrderImageDownloadError(OrderError):
-    message = "下载饮品图片失败，请稍后重试。"
+    def __init__(self, status_code: Optional[int] = None):
+        if status_code is not None:
+            self.message = f"图片下载失败：[HTTP {status_code}]，请稍后重试~"
+        else:
+            self.message = "下载饮品图片失败，请稍后重试。"
+        super().__init__(self.message)
 
 
 class OrderImageSaveError(OrderError):

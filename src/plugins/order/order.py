@@ -72,7 +72,12 @@ async def upload_order_function(
             + "输入格式不正确，请重新上传\n"
               "正确的格式应该是：上传饮品#饮品名字#饮品图片"
         )
-    name = data[1]
+    name = data[1].strip()
+    if not name or "/" in name or "\\" in name or name in (".", ".."):
+        await matcher.finish(
+            MessageSegment.reply(event.message_id)
+            + "饮品名称不能为空，也不能包含路径分隔符哦~"
+        )
 
     msg_group = event.get_message()
     if not msg_group["image"]:
@@ -87,8 +92,12 @@ async def upload_order_function(
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(pic_url)
             if resp.status_code != 200:
-                raise OrderImageDownloadError()
+                raise OrderImageDownloadError(resp.status_code)
             img_content = resp.content
+    except httpx.HTTPError:
+        await matcher.finish(
+            MessageSegment.reply(event.message_id) + "图片下载超时或网络错误，请稍后重试~"
+        )
     except OrderImageDownloadError as e:
         await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
         return
