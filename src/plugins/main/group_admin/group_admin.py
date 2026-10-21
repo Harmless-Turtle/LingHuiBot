@@ -30,6 +30,22 @@ from src.plugins.main.commands import (
 )
 from src.plugins.utils import handle_errors, handle_json, get_admin_qq
 
+# 入群理由违禁词表：命中任意一个词即自动拒绝（原实现是拿整条理由去匹配一串
+# 拼接起来的字符串，只有理由恰好是这串的子串时才会命中，等于形同虚设）
+BAN_WORDS = (
+    "死全家",
+    "滚开",
+    "去死",
+    "废渣",
+    "傻逼",
+    "脑残",
+    "智障",
+    "贱货",
+    "垃圾",
+    "杂种",
+    "操你妈",
+)
+
 
 @GroupExitMember.handle()
 @handle_errors
@@ -207,8 +223,7 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
     )
 
     # 违禁词判断与自动拒绝
-    ban_text = "死全家滚开去死废渣傻逼脑残智障败贱货垃圾杂种操你妈"
-    if comment in ban_text:
+    if any(word in comment for word in BAN_WORDS):
         await bot.set_group_add_request(
             flag=str(event.flag),
             approve=False,
