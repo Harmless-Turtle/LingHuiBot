@@ -11,7 +11,7 @@ ADMIN_MENU_MD = Path() / 'markdown' / 'admin_system.md'
 
 ALL_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'All_Menu.png'
 FURRY_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'Furry_Menu.png'
-MAIN_MENU_PIC_DATA = Path() / 'data' / 'mwnu' / 'Main_Menu.png'
+MAIN_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'Main_Menu.png'
 SERVICE_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'Service_Menu.png'
 MARRY_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'Marry_Menu.png'
 ADMIN_MENU_PIC_DATA = Path() / 'data' / 'menu' / 'Admin_Menu.png'
