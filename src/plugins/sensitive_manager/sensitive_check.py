@@ -11,6 +11,7 @@ from nonebot.adapters.onebot.v11 import (
     Message,
     MessageSegment,
 )
+from nonebot.exception import MatcherException
 from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -38,12 +39,30 @@ from .models import (
 from ..utils import handle_errors
 
 config = get_driver().config
-sensitive_admins = getattr(config, "sensitiveadmin", '[1097740481,1692719245]')
+
+
+# 解析敏感词管理员配置，支持列表、逗号分隔字符串或缺省名单
+def _parse_admin_config(raw) -> list[str]:
+    if raw is None:
+        return ["1097740481", "1692719245"]
+    if isinstance(raw, str):
+        return raw.split(",")
+    if isinstance(raw, (list, tuple, set)):
+        return [str(i) for i in raw]
+    return [str(raw)]
+
+
+# 敏感词管理员集合（供权限校验使用）
+sensitive_admins = {
+    item.strip()
+    for item in _parse_admin_config(getattr(config, "sensitiveadmin", None))
+    if item.strip()
+}
 logger.info(f"敏感词管理员列表: {sensitive_admins}")
 
 
 def is_admin(user_id: str) -> bool:
-    return user_id in sensitive_admins
+    return str(user_id) in sensitive_admins
 
 
 class SensitiveManager:
@@ -190,13 +209,15 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent,
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计6次违规，将禁言30天")
                 elif warn_level >= 3:
+                    await bot.set_group_kick(group_id=int(group_id), user_id=event.user_id)
                     # 删除该用户在当前群的违规记录
                     await delete_violation(session, group_id, user_id)
-                    manager.build_ac(group_id)  # 重建当前群的AC自动机
                     await session.commit()
                     action_taken = True
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计9次违规，将踢出该群员")
+        except MatcherException:
+            raise
         except Exception as e:
             logger.error(f"执行惩罚时出错：{e}")
 
