@@ -47,7 +47,7 @@ async def add_group(
 
 
 @del_group_blacklist.handle()
-async def del_user(
+async def del_group(
         matcher: Matcher,
         event: GroupMessageEvent,
         session: async_scoped_session,

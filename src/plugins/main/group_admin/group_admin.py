@@ -279,7 +279,7 @@ async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, arg
 
 
 @handle_group.handle()
-async def handle_add_group(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
+async def handle_group_request(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     self_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
     if self_is_admin['role'] == 'member':
         await matcher.finish(MessageSegment.reply(event.message_id) + "请先将Bot设置为管理员哦~")
