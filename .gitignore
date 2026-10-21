@@ -26,7 +26,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-data/
+# 数据目录整体忽略，但允许单独放行内置资源（见文件尾部）
+data/*
 
 # PyInstaller
 *.manifest
@@ -137,3 +138,7 @@ menu_config/
 config
 
 upload
+
+# 内置字体：随仓库一起分发，保证全新部署也能正常渲染中文
+# （utils.FONT_PATH 指向该文件；缺失时各调用点会回退 Pillow 默认字体）
+!data/SarasaFixedSlabJ-SemiBoldItalic.ttf
