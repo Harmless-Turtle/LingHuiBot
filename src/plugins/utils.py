@@ -202,6 +202,19 @@ async def batch_get(text: str, picture: Optional[str] | bytes, qq: int, name: st
     return make_text
 
 
+def image_segment_or_empty(path: str | Path) -> MessageSegment:
+    """图片文件存在且非空时返回图片段，否则返回空文本段。
+
+    背景图这类二进制资源缺失（或自检留下了 0 字节占位）时，直接
+    MessageSegment.image 会让协议端上传失败、整条消息发不出去；
+    这里统一降级成“不带图”，保证文字部分仍然送达。
+    """
+    picture = Path(path)
+    if picture.exists() and picture.stat().st_size > 0:
+        return MessageSegment.image(picture)
+    return MessageSegment.text("")
+
+
 def time_handle(datetime_input):
     """
     根据用户提供的时间戳，计算与当前时间的时间差，并以“年月日时分秒”的格式返回。

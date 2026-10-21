@@ -20,7 +20,7 @@ from .commands import *
 from .models import do_sign_in
 from .exceptions import SignInError
 from ..entertainment.currency.models import get_mohui_data, add_mohui_coin
-from ..utils import handle_errors, get_admin_qq
+from ..utils import handle_errors, get_admin_qq, image_segment_or_empty
 
 # 获取机器人的名字
 config = get_driver().config
@@ -154,7 +154,7 @@ async def sign_in_function(
             text = "确实好久不见了诶~抱抱~\n"
             pic = sign_in_pic_true
         # 输出
-        await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(
+        await matcher.finish(MessageSegment.reply(event.message_id) + image_segment_or_empty(
             pic) + f"{text}签到成功。本月在本群中已签到{user_count}次，今天在本群中排名第{group_count}位~\n"
                    f"您获得了{operate_coins}个墨辉币！您现在有{balance}个墨辉币。\n"
                    f"——————\n"
