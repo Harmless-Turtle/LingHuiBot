@@ -41,18 +41,18 @@ ensure_files_exist(
 
 
 @Order.handle()
-async def order_function(event: MessageEvent):
+async def order_function(matcher: Matcher, event: MessageEvent):
     with open(f"{Data_Path}/List.json", 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     if not data:
-        await Order.finish(
+        await matcher.finish(
             MessageSegment.reply(event.message_id) + "饮品列表还是空的呢，先让管理员用“上传饮品”加几个吧~")
 
     key, value = list(data.keys()), list(data.values())
     select = random.randint(0, len(key) - 1)
     text, picture = key[select], value[select]
-    await Order.finish(
+    await matcher.finish(
         MessageSegment.reply(event.message_id) + f"您好~您的饮品是{text}，请慢用~\n" + MessageSegment.image(picture))
 
 
@@ -66,7 +66,7 @@ async def upload_order_function(matcher: Matcher, event: MessageEvent, args: Mes
     name = data[1]
     # name 会直接拼进文件路径，禁止空名与路径分隔符，避免把文件写出 Picture 目录
     if not name or "/" in name or "\\" in name or name in (".", ".."):
-        await Upload_Order.finish(MessageSegment.reply(
+        await matcher.finish(MessageSegment.reply(
             event.message_id) + "饮品名称不能为空，也不能包含路径分隔符哦~")
     msg_group = event.get_message()
     # 没附带图片时 msg_group["image"] 返回空 Message，后续 list(...)[-1] 会 IndexError
@@ -74,15 +74,12 @@ async def upload_order_function(matcher: Matcher, event: MessageEvent, args: Mes
         await matcher.finish(MessageSegment.reply(
             event.message_id) + "没有检测到图片，请在命令后附带一张饮品图片~")
     url = msg_group["image"]
-    if not url:
-        await Upload_Order.finish(MessageSegment.reply(
-            event.message_id) + "没有检测到图片，请在命令后附带一张饮品图片~")
     pic_url = list(url)[-1].data["url"]
     # 原实现用同步 httpx.get 下载，会阻塞整个事件循环（项目规范要求异步）
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(pic_url)
     if response.status_code != 200:
-        await Upload_Order.finish(MessageSegment.reply(
+        await matcher.finish(MessageSegment.reply(
             event.message_id) + f"图片下载失败：[HTTP {response.status_code}]，请稍后重试~")
     with open(f"{Data_Path}/Picture/{name}.jpg", 'wb') as f, open(f"{Data_Path}/List.json", 'r', encoding='utf-8') as F:
         f.write(response.content)
