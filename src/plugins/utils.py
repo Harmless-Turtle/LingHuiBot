@@ -22,7 +22,7 @@ FURRY_FUSION_BG_PATH = Path() / 'data' / 'furry_system' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
 # 验证字体包是否存在（空文件视为缺失，避免 truetype 打开 0 字节字体崩溃）
-if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 0:
+if os.path.exists(FONT_PATH):
     logger.info(f"已找到字体文件: {FONT_PATH}")
 else:
     FONT_PATH = None

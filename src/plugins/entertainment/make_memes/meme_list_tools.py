@@ -12,15 +12,8 @@ from meme_generator import get_memes
 from src.plugins.utils import FONT_PATH
 
 
-def _load_font(size: int) -> ImageFont.ImageFont:
-    """加载项目字体；字体缺失或不可用时回退 Pillow 默认字体。
-
-    全新部署时 data/ 下的 .ttf 不会随仓库分发（.gitignore 忽略 *.ttf），
-    启动自检还可能在字体缺失时留下 0 字节占位文件。两种情况 truetype 都会抛
-    OSError（FONT_PATH 为 None 时 str(None) 会落到不存在的 "None" 路径）。
-
-    「表情列表」只用于展示，不应因此整条命令失败，统一回退默认字体。
-    """
+def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """加载项目字体；字体缺失或不可用时回退 Pillow 默认字体。"""
     try:
         return ImageFont.truetype(str(FONT_PATH), size)
     except (OSError, ValueError):
