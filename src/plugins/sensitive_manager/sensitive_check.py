@@ -11,11 +11,11 @@ from nonebot.adapters.onebot.v11 import (
     Message,
     MessageSegment,
 )
+from nonebot.exception import MatcherException
 from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.rule import Rule
-from nonebot.exception import MatcherException
 from nonebot_plugin_orm import async_scoped_session
 
 from .command import cmd_add, cmd_del, cmd_list, cmd_group
@@ -39,14 +39,25 @@ from .models import (
 from ..utils import handle_errors
 
 config = get_driver().config
-# 兼容两种配置形态：.env 里的 JSON 数组（list）与逗号分隔字符串；
-# 未配置时沿用原内置名单。统一收敛成 set[str]，避免字符串子串误判。
-_sensitive_admin_config = getattr(config, "sensitiveadmin", None)
-if _sensitive_admin_config is None:
-    _sensitive_admin_config = ["1097740481", "1692719245"]
-elif isinstance(_sensitive_admin_config, str):
-    _sensitive_admin_config = _sensitive_admin_config.split(",")
-sensitive_admins = {str(item).strip() for item in _sensitive_admin_config if str(item).strip()}
+
+
+# 解析敏感词管理员配置，支持列表、逗号分隔字符串或缺省名单
+def _parse_admin_config(raw) -> list[str]:
+    if raw is None:
+        return ["1097740481", "1692719245"]
+    if isinstance(raw, str):
+        return raw.split(",")
+    if isinstance(raw, (list, tuple, set)):
+        return [str(i) for i in raw]
+    return [str(raw)]
+
+
+# 敏感词管理员集合（供权限校验使用）
+sensitive_admins = {
+    item.strip()
+    for item in _parse_admin_config(getattr(config, "sensitiveadmin", None))
+    if item.strip()
+}
 logger.info(f"敏感词管理员列表: {sensitive_admins}")
 
 
@@ -198,8 +209,6 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent,
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计6次违规，将禁言30天")
                 elif warn_level >= 3:
-                    # 恢复 #47 迁移 SQLite 时丢失的踢人动作：文案一直是“将踢出该群员”，
-                    # 但迁移后只删记录、没有真正调用 set_group_kick。
                     await bot.set_group_kick(group_id=int(group_id), user_id=event.user_id)
                     # 删除该用户在当前群的违规记录
                     await delete_violation(session, group_id, user_id)
@@ -208,8 +217,6 @@ async def handle_check(matcher: Matcher, bot: Bot, event: GroupMessageEvent,
                     await matcher.finish(
                         MessageSegment.reply(event.message_id) + f"检测到敏感词，并且已经累计9次违规，将踢出该群员")
         except MatcherException:
-            # matcher.finish 通过抛出 FinishedException(MatcherException) 结束事件，
-            # 不能被下面的兜底 except 吞掉：否则禁言/踢人提示发不出去，还会记一条假错误日志。
             raise
         except Exception as e:
             logger.error(f"执行惩罚时出错：{e}")
