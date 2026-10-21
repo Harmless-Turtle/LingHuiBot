@@ -18,7 +18,6 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
 FONT_PATH = Path() / 'data' / 'SarasaFixedSlabJ-SemiBoldItalic.ttf'
-FURRY_FUSION_BG_PATH = Path() / 'data' / 'furry_system' / 'bg.png'
 ERROR_DIR = Path() / "logs"
 
 # 验证字体包是否存在（空文件视为缺失，避免 truetype 打开 0 字节字体崩溃）
@@ -276,41 +275,6 @@ def time_handle(datetime_input):
     ).strip() or '0秒'  # 处理全零情况
 
     return time_text
-
-
-# TODO: 需要重构
-async def furry_fusion_picture_handle(picture: str, name: str, text: str) -> str:
-    # --------
-    response = httpx.get(picture)
-    if response.status_code != 200:
-        raise Exception(f"图片下载失败，状态码: {response.status_code}")
-    img = Image.open(BytesIO(response.content))
-    overlay_image = Image.open(FURRY_FUSION_BG_PATH).convert("RGBA")
-    _, _, _, alpha = overlay_image.split()
-    target_size = (1920, 1080)  # 设置目标尺寸
-    img_resized = img.resize(target_size, Image.Resampling.LANCZOS)
-    img_resized.paste(
-        overlay_image,
-        (0, 0),
-        alpha
-    )
-    img_resized = img_resized.convert("RGB")
-    output_dir = Path.cwd() / 'data' / 'Furry_System' / "processed_images"
-    os.makedirs(output_dir, exist_ok=True)
-
-    draw = ImageDraw.Draw(img_resized)
-    font_path = Path.cwd() / 'data' / 'SourceHanSansSC-VF.ttf'
-    font = ImageFont.truetype(str(font_path), size=95)
-
-    text_color = (255, 255, 255)
-    draw.text((10, 50), text, font=font, fill=text_color)
-
-    # 生成唯一文件名
-    unique_filename = f"image_{name}.png"
-    output_path = os.path.join(output_dir, unique_filename)
-    img_resized.save(output_path, format="PNG")
-    return os.path.abspath(output_path)
-    # --------
 
 
 # 配置项读取函数
