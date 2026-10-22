@@ -5,7 +5,7 @@ import jwt
 from datetime import datetime, timezone, timedelta
 
 import asyncio
-from nonebot import on_message, logger, get_driver
+from nonebot import get_plugin_config, logger, on_message
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message, MessageSegment
 from nonebot_plugin_htmlrender import html_to_pic
 from nonebot.exception import FinishedException
@@ -14,18 +14,17 @@ from nonebot.params import CommandArg
 import re
 
 from .commands import weather_check, weather_forecast
+from .config import Config
 from src.plugins.utils import handle_errors
 from .utils import http_get
 
-try:
-    api_key = get_driver().config.weather_api_key
-    project_id = get_driver().config.weather_project_id
-    expire_time = get_driver().config.weather_expired_time
-    jwt_id = get_driver().config.weather_jwt_id
-    base_url = get_driver().config.weather_api_baseurl
-except AttributeError:
-    api_key, project_id, expire_time = None, 0, 0
-    logger.warning("未读取到天气查询API，天气查询功能将不可用。")
+config = get_plugin_config(Config)
+
+api_key = config.WEATHER_API_KEY
+project_id = config.WEATHER_PROJECT_ID
+expire_time = config.WEATHER_EXPIRED_TIME
+jwt_id = config.WEATHER_JWT_ID
+base_url = config.WEATHER_API_BASEURL
 
 
 CURRENT_DIR = str(os.path.dirname(__file__))

@@ -1,1 +1,1 @@
-from . import weather,typhoon,scheduled_task
+from . import config, scheduled_task, typhoon, weather
