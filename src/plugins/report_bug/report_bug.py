@@ -5,9 +5,10 @@ from typing import Any, Dict, List
 from nonebot import on_command
 from nonebot.adapters import Bot as BaseBot
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent, GroupMessageEvent, Message, MessageSegment
+from nonebot.matcher import Matcher
 from nonebot.message import run_postprocessor
 
-from src.plugins.utils import get_admin_qq
+from ..utils import get_admin_qq, handle_errors
 
 # --- 配置 ---
 EXCLUDE_COMMANDS = {"bug反馈", "报告bug"}
@@ -70,7 +71,8 @@ bug_report = on_command("bug反馈", aliases={"报告bug"}, priority=5, block=Tr
 
 
 @bug_report.handle()
-async def report_bug(bot: Bot, event: MessageEvent):
+@handle_errors
+async def report_bug(matcher: Matcher, bot: Bot, event: MessageEvent):
     # ==================== 新增逻辑：频率检测开始 ====================
     current_user_id = event.user_id
     now = time.time()
@@ -88,7 +90,7 @@ async def report_bug(bot: Bot, event: MessageEvent):
     # 检查剩余记录数量是否达到上限
     if len(feedback_records[current_user_id]) >= RATE_LIMIT_MAX_COUNT:
         # 超过限制，直接静默结束，忽略此请求
-        await bug_report.finish()
+        await matcher.finish()
 
     # 记录本次请求时间
     feedback_records[current_user_id].append(now)
@@ -140,8 +142,12 @@ async def report_bug(bot: Bot, event: MessageEvent):
 
         await bot.send(event, "已静默抓取用户日志，正在发送给管理员...")
         await bot.send_msg(user_id=get_admin_qq(), message=final_report)
-        await bug_report.finish(MessageSegment.reply(
-            event.message_id) + f"感谢你的反馈，已将该问题反馈给管理员。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id)
+            + f"感谢你的反馈，已将该问题反馈给管理员。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。"
+        )
     else:
-        await bot.send(event,
-                       f"无法定位你刚才发送的指令，请确保你刚刚执行过其他功能。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。")
+        await matcher.finish(
+            MessageSegment.reply(event.message_id)
+            + f"无法定位你刚才发送的指令，请确保你刚刚执行过其他功能。\n您在{RATE_LIMIT_WINDOW}秒内还有{count}/{RATE_LIMIT_MAX_COUNT}次反馈机会。"
+        )
