@@ -42,11 +42,11 @@ async def handle_suit_random(
         description = ""
         if picture.description:
             description = f"ta的留言是：{picture.description}\n"
-        text = f"这只兽兽叫做”{picture.furry_name}“~\n{description}图片码为：{picture.id}"
+        text = f"这只兽兽叫做“{picture.furry_name}”~\n{description}图片码为：{picture.id}"
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"{text}" + MessageSegment.image(picture.file_path) + "来源：本地\n"
             "您想上传图片吗？仅需发送“上传”即可开始上传流程（上传到本地）\n"
-            f"想要从网络获取图片吗？仅需使用命令“云来只{picture.furry_name}“即可~"
+            f"想要从网络获取图片吗？仅需使用命令“云来只{picture.furry_name}”即可~"
         )
     else:
         response = await get_http_api("furpic", furry_name)
@@ -57,7 +57,7 @@ async def handle_suit_random(
                 text = f"似乎没有找到图片码为{furry_name}的图片呢qwq"
             await matcher.finish(MessageSegment.reply(event.message_id) + text)
         item = response.get("item")
-        text = f"这只兽兽叫做”{item.get('furry_name')}“~\nta的留言是：{item.get('message')}\n图片码为：{item.get('id')}"
+        text = f"这只兽兽叫做“{item.get('furry_name')}”~\nta的留言是：{item.get('message')}\n图片码为：{item.get('id')}"
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"{text}" + MessageSegment.image(item.get("image")) + "来源：网络"
         )

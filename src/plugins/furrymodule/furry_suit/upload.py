@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 from pathlib import Path
+import shutil
 
 import httpx
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageSegment
@@ -20,6 +21,29 @@ FURRY_TYPE_MAP = {"1": "毛照", "2": "稿子"}
 # 缓存目录
 UPLOAD_CACHE_DIR = Path(__file__).parent / "upload"
 UPLOAD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# 兼容迁移：若旧目录 furry/upload 存在未审核文件，自动迁移到新目录 furry_suit/upload
+LEGACY_UPLOAD_DIR = Path(__file__).parent.parent / "furry" / "upload"
+if LEGACY_UPLOAD_DIR.is_dir():
+    for f in LEGACY_UPLOAD_DIR.iterdir():
+        target = UPLOAD_CACHE_DIR / f.name
+        if not target.exists():
+            shutil.move(str(f), str(target))
+        elif f.suffix == ".json":
+            try:
+                old_data = handle_json(f, "r") or []
+                new_data = handle_json(target, "r") or []
+                if old_data and isinstance(old_data, list) and isinstance(new_data, list):
+                    combined = new_data + [item for item in old_data if item not in new_data]
+                    handle_json(target, "w", combined)
+                f.unlink(missing_ok=True)
+            except Exception:
+                pass
+    shutil.rmtree(LEGACY_UPLOAD_DIR, ignore_errors=True)
+    legacy_parent = LEGACY_UPLOAD_DIR.parent
+    if legacy_parent.is_dir() and not any(p for p in legacy_parent.iterdir() if p.name != "__pycache__"):
+        shutil.rmtree(legacy_parent, ignore_errors=True)
+
 ensure_files_exist(
     [UPLOAD_CACHE_DIR / "manifest.json", UPLOAD_CACHE_DIR / "modify.json"],
     normal_data=[[], []],
@@ -56,7 +80,7 @@ async def handle_suit_upload(matcher: Matcher, args: Message = CommandArg()):
         matcher.set_arg("image", Message(image_segments))
 
 
-@cmd_suit_upload.got("image", prompt="请发送图片，注意不要上传群文件。\n想要取消上传，请发送”结束“")
+@cmd_suit_upload.got("image", prompt="请发送图片，注意不要上传群文件。\n想要取消上传，请发送“结束”")
 @handle_errors
 async def handle_suit_upload_image(
     matcher: Matcher,
@@ -74,7 +98,7 @@ async def handle_suit_upload_image(
         await matcher.finish("已取消本次图片上传。")
     image_segments = [seg for seg in matcher.get_arg("image") if seg.type == "image"]
     if not image_segments:
-        await matcher.reject_arg("image", "请发送图片，注意不要上传群文件。\n想要取消上传，请发送”结束“")
+        await matcher.reject_arg("image", "请发送图片，注意不要上传群文件。\n想要取消上传，请发送“结束”")
     name_list, tasks = [], []
     duplicate_sum = 0
     # 下载图片并保存到缓存目录
@@ -156,7 +180,7 @@ async def handle_suit_modify(
 
 @cmd_suit_modify.got(
     "modify_content",
-    prompt="请发送新的属性值。\n想要取消修改，请发送”结束“\n如果想要删除留言，请发送“无”或者一个空格。",
+    prompt="请发送新的属性值。\n想要取消修改，请发送“结束”\n如果想要删除留言，请发送“无”或者一个空格。",
 )
 @handle_errors
 async def handle_suit_modify_attr(
