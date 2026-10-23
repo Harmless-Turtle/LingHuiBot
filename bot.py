@@ -46,6 +46,13 @@ def migrate_env_file() -> None:
             continue
 
         lines = path.read_text(encoding="utf-8").splitlines()
+        existing_keys = set()
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                k, _ = stripped.split("=", 1)
+                existing_keys.add(k.removeprefix("export ").strip())
+
         modified = False
         new_lines = []
 
@@ -53,11 +60,16 @@ def migrate_env_file() -> None:
             stripped = line.strip()
             if stripped and not stripped.startswith("#") and "=" in stripped:
                 k, v = stripped.split("=", 1)
-                k = k.removeprefix("export ").strip()
-                if k in ENV_MIGRATIONS:
-                    new_k = ENV_MIGRATIONS[k]
-                    new_lines.append(f"{new_k}={v.strip()}")
-                    os.environ[new_k] = v.strip().strip("'\"")
+                k_clean = k.removeprefix("export ").strip()
+                if k_clean in ENV_MIGRATIONS:
+                    new_k = ENV_MIGRATIONS[k_clean]
+                    # 若文件中已存在新键，直接移除旧行避免重复
+                    if new_k in existing_keys:
+                        modified = True
+                        continue
+                    prefix = "export " if k.strip().startswith("export ") else ""
+                    new_lines.append(f"{prefix}{new_k}={v}")
+                    existing_keys.add(new_k)
                     modified = True
                     continue
             new_lines.append(line)
