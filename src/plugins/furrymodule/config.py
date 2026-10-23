@@ -32,13 +32,33 @@ class Config(BaseModel):
                 )
         return v
 
+    @property
+    def is_ai_configured(self) -> bool:
+        return bool(
+            self.FURRY_AI_KEY
+            and self.FURRY_AI_BASE_URL
+            and self.FURRY_AI_MODEL_LIST
+        )
+
+    @property
+    def is_con_configured(self) -> bool:
+        return bool(
+            self.FURRY_CON_TOKEN
+            and self.FURRY_CON_USER
+            and self.FURRY_CON_PASSWORD
+        )
+
+    @property
+    def is_suit_configured(self) -> bool:
+        return bool(self.FURRY_SUIT_BASE_URL and self.FURRY_SUIT_KEY)
+
 
 @driver.on_startup
 async def print_furry_config():
     config = get_plugin_config(Config)
 
     # 1. FurryBar 状态
-    if config.FURRY_AI_KEY and config.FURRY_AI_BASE_URL and config.FURRY_AI_MODEL_LIST:
+    if config.is_ai_configured:
         logger.info(
             f"FurryBar 配置已加载: BASE_URL={config.FURRY_AI_BASE_URL}, MODEL_LIST={config.FURRY_AI_MODEL_LIST}"
         )
@@ -48,7 +68,7 @@ async def print_furry_config():
         )
 
     # 2. FurryCon 状态
-    if config.FURRY_CON_TOKEN and config.FURRY_CON_USER and config.FURRY_CON_PASSWORD:
+    if config.is_con_configured:
         logger.info(
             f"兽聚 (FurryCon) 配置已加载: USER={config.FURRY_CON_USER}, SPECIAL_EVENTS={config.FURRY_CON_SPECIAL_EVENTS}"
         )
@@ -58,7 +78,7 @@ async def print_furry_config():
         )
 
     # 3. FurrySuit (鉴毛) 状态
-    if config.FURRY_SUIT_BASE_URL and config.FURRY_SUIT_KEY:
+    if config.is_suit_configured:
         logger.info(
             f"鉴毛 (FurrySuit) 配置已加载: BASE_URL={config.FURRY_SUIT_BASE_URL}"
         )

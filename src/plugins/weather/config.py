@@ -27,17 +27,22 @@ class Config(BaseModel):
         return v
 
 
+    @property
+    def is_configured(self) -> bool:
+        return bool(
+            self.WEATHER_API_KEY
+            and self.WEATHER_PROJECT_ID
+            and self.WEATHER_JWT_ID
+            and self.WEATHER_API_BASEURL
+        )
+
+
 @driver.on_startup
 async def print_weather_config() -> None:
     config = get_plugin_config(Config)
 
     # 和风天气 (Weather) 状态
-    if (
-        config.WEATHER_API_KEY
-        and config.WEATHER_PROJECT_ID
-        and config.WEATHER_JWT_ID
-        and config.WEATHER_API_BASEURL
-    ):
+    if config.is_configured:
         logger.info(
             f"和风天气配置已加载: PROJECT_ID={config.WEATHER_PROJECT_ID}, JWT_ID={config.WEATHER_JWT_ID}, EXPIRED_TIME={config.WEATHER_EXPIRED_TIME}, BASEURL={config.WEATHER_API_BASEURL}"
         )

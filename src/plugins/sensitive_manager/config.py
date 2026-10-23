@@ -13,13 +13,17 @@ class Config(BaseModel):
 
     SENSITIVEADMIN: list[str] = []
 
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.SENSITIVEADMIN)
+
 
 @driver.on_startup
 async def print_sensitive_config() -> None:
     config = get_plugin_config(Config)
 
     # 敏感词管理员状态
-    if config.SENSITIVEADMIN:
+    if config.is_configured:
         logger.info(f"敏感词管理员配置已加载: {config.SENSITIVEADMIN}")
     else:
         logger.warning(

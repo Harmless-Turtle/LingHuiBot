@@ -1,4 +1,11 @@
-from . import config, sensitive_check
+from nonebot import get_plugin_config
+
+from . import config
+from .config import Config
+
+_config = get_plugin_config(Config)
+if _config.is_configured:
+    from . import sensitive_check
 
 # 导出插件元数据
 __plugin_name__ = "敏感词检测"

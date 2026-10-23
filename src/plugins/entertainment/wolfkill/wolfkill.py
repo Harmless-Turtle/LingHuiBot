@@ -1,7 +1,42 @@
-from nonebot import on_command
-from nonebot.adapters.onebot.v11 import Message
+from pathlib import Path
 
-wolf_kill_help = on_command("狼人杀帮助", aliases={"狼人杀说明", "狼人杀指南"})
+from nonebot import get_plugin_config, logger
+from nonebot.adapters.onebot.v11 import (
+    GroupMessageEvent,
+    Message,
+    MessageSegment,
+)
+from nonebot.internal.matcher import Matcher
+from nonebot.params import Depends
+
+from src.plugins import utils
+from .check_rule import (
+    require_not_full,
+    require_room_exists,
+    require_room_not_exists,
+    require_waiting,
+)
+from .commands import (
+    wolf_kill_auto_check,
+    wolf_kill_check_win,
+    wolf_kill_down_people,
+    wolf_kill_help,
+    wolf_kill_join,
+    wolf_kill_new,
+    wolf_kill_over,
+    wolf_kill_start,
+    wolf_kill_tally,
+    wolf_kill_up_people,
+    wolf_kill_vote,
+)
+from .config import Config
+from .wolfkill_game import WolfKillGame
+
+# 获取系统配置
+plugin_config = get_plugin_config(Config)
+min_player = plugin_config.LRS_MIN_PLAYER
+max_player = plugin_config.LRS_MAX_PLAYER
+path = Path.cwd() / "data" / "wolfkill"
 
 
 # 狼人杀帮助指令
@@ -17,11 +52,6 @@ async def _wolf_kill_help(matcher: Matcher):
 
 
 # 自动判定胜负指令
-from nonebot import on_command
-
-wolf_kill_auto_check = on_command("自动判定胜负")
-
-
 @wolf_kill_auto_check.handle()
 async def _wolf_kill_auto_check(
         matcher: Matcher,
@@ -29,7 +59,6 @@ async def _wolf_kill_auto_check(
         room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
-    from .wolfkill_game import WolfKillGame
     game = WolfKillGame(room_file, data)
     winner = game.auto_check_and_finish()
     if winner == '狼人':
@@ -40,30 +69,6 @@ async def _wolf_kill_auto_check(
         await matcher.finish("游戏尚未结束，无胜负。")
 
 
-from pathlib import Path
-
-from nonebot import get_plugin_config, logger
-from nonebot.adapters.onebot.v11 import (
-    GroupMessageEvent,
-    MessageSegment,
-)
-from nonebot.internal.matcher import Matcher
-from nonebot.params import Depends
-
-from .config import Config
-from ..commands import (
-    wolf_kill_new,
-    wolf_kill_join,
-    wolf_kill_start,
-    wolf_kill_over,
-    wolf_kill_up_people,
-    wolf_kill_down_people,
-    wolf_kill_vote,
-    wolf_kill_tally,
-    wolf_kill_check_win
-)
-
-
 # 白天投票指令
 @wolf_kill_vote.handle()
 async def _wolf_kill_vote(
@@ -72,7 +77,6 @@ async def _wolf_kill_vote(
         room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
-    from .wolfkill_game import WolfKillGame
     game = WolfKillGame(room_file, data)
     args = str(event.get_plaintext()).strip().split()
     if len(args) < 2:
@@ -93,7 +97,6 @@ async def _wolf_kill_tally(
         room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
-    from .wolfkill_game import WolfKillGame
     game = WolfKillGame(room_file, data)
     out = game.tally_vote()
     if out is None:
@@ -110,7 +113,6 @@ async def _wolf_kill_check_win(
         room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
-    from .wolfkill_game import WolfKillGame
     game = WolfKillGame(room_file, data)
     winner = game.check_win()
     if winner == '狼人':
@@ -119,17 +121,6 @@ async def _wolf_kill_check_win(
         await matcher.finish("好人阵营胜利！")
     else:
         await matcher.finish("游戏尚未结束。")
-
-
-from .check_rule import require_room_not_exists, require_room_exists, require_waiting, require_not_full
-from .wolfkill_game import WolfKillGame
-from src.plugins import utils
-
-# 获取系统配置
-plugin_config = get_plugin_config(Config)
-min_player = plugin_config.LRS_MIN_PLAYER
-max_player = plugin_config.LRS_MAX_PLAYER
-path = Path.cwd() / "data" / "wolfkill"
 
 
 @wolf_kill_new.handle()
