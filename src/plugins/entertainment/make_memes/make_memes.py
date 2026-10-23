@@ -1,24 +1,26 @@
 from io import BytesIO
 
 from meme_generator import (
+    DeserializeError,
     Image,
-    ImageNumberMismatch,
-    TextNumberMismatch,
-    TextOverLength,
-    MemeFeedback,
     ImageDecodeError,
     ImageEncodeError,
     ImageAssetMissing,
-    DeserializeError,
+    ImageNumberMismatch,
+    MemeFeedback,
+    TextNumberMismatch,
+    TextOverLength,
 )
-from nonebot.adapters.onebot.v11 import MessageSegment, Message, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageSegment
+from nonebot.matcher import Matcher
 from nonebot.params import CommandArg, RawCommand
 
-from src.plugins.entertainment.check_files import memes_make_path
-from src.plugins.utils import handle_errors, at_is_true
-from .meme_list_tools import build_meme_groups, render_meme_list_image, add_meme_list_footer
+from .meme_list_tools import add_meme_list_footer, build_meme_groups, render_meme_list_image
 from .tools import check_memes_func, download_avatar
-from ..commands import meme_matcher, meme_list_matcher
+from ..check_files import memes_make_path
+from ..commands import meme_list_matcher, meme_matcher
+from ...Exceptions import UserVisibleError
+from ...utils import at_is_true, handle_errors
 
 
 # ────────────────────────────────────────────────────────────
@@ -27,14 +29,14 @@ from ..commands import meme_matcher, meme_list_matcher
 
 @meme_list_matcher.handle()
 @handle_errors
-async def handle_meme_list(event: GroupMessageEvent):
+async def handle_meme_list(matcher: Matcher, event: GroupMessageEvent):
     groups = build_meme_groups()
     img = render_meme_list_image(groups)
     img = add_meme_list_footer(img)
     buf = BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
-    await meme_list_matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(buf))
+    await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(buf))
 
 
 # ────────────────────────────────────────────────────────────
@@ -44,20 +46,20 @@ async def handle_meme_list(event: GroupMessageEvent):
 @meme_matcher.handle()
 @handle_errors
 async def handle_meme(
-        event: GroupMessageEvent,
-        args: Message = CommandArg(),
-        raw_cmd=RawCommand()
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    args: Message = CommandArg(),
+    raw_cmd: str = RawCommand(),
 ):
     plain = args.extract_plain_text().strip()
     tokens = plain.split()
     if raw_cmd in ("摸",):
         if "自己" not in str(args) and "[CQ:at" not in str(args):
-            await meme_matcher.finish()
-        meme_key_input = 'petpet'
+            await matcher.finish()
+        meme_key_input = "petpet"
         user_texts = []
     elif not tokens:
-        await meme_matcher.finish(
-            MessageSegment.reply(event.message_id) +
+        raise UserVisibleError(
             "用法：制作表情 <表情名> [文字1] [文字2] ...\n"
             "发送\"表情列表\"可查看所有可用表情及其所需参数。"
         )
@@ -67,7 +69,7 @@ async def handle_meme(
 
     meme = await check_memes_func(meme_key_input)
     if isinstance(meme, RuntimeError):
-        await meme_matcher.finish(MessageSegment.reply(event.message_id) + f"运行时错误：{meme}")
+        raise UserVisibleError(f"运行时错误：{meme}")
     params = meme.info.params
     min_img = params.min_images
     max_img = params.max_images
@@ -87,12 +89,12 @@ async def handle_meme(
         # 补完后仍不足，报错提示
         if len(texts) < min_txt:
             needed = f"{min_txt}" if min_txt == max_txt else f"{min_txt}~{max_txt}"
-            await meme_matcher.finish(MessageSegment.reply(event.message_id) +
-                                      f"该表情「{meme_key_input}」需要 {needed} 段文字，"
-                                      f"你只提供了 {len(user_texts)} 段。\n"
-                                      f"示例：制作表情 {meme_key_input} " +
-                                      " ".join(f"<文字{i + 1}>" for i in range(min_txt))
-                                      )
+            raise UserVisibleError(
+                f"该表情「{meme_key_input}」需要 {needed} 段文字，"
+                f"你只提供了 {len(user_texts)} 段。\n"
+                f"示例：制作表情 {meme_key_input} "
+                + " ".join(f"<文字{i + 1}>" for i in range(min_txt))
+            )
 
     # 超出上限则截断（max_texts == -1 表示无上限）
     if max_txt != -1 and len(texts) > max_txt:
@@ -105,8 +107,6 @@ async def handle_meme(
         # 纯文字表情，不需要图片
         pass
     else:
-        # 保持原有单 @ / 无 @ 行为，只扩展为收集 CommandArg 中的全部 @ 段。
-        # 不改变头像缓存路径和下载时机，避免引入与原插件无关的副作用。
         at_user_ids: list[str] = []
         for segment in args:
             if segment.type == "at":
@@ -125,12 +125,10 @@ async def handle_meme(
                 with open(target_dir, "rb") as f:
                     images.append(Image("avatar", f.read()))
         else:
-            # 完全保留原来的无 @ 逻辑（包括 at_is_true 对非法 AT 的兼容）。
             user_id = await at_is_true(event)
 
             if user_id == "illegal":
-                await meme_matcher.finish(
-                    MessageSegment.reply(event.message_id) + "AT 格式不合法，请直接 @用户 而不是输入 @ 符号。")
+                raise UserVisibleError("AT 格式不合法，请直接 @用户 而不是输入 @ 符号。")
 
             if user_id in ("finish", "illegal") or not user_id.isdigit():
                 if min_img > 0:
@@ -145,10 +143,10 @@ async def handle_meme(
                     images.append(Image("avatar", f.read()))
 
         if len(images) < min_img:
-            await meme_matcher.finish(MessageSegment.reply(event.message_id) +
-                                      f"该表情「{meme_key_input}」需要至少 {min_img} 张图片，"
-                                      f"请 @对应用户 来提供头像。"
-                                      )
+            raise UserVisibleError(
+                f"该表情「{meme_key_input}」需要至少 {min_img} 张图片，"
+                "请 @对应用户 来提供头像。"
+            )
 
     # ── 生成 ─────────────────────────────────────────────────
     result = meme.generate(images, texts, {"circle": True})
@@ -157,28 +155,25 @@ async def handle_meme(
         if using_default:
             keyword = meme.info.keywords[0]
             custom_hint = (
-                    "正在使用默认文本制作图片，要自定义文本，请这么使用：\n"
-                    f"制作表情 {keyword} " +
-                    " ".join(f"<文字{i + 1}>" for i in range(max_txt))
+                "正在使用默认文本制作图片，要自定义文本，请这么使用：\n"
+                f"制作表情 {keyword} "
+                + " ".join(f"<文字{i + 1}>" for i in range(max_txt))
             )
-            await meme_matcher.finish(
-                MessageSegment.reply(event.message_id) + custom_hint + MessageSegment.image(result))
+            await matcher.finish(
+                MessageSegment.reply(event.message_id) + custom_hint + MessageSegment.image(result)
+            )
         else:
-            await meme_matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(result))
+            await matcher.finish(MessageSegment.reply(event.message_id) + MessageSegment.image(result))
     elif isinstance(result, ImageNumberMismatch):
-        await meme_matcher.finish(MessageSegment.reply(event.message_id) +
-                                  f"图片数量不对：需要 {result.min}~{result.max} 张，实际 {result.actual} 张。"
-                                  )
+        raise UserVisibleError(f"图片数量不对：需要 {result.min}~{result.max} 张，实际 {result.actual} 张。")
     elif isinstance(result, TextNumberMismatch):
-        await meme_matcher.finish(MessageSegment.reply(event.message_id) +
-                                  f"文字数量不对：需要 {result.min}~{result.max} 段，实际 {result.actual} 段。"
-                                  )
+        raise UserVisibleError(f"文字数量不对：需要 {result.min}~{result.max} 段，实际 {result.actual} 段。")
     elif isinstance(result, TextOverLength):
-        await meme_matcher.finish(MessageSegment.reply(event.message_id) + f"文字太长了：「{result.text}」")
+        raise UserVisibleError(f"文字太长了：「{result.text}」")
     elif isinstance(result, MemeFeedback):
-        await meme_matcher.finish(MessageSegment.reply(event.message_id) + f"表情生成反馈：{result.feedback}")
+        raise UserVisibleError(f"表情生成反馈：{result.feedback}")
     elif isinstance(result, ImageDecodeError):
-        await meme_matcher.finish(MessageSegment.reply(event.message_id) + f"图片解码失败：{result.error}")
+        raise UserVisibleError(f"图片解码失败：{result.error}")
     elif isinstance(result, (ImageEncodeError, ImageAssetMissing, DeserializeError)):
         raise RuntimeError(str(result))
     else:

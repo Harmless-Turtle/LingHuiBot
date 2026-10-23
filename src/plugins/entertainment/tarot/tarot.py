@@ -11,21 +11,16 @@ from nonebot.adapters.onebot.v11.event import GroupMessageEvent, PrivateMessageE
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from src.plugins.utils import handle_errors
+from ...Exceptions import EntertainmentError
+from ...utils import handle_errors
 from ..commands import tarot, divine
 
 tarot_path: Path = Path(__file__).parent / "resource"
 tarot_official_themes: List[str] = ["BilibiliTarot", "TouhouTarot"]
 
 
-# __tarot_version__ = "v0.4.0.post4"
-# __tarot_usages__ = f'''
-# 塔罗牌 {__tarot_version__}
-# [占卜] 随机选取牌阵进行占卜
-# [塔罗牌] 得到单张塔罗牌回应'''.strip()
-
-class EventNotSupport(Exception):
-    pass
+class EventNotSupport(EntertainmentError):
+    message = "不支持的事件类型"
 
 
 @tarot.handle()
