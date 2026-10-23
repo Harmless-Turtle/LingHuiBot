@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.plugins import utils
+from .. import utils
 
 # data路径作为全局变量使用
 path_header = Path.cwd() / "data"

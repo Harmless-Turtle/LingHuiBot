@@ -1,22 +1,23 @@
+import asyncio
 import os
+import re
 import time
-import jinja2
-import jwt
 from datetime import datetime, timezone, timedelta
 
-import asyncio
+import jinja2
+import jwt
 from nonebot import get_plugin_config, logger, on_message
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message, MessageSegment
-from nonebot_plugin_htmlrender import html_to_pic
 from nonebot.exception import FinishedException
-from nonebot.internal.matcher import Matcher
+from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-import re
+from nonebot_plugin_htmlrender import html_to_pic
 
 from .commands import weather_check, weather_forecast
 from .config import Config
-from src.plugins.utils import handle_errors
 from .utils import http_get
+from ..Exceptions import UserVisibleError
+from ..utils import handle_errors
 
 config = get_plugin_config(Config)
 
@@ -26,15 +27,14 @@ expire_time = config.WEATHER_EXPIRED_TIME
 jwt_id = config.WEATHER_JWT_ID
 base_url = config.WEATHER_API_BASEURL
 
-
 CURRENT_DIR = str(os.path.dirname(__file__))
 TEMPLATE_DIR = os.path.join(CURRENT_DIR, "html_template")
 template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
 template_env = jinja2.Environment(loader=template_loader, enable_async=True)
 
 # ===== 常量 =====
-CITY_SELECTION_TIMEOUT = 5   # 城市选择超时（秒）
-MAX_PENDING_TIMEOUT = 300      # 待选记录最大保留（秒），超过自动清理
+CITY_SELECTION_TIMEOUT = 5  # 城市选择超时（秒）
+MAX_PENDING_TIMEOUT = 300  # 待选记录最大保留（秒），超过自动清理
 VALID_FORECAST_DAYS = {3, 7, 10, 15, 30}
 DEFAULT_FORECAST_DAYS = 7
 
@@ -90,15 +90,15 @@ async def create_jwt() -> dict:
     }
     return headers
 
-@handle_errors
+
 async def lookup_city(city: str) -> list[dict]:
-    """查询城市列表。API 错误时抛出 ValueError。"""
+    """查询城市列表。API 错误时抛出 UserVisibleError。"""
     headers = await create_jwt()
     data = await http_get(
         "LocationID", f"{base_url}/geo/v2/city/lookup?location={city}", headers
     )
     if data["code"] != "200":
-        raise ValueError(
+        raise UserVisibleError(
             f"已经正确请求了API，但API返回了错误: "
             f"{data.get('info', '未知错误')}[Status: {data['code']}]"
         )
@@ -389,19 +389,15 @@ async def _(
         args: Message = CommandArg()
 ):
     if not api_key:
-        await matcher.finish("天气查询功能未配置，请联系管理员。")
+        raise UserVisibleError("天气查询功能未配置，请联系管理员。")
 
     city = args.extract_plain_text().strip()
     if not city:
-        await matcher.finish("请提供要查询的城市名称，例如：天气查询 北京")
-    locations = []
-    try:
-        locations = await lookup_city(city)
-    except ValueError as e:
-        await matcher.finish(MessageSegment.reply(event.message_id) + str(e))
+        raise UserVisibleError("请提供要查询的城市名称，例如：天气查询 北京")
+    locations = await lookup_city(city)
 
     if not locations:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "未找到匹配的城市，请检查城市名称")
+        raise UserVisibleError("未找到匹配的城市，请检查城市名称")
 
     if len(locations) == 1:
         await process_weather_check(matcher, event, locations[0])
@@ -425,15 +421,15 @@ async def _(
         args: Message = CommandArg()
 ):
     if not api_key:
-        await matcher.finish("天气预报功能未配置，请联系管理员。")
+        raise UserVisibleError("天气预报功能未配置，请联系管理员。")
 
     raw_text = args.extract_plain_text().strip()
     if not raw_text:
-        await matcher.finish("请提供要查询的城市名称，例如：天气预报 北京 或 天气预报 北京 3")
+        raise UserVisibleError("请提供要查询的城市名称，例如：天气预报 北京 或 天气预报 北京 3")
 
     city, days, valid_days = parse_forecast_args(raw_text)
     if not city:
-        await matcher.finish("请提供要查询的城市名称，例如：天气预报 北京 或 天气预报 北京 3")
+        raise UserVisibleError("请提供要查询的城市名称，例如：天气预报 北京 或 天气预报 北京 3")
 
     # 天数参数无效时提示
     if not valid_days and len(raw_text.strip().split()) > 1:
@@ -442,13 +438,9 @@ async def _(
             f"不支持该天数预报，已自动使用{days}天预报"
             f"（支持天数: {', '.join(map(str, sorted(VALID_FORECAST_DAYS)))}）"
         )
-    locations = []
-    try:
-        locations = await lookup_city(city)
-    except ValueError as e:
-        await matcher.finish(MessageSegment.reply(event.message_id) + str(e))
+    locations = await lookup_city(city)
     if not locations:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "未找到匹配的城市，请检查城市名称")
+        raise UserVisibleError("未找到匹配的城市，请检查城市名称")
 
     if len(locations) == 1:
         await process_weather_forecast(matcher, event, bot, locations[0], days)
@@ -467,6 +459,7 @@ async def _(
 # ===== 城市选择响应处理器 =====
 
 @city_response.handle()
+@handle_errors
 async def _(
         matcher: Matcher,
         event: GroupMessageEvent,
@@ -493,7 +486,7 @@ async def _(
         choice = int(choice_text)
         if choice < 1 or choice > len(locations):
             del _pending_selections[key]
-            await matcher.finish("输入的编号无效，请重新发送指令查询")
+            raise UserVisibleError("输入的编号无效，请重新发送指令查询")
         location = locations[choice - 1]
         del _pending_selections[key]
 

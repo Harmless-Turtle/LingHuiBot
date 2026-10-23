@@ -3,7 +3,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.plugins.database.models import Groups
+from ..database.models import Groups
 
 
 class TyphoonSubscribe(Model):
