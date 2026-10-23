@@ -9,7 +9,7 @@ import datetime
 from PIL import Image, ImageDraw, ImageFont
 from meme_generator import get_memes
 
-from src.plugins.utils import FONT_PATH
+from ...utils import FONT_PATH
 
 
 def _load_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:

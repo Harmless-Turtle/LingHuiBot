@@ -5,7 +5,7 @@ from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, String,text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.plugins.database.models import Users
+from .....database.models import Users
 
 
 # ==================== ORM 表定义 ====================

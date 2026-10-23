@@ -1,32 +1,32 @@
 import asyncio
 import random as rd
-from typing import Dict, Any
+from typing import Any
 
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot, MessageSegment
-from nonebot.internal.matcher import Matcher
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageSegment
+from nonebot.matcher import Matcher
 from nonebot_plugin_orm import async_scoped_session
 
-from ...models import get_mohui_data, add_mohui_coin, remove_mohui_coin
+from ...models import add_mohui_coin, get_mohui_data, remove_mohui_coin
 from ....commands import guess_number
-from .....utils import handle_errors, get_admin_qq
+from .....Exceptions import UserVisibleError
+from .....utils import get_admin_qq, handle_errors
 
 # 定义全局内存字典
-active_games: Dict[int, Dict[str, Any]] = {}
+active_games: dict[int, dict[str, Any]] = {}
 
 
 @guess_number.handle()
 @handle_errors
 async def _(
-        matcher: Matcher,
-        bot: Bot,
-        event: GroupMessageEvent,
-        session: async_scoped_session,
+    matcher: Matcher,
+    bot: Bot,
+    event: GroupMessageEvent,
+    session: async_scoped_session,
 ):
     # 解析参数读取args值
     args = str(event.get_message()).split()
     if len(args) != 3 or not args[1].isdigit() or not args[2].isdigit():
-        await matcher.finish(MessageSegment.reply(
-            event.message_id) + "没有获取到正确的数据呢...请按照格式：\n猜数字 <猜的数字> <下注金额>来使用命令呢")
+        raise UserVisibleError("没有获取到正确的数据呢...请按照格式：\n猜数字 <猜的数字> <下注金额>来使用命令呢")
 
     user_guess_number, bet_amount = int(args[1]), int(args[2])
     group_id = event.group_id
@@ -36,12 +36,14 @@ async def _(
     obj = await get_mohui_data(session, str(user_id))
     mh_coin = obj.mohui_coin
     if mh_coin < bet_amount:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你的墨辉币不足qwq...")
+        raise UserVisibleError("你的墨辉币不足qwq...")
     if bet_amount <= 0:
-        await bot.send_msg(user_id=get_admin_qq(),
-                           message=f"在猜数字中发现了非法数据，如有必要请及时处理：\nGroup:{event.group_id}\nUser:{event.user_id}")
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) + "下注金额必须大于0捏uwu...\n非法的请求将上报给管理员处理。")
+        await bot.send_msg(
+            user_id=get_admin_qq(),
+            message=f"在猜数字中发现了非法数据，如有必要请及时处理：\nGroup:{event.group_id}\nUser:{event.user_id}",
+        )
+        raise UserVisibleError("下注金额必须大于0捏uwu...\n非法的请求将上报给管理员处理。")
+
     # 扣除下注金额
     await remove_mohui_coin(session, str(user_id), bet_amount)
     await session.commit()
@@ -58,11 +60,14 @@ async def _(
             "correct_number": rd.sample(range(1, 11), 2),
             "player_data": {
                 user_id: [new_bet]
-            }
+            },
         }
-        await bot.send(event, f"这一局猜数字已经开始了捏uwu\n"
-                              f"你对数字{user_guess_number}下注了{bet_amount}个墨辉币捏uwu\n"
-                              f"将在60秒后进行结算。")
+        await bot.send(
+            event,
+            f"这一局猜数字已经开始了捏uwu\n"
+            f"你对数字{user_guess_number}下注了{bet_amount}个墨辉币捏uwu\n"
+            "将在60秒后进行结算。",
+        )
     else:
         # 如果该用户还没下注过，初始化列表；否则追加下注
         if user_id not in active_games[group_id]["player_data"]:
@@ -102,11 +107,11 @@ async def _(
 
     # 构建播报文本
     winner_str = "\n".join(winner_messages) if winner_messages else "没有人获奖呢qwq"
-    group_correct_number_list = '、'.join([str(number) for number in correct_numbers])
+    group_correct_number_list = "、".join([str(number) for number in correct_numbers])
 
     await matcher.finish(
-        MessageSegment.reply(event.message_id) +
-        f"正确数字是：{group_correct_number_list}\n"
+        MessageSegment.reply(event.message_id)
+        + f"正确数字是：{group_correct_number_list}\n"
         f"本场共有 {correct_count} 人猜对捏uwu！\n"
         f"{winner_str}"
     )
