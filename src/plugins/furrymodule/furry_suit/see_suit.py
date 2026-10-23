@@ -1,33 +1,34 @@
+import random as rd
 import time
 
-import jwt
 import httpx
+import jwt
 from httpx import NetworkError
-import random as rd
+from nonebot import get_plugin_config, logger
+from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
-from nonebot import logger,get_driver
 
-from ..commands import see_furry
+from ..commands import cmd_suit_see
+from ..config import Config
 from src.plugins.utils import handle_errors
 
 
-try:
-    see_furry_baseURL = get_driver().config.furry_see_furry
-    secret_key = get_driver().config.furry_see_furry_key
-except AttributeError:
-    see_furry_baseURL = None
-    logger.warning("未读取到鉴毛API，鉴毛功能可能不可用！")
-
-@see_furry.handle()
+@cmd_suit_see.handle()
 @handle_errors
-async def see_furry_function(
+async def handle_suit_see(
         matcher: Matcher,
         event: MessageEvent,
         args: Message = CommandArg()):
     if "#" not in str(args) and str(args) != "":
         await matcher.finish()
+    plugin_config = get_plugin_config(Config)
+    if not plugin_config.FURRY_SUIT_BASE_URL or not plugin_config.FURRY_SUIT_KEY:
+        await matcher.finish(
+            MessageSegment.reply(event.message_id)
+            + "未读取到鉴毛 (FurrySuit) API 配置（FURRY_SUIT_BASE_URL / FURRY_SUIT_KEY），鉴毛功能暂不可用！"
+        )
+        return
     params_data = {"all": "1"}
     try:
         input_data = str(args).split("#")
@@ -42,15 +43,15 @@ async def see_furry_function(
         splice_url = "random"
     # 生成 JWT
     payload = {
-        "qq": "1097740481",  # 用户唯一标识
+        "qq": str(event.user_id),  # 用户唯一标识
         "timestamp": int(time.time())  # 当前时间戳
     }
-    token = jwt.encode(payload, secret_key, algorithm="HS256")
+    token = jwt.encode(payload, plugin_config.FURRY_SUIT_KEY, algorithm="HS256")
     logger.debug(f"生成的 JWT: {token}")
     logger.debug(f"最终生成的params数据：{params_data}")
     try:
         async with httpx.AsyncClient(timeout=None) as client:
-            response = await client.post(f"{see_furry_baseURL}/{splice_url}",
+            response = await client.post(f"{plugin_config.FURRY_SUIT_BASE_URL}/{splice_url}",
                                          json={"qq": payload["qq"], "token": token},
                                          params=params_data,
                                          timeout=None)
