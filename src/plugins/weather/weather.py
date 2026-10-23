@@ -1,23 +1,23 @@
+import asyncio
 import os
+import re
 import time
-import jinja2
-import jwt
 from datetime import datetime, timezone, timedelta
 
-import asyncio
+import jinja2
+import jwt
 from nonebot import get_plugin_config, logger, on_message
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message, MessageSegment
-from nonebot_plugin_htmlrender import html_to_pic
 from nonebot.exception import FinishedException
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
-import re
+from nonebot_plugin_htmlrender import html_to_pic
 
 from .commands import weather_check, weather_forecast
 from .config import Config
-from ..utils import handle_errors
-from ..Exceptions import UserVisibleError
 from .utils import http_get
+from ..Exceptions import UserVisibleError
+from ..utils import handle_errors
 
 config = get_plugin_config(Config)
 
@@ -27,15 +27,14 @@ expire_time = config.WEATHER_EXPIRED_TIME
 jwt_id = config.WEATHER_JWT_ID
 base_url = config.WEATHER_API_BASEURL
 
-
 CURRENT_DIR = str(os.path.dirname(__file__))
 TEMPLATE_DIR = os.path.join(CURRENT_DIR, "html_template")
 template_loader = jinja2.FileSystemLoader(searchpath=TEMPLATE_DIR)
 template_env = jinja2.Environment(loader=template_loader, enable_async=True)
 
 # ===== 常量 =====
-CITY_SELECTION_TIMEOUT = 5   # 城市选择超时（秒）
-MAX_PENDING_TIMEOUT = 300      # 待选记录最大保留（秒），超过自动清理
+CITY_SELECTION_TIMEOUT = 5  # 城市选择超时（秒）
+MAX_PENDING_TIMEOUT = 300  # 待选记录最大保留（秒），超过自动清理
 VALID_FORECAST_DAYS = {3, 7, 10, 15, 30}
 DEFAULT_FORECAST_DAYS = 7
 
@@ -91,7 +90,7 @@ async def create_jwt() -> dict:
     }
     return headers
 
-@handle_errors
+
 async def lookup_city(city: str) -> list[dict]:
     """查询城市列表。API 错误时抛出 UserVisibleError。"""
     headers = await create_jwt()

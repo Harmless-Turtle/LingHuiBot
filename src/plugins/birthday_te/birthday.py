@@ -86,7 +86,5 @@ async def _delete_birthday(
         event: GroupMessageEvent,
         deleted: Annotated[bool, Depends(delete_user_birthday)],
 ):
-    if not deleted:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你还没有设置生日呢。")
-    else:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "已删除你的生日信息。")
+    msg = "已删除你的生日信息。" if deleted else "你还没有设置生日呢。"
+    await matcher.finish(MessageSegment.reply(event.message_id) + msg)
