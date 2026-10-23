@@ -21,7 +21,7 @@ class Config(BaseModel):
                 HttpUrl(v)
             except Exception as e:
                 logger.error(
-                    f"[Weather] 配置项 {info.field_name} 不是合法的 HTTP(S) URL: {v} ({e})"
+                    f"配置项 {info.field_name} 不是合法的 HTTP(S) URL: {v} ({e})"
                 )
             return v.rstrip("/")
         return v
@@ -38,8 +38,10 @@ async def print_weather_config() -> None:
         and config.WEATHER_JWT_ID
         and config.WEATHER_API_BASEURL
     ):
-        logger.info("[Weather] 和风天气 (Weather) 配置已加载")
+        logger.info(
+            f"和风天气配置已加载: PROJECT_ID={config.WEATHER_PROJECT_ID}, JWT_ID={config.WEATHER_JWT_ID}, EXPIRED_TIME={config.WEATHER_EXPIRED_TIME}, BASEURL={config.WEATHER_API_BASEURL}"
+        )
     else:
         logger.warning(
-            "[Weather] 和风天气 (Weather) 配置不完整，该功能未启用！"
+            "和风天气配置不完整，该功能未启用！"
         )
