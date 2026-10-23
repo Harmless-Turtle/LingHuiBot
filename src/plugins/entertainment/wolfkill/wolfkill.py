@@ -42,7 +42,7 @@ async def _wolf_kill_auto_check(
 
 from pathlib import Path
 
-from nonebot import get_driver, logger
+from nonebot import get_plugin_config, logger
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     MessageSegment,
@@ -50,6 +50,7 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.internal.matcher import Matcher
 from nonebot.params import Depends
 
+from .config import Config
 from ..commands import (
     wolf_kill_new,
     wolf_kill_join,
@@ -125,18 +126,10 @@ from .wolfkill_game import WolfKillGame
 from src.plugins import utils
 
 # 获取系统配置
-config = get_driver().config
-min_player = 8
-max_player = 20
+plugin_config = get_plugin_config(Config)
+min_player = plugin_config.LRS_MIN_PLAYER
+max_player = plugin_config.LRS_MAX_PLAYER
 path = Path.cwd() / "data" / "wolfkill"
-
-# 尝试导入自定义配置
-try:
-    min_player = config.lrs_min_player
-    max_player = config.lrs_max_player
-except AttributeError:
-    logger.warning("未从dotEnv文件中获取到配置文件，将导入默认配置的人数上下限。")
-    logger.warning(f"人数范围：{min_player}~{max_player}")
 
 
 @wolf_kill_new.handle()
