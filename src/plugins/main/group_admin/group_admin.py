@@ -13,22 +13,23 @@ from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
-from src.plugins.main.check_file import (
-    group_join_flag_path,
-    check_group_member_path,
-    welcome_path,
+from ..check_file import (
     add_group_check_path,
+    check_group_member_path,
+    group_join_flag_path,
+    welcome_path,
 )
-from src.plugins.main.commands import (
-    change_welcome_text,
+from ..commands import (
     GroupExitMember,
+    add_group,
     change_welcome,
-    switch_add_group,
+    change_welcome_text,
     exit_change,
     handle_group,
-    add_group,
+    switch_add_group,
 )
-from src.plugins.utils import handle_errors, handle_json, get_admin_qq
+from ...Exceptions import UserVisibleError
+from ...utils import get_admin_qq, handle_errors, handle_json
 
 # 入群理由违禁词表：命中任意一个词即自动拒绝（原实现是拿整条理由去匹配一串
 # 拼接起来的字符串，只有理由恰好是这串的子串时才会命中，等于形同虚设）
@@ -202,8 +203,11 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
     user_id = event.user_id
 
     # OneBot v11 的资料卡字段是 nickname，取不到或为空字符串时退回 QQ 号
-    stranger_info = await bot.get_stranger_info(user_id=user_id)
-    user_name = stranger_info.get("nickname") or str(user_id)
+    try:
+        stranger_info = await bot.get_stranger_info(user_id=user_id)
+        user_name = stranger_info.get("nickname") or str(user_id)
+    except ActionFailed:
+        user_name = str(user_id)
 
     # 记录加群请求的 flag
     data = handle_json(group_join_flag_path, "r")
@@ -248,6 +252,7 @@ async def handle_add_group(matcher: Matcher, bot: Bot, event: GroupRequestEvent)
 
 
 @switch_add_group.handle()
+@handle_errors
 async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     arg = args.extract_plain_text()
 
@@ -279,6 +284,7 @@ async def utils_switch_add_group(matcher: Matcher, event: GroupMessageEvent, arg
 
 
 @handle_group.handle()
+@handle_errors
 async def handle_group_request(matcher: Matcher, event: GroupMessageEvent, bot: Bot, args: Message = CommandArg()):
     self_is_admin = await bot.get_group_member_info(group_id=event.group_id, user_id=event.self_id)
     if self_is_admin['role'] == 'member':
@@ -294,20 +300,20 @@ async def handle_group_request(matcher: Matcher, event: GroupMessageEvent, bot: 
         await matcher.finish(MessageSegment.reply(event.message_id) + "命令不正确")
         return
     flag_list = handle_json(group_join_flag_path, 'r')
-    group_flag_list = flag_list[f"{event.group_id}"]
+    group_flag_list = flag_list.get(f"{event.group_id}", [])
     if len(group_flag_list) == 0:
         await matcher.finish(MessageSegment.reply(event.message_id) + "这个群的待审列表是空的qwq")
-    select_flag = 1
     try:
-        select_flag = int(str(args))
+        select_flag = int(str(args).strip())
     except ValueError:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "输入不正确。请确认输入了纯数字")
-    select_flag = group_flag_list[select_flag - 1]
-    del group_flag_list[int(str(args)) - 1]
+        raise UserVisibleError("输入不正确。请确认输入了纯数字")
+    if not (1 <= select_flag <= len(group_flag_list)):
+        raise UserVisibleError("输入的序号超出待审列表范围")
+    flag_val = group_flag_list.pop(select_flag - 1)
     handle_json(group_join_flag_path, 'w', flag_list)
     try:
         await bot.set_group_add_request(
-            flag=str(select_flag),
+            flag=str(flag_val),
             sub_type="add",
             approve=select,
             reason="管理员拒绝通过。"

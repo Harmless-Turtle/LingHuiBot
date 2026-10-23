@@ -1,26 +1,51 @@
 import random as rd
+import re
 import time
 from datetime import datetime as dt, timedelta
 
 import httpx
-from nonebot import get_driver
+from nonebot import get_driver, logger
 from nonebot.adapters.onebot.v11 import (
-    MessageSegment,
-    MessageEvent,
-    Message,
     Bot,
+    FriendRequestEvent,
+    GroupIncreaseNoticeEvent,
+    GroupMessageEvent,
+    Message,
+    MessageEvent,
+    MessageSegment,
+    NoticeEvent,
+    PokeNotifyEvent,
 )
 from nonebot.exception import ActionFailed
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
-from .check_file import *
-from .commands import *
+from .check_file import (
+    aword_path,
+    friend_like_path,
+    poke_path,
+    sign_in_pic_false,
+    sign_in_pic_true,
+    welcome_path,
+)
+from .commands import (
+    SelfJoinGroupWelcome,
+    a_word,
+    add_friend,
+    add_welcome,
+    btfrk,
+    choice_friend,
+    eat_what,
+    like,
+    like_friend,
+    nc_version_info,
+    poke_check,
+    sign_in,
+)
 from .models import do_sign_in
-from .exceptions import SignInError
-from ..entertainment.currency.models import get_mohui_data, add_mohui_coin
-from ..utils import handle_errors, get_admin_qq, image_segment_or_empty
+from ..entertainment.currency.models import add_mohui_coin
+from ..utils import get_admin_qq, handle_errors, handle_json, image_segment_or_empty
 
 # 获取机器人的名字
 config = get_driver().config
@@ -121,12 +146,8 @@ async def sign_in_function(
     if args.extract_plain_text(): await matcher.finish()
     # 获取触发人QQ号和群聊号（签到数据已迁移至 SQLite，见 do_sign_in）
     user, group = event.user_id, event.group_id
-    # 执行签到（ORM）：已签到会抛 AlreadySignedToday，由下方 except 统一反馈
-    try:
-        sign_result = await do_sign_in(session, str(group), str(user))
-    except SignInError as e:
-        await session.rollback()
-        await matcher.finish(MessageSegment.reply(event.message_id) + e.message)
+    # 执行签到（ORM）：已签到会抛 AlreadySignedToday，由 @handle_errors 统一处理
+    sign_result = await do_sign_in(session, str(group), str(user))
     user_count = sign_result.user_count
     group_count = sign_result.group_count
     sign_in_at = sign_result.sign_in_at
@@ -138,10 +159,8 @@ async def sign_in_function(
     # 判断随机给墨辉币的数量
     rd_coins = rd.randint(50, 300)
     operate_coins = user_count * 2 + rd_coins
-    await add_mohui_coin(session, str(event.user_id), operate_coins)
+    balance = await add_mohui_coin(session, str(event.user_id), operate_coins)
     await session.commit()
-    obj = await get_mohui_data(session, str(event.user_id))
-    balance = obj.mohui_coin
     # 判断：调用是否出现“好久不见”字样
     if "好久不见" in str(event.message):
         # 生成检测到“好久不见”字样的默认值
@@ -199,14 +218,12 @@ async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
         MessageSegment.text("推荐用户"),
         user_card
     ])
-    await btfrk.finish(message)
+    await matcher.finish(message)
 
 
 @like_friend.handle()
 @handle_errors
-async def lf_function(matcher: Matcher, event: NoticeEvent):
-    from nonebot import get_bot
-    bot = get_bot()
+async def lf_function(bot: Bot, matcher: Matcher, event: NoticeEvent):
     data = event.model_dump()
     user_data = handle_json(friend_like_path, 'r')
     user_id = data['operator_id']
@@ -268,9 +285,9 @@ async def cf_function(
         bot: Bot,
         args: Message = CommandArg()
 ):
-    if "同意" in str(event.get_message):
+    if "同意" in str(event.get_message()):
         select = True
-    elif "拒绝" in str(event.get_message):
+    elif "拒绝" in str(event.get_message()):
         select = False
     else:
         await matcher.finish(MessageSegment.reply(event.message_id) + "命令不正确")

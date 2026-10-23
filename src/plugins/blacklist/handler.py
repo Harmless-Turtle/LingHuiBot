@@ -1,34 +1,42 @@
-from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment, Message, Bot, MessageEvent, ActionFailed
-from nonebot.internal.matcher import Matcher
+from nonebot import get_driver
+from nonebot.adapters.onebot.v11 import (
+    ActionFailed,
+    Bot,
+    GroupMessageEvent,
+    Message,
+    MessageEvent,
+    MessageSegment,
+)
+from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 from sqlalchemy import select
 
+from ..Exceptions import UserVisibleError
+from ..utils import handle_errors
 from .command import (
     add_group_blacklist,
-    del_group_blacklist,
     add_user_blacklist,
-    del_user_blacklist,
-    check_user_blacklist,
     check_group_blacklist,
-    check_su
+    check_su,
+    check_user_blacklist,
+    del_group_blacklist,
+    del_user_blacklist,
 )
 from .model import GroupBlacklist, UserBlacklist
 
 
 @add_group_blacklist.handle()
+@handle_errors
 async def add_group(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        session: async_scoped_session,
-        args: Message = CommandArg()
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    session: async_scoped_session,
+    args: Message = CommandArg(),
 ):
     group_id = args.extract_plain_text().strip()
     if not group_id.isdigit():
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...请输入一个正确的数字才可以呢。"
-        )
+        raise UserVisibleError("唔...请输入一个正确的数字才可以呢。")
 
     obj = await session.get(GroupBlacklist, group_id)
     if obj is None:
@@ -47,18 +55,16 @@ async def add_group(
 
 
 @del_group_blacklist.handle()
+@handle_errors
 async def del_group(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        session: async_scoped_session,
-        args: Message = CommandArg()
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    session: async_scoped_session,
+    args: Message = CommandArg(),
 ):
     group_id = args.extract_plain_text().strip()
     if not group_id.isdigit():
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...请输入一个正确的数字才可以呢。"
-        )
+        raise UserVisibleError("唔...请输入一个正确的数字才可以呢。")
 
     obj = await session.get(GroupBlacklist, group_id)
     if obj is not None:
@@ -76,24 +82,19 @@ async def del_group(
 
 
 @add_user_blacklist.handle()
+@handle_errors
 async def add_user(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        session: async_scoped_session,
-        args: Message = CommandArg()
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    session: async_scoped_session,
+    args: Message = CommandArg(),
 ):
     user_id = args.extract_plain_text().strip()
     if not user_id.isdigit():
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...请输入一个正确的数字才可以呢。"
-        )
+        raise UserVisibleError("唔...请输入一个正确的数字才可以呢。")
 
     if user_id == str(event.user_id):
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...您不能拉黑自己，请检查参数是否正确输入了呢..."
-        )
+        raise UserVisibleError("唔...您不能拉黑自己，请检查参数是否正确输入了呢...")
 
     obj = await session.get(UserBlacklist, user_id)
     if obj is None:
@@ -112,24 +113,19 @@ async def add_user(
 
 
 @del_user_blacklist.handle()
+@handle_errors
 async def del_user(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        session: async_scoped_session,
-        args: Message = CommandArg()
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    session: async_scoped_session,
+    args: Message = CommandArg(),
 ):
     user_id = args.extract_plain_text().strip()
     if not user_id.isdigit():
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "唔...请输入一个正确的数字才可以呢。"
-        )
+        raise UserVisibleError("唔...请输入一个正确的数字才可以呢。")
 
     if user_id == str(event.user_id):
-        await matcher.finish(
-            MessageSegment.reply(event.message_id) +
-            "?"
-        )
+        raise UserVisibleError("?")
 
     obj = await session.get(UserBlacklist, user_id)
     if obj is None:
@@ -147,11 +143,12 @@ async def del_user(
 
 
 @check_user_blacklist.handle()
+@handle_errors
 async def handle_check_user_blacklist(
-        matcher: Matcher,
-        bot: Bot,
-        session: async_scoped_session,
-        event: MessageEvent
+    matcher: Matcher,
+    bot: Bot,
+    session: async_scoped_session,
+    event: MessageEvent,
 ):
     result = await session.execute(select(UserBlacklist))
     user_list = result.scalars().all()
@@ -162,8 +159,11 @@ async def handle_check_user_blacklist(
         )
     for user in user_list:
         user_id = user.user_id
-        user_info = await bot.get_stranger_info(user_id=int(user_id))
-        user_name = user_info.get("nickname") or "<昵称获取失败>"
+        try:
+            user_info = await bot.get_stranger_info(user_id=int(user_id))
+            user_name = user_info.get("nickname")
+        except ActionFailed:
+            user_name = "<昵称获取失败>"
         text += f"{user_name}[{user_id}]\n"
     await matcher.finish(
         MessageSegment.reply(event.message_id) + f"下面是黑名单用户：\n{text}"
@@ -171,11 +171,12 @@ async def handle_check_user_blacklist(
 
 
 @check_group_blacklist.handle()
+@handle_errors
 async def handle_check_group_blacklist(
-        matcher: Matcher,
-        bot: Bot,
-        session: async_scoped_session,
-        event: MessageEvent
+    matcher: Matcher,
+    bot: Bot,
+    session: async_scoped_session,
+    event: MessageEvent,
 ):
     result = await session.execute(select(GroupBlacklist))
     group_list = result.scalars().all()
@@ -198,17 +199,20 @@ async def handle_check_group_blacklist(
 
 
 @check_su.handle()
-async def handle_chek_su(event: MessageEvent):
+@handle_errors
+async def handle_chek_su(
+    matcher: Matcher,
+    event: MessageEvent,
+):
     normal_message = event.raw_message
     if "凌辉" not in normal_message:
-        await check_su.finish()
-    from nonebot import get_driver
+        await matcher.finish()
     su_list = get_driver().config.superusers
     if str(event.user_id) in su_list:
-        await check_su.finish(
+        await matcher.finish(
             MessageSegment.reply(event.message_id) + "您已经是凌辉 Bot 的超级用户了。"
         )
     else:
-        await check_su.finish(
+        await matcher.finish(
             MessageSegment.reply(event.message_id) + "您不是凌辉 Bot 的超级用户。"
         )
