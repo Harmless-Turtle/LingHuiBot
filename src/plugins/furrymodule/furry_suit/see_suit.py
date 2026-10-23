@@ -11,7 +11,7 @@ from nonebot.params import CommandArg
 
 from ..commands import cmd_suit_see
 from ..config import Config
-from src.plugins.utils import handle_errors
+from ...utils import handle_errors
 
 
 @cmd_suit_see.handle()

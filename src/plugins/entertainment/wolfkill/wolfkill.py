@@ -1,15 +1,16 @@
 from pathlib import Path
 
-from nonebot import get_plugin_config, logger
+from nonebot import get_plugin_config
 from nonebot.adapters.onebot.v11 import (
     GroupMessageEvent,
     Message,
     MessageSegment,
 )
-from nonebot.internal.matcher import Matcher
+from nonebot.matcher import Matcher
 from nonebot.params import Depends
 
-from src.plugins import utils
+from ...Exceptions import UserVisibleError
+from ...utils import handle_errors, handle_json
 from .check_rule import (
     require_not_full,
     require_room_exists,
@@ -41,6 +42,7 @@ path = Path.cwd() / "data" / "wolfkill"
 
 # 狼人杀帮助指令
 @wolf_kill_help.handle()
+@handle_errors
 async def _wolf_kill_help(matcher: Matcher):
     guide_path = Path(__file__).parent / "wolfkill_guide.md"
     if guide_path.exists():
@@ -53,17 +55,17 @@ async def _wolf_kill_help(matcher: Matcher):
 
 # 自动判定胜负指令
 @wolf_kill_auto_check.handle()
+@handle_errors
 async def _wolf_kill_auto_check(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_room_exists),
+    matcher: Matcher,
+    room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
     game = WolfKillGame(room_file, data)
     winner = game.auto_check_and_finish()
-    if winner == '狼人':
+    if winner == "狼人":
         await matcher.finish("狼人阵营胜利！游戏结束。")
-    elif winner == '好人':
+    elif winner == "好人":
         await matcher.finish("好人阵营胜利！游戏结束。")
     else:
         await matcher.finish("游戏尚未结束，无胜负。")
@@ -71,30 +73,31 @@ async def _wolf_kill_auto_check(
 
 # 白天投票指令
 @wolf_kill_vote.handle()
+@handle_errors
 async def _wolf_kill_vote(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_room_exists),
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
     game = WolfKillGame(room_file, data)
     args = str(event.get_plaintext()).strip().split()
     if len(args) < 2:
-        await matcher.finish("请指定你要投票的玩家ID，如：投票狼人杀 123456")
+        raise UserVisibleError("请指定你要投票的玩家ID，如：投票狼人杀 123456")
     try:
         target_id = int(args[1])
     except ValueError:
-        await matcher.finish("请输入有效的玩家ID")
+        raise UserVisibleError("请输入有效的玩家ID")
     game.cast_vote(event.user_id, target_id)
     await matcher.finish(f"你已投票给玩家{target_id}")
 
 
 # 票数结算指令
 @wolf_kill_tally.handle()
+@handle_errors
 async def _wolf_kill_tally(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_room_exists),
+    matcher: Matcher,
+    room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
     game = WolfKillGame(room_file, data)
@@ -107,27 +110,28 @@ async def _wolf_kill_tally(
 
 # 胜负判定指令
 @wolf_kill_check_win.handle()
+@handle_errors
 async def _wolf_kill_check_win(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_room_exists),
+    matcher: Matcher,
+    room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
     game = WolfKillGame(room_file, data)
     winner = game.check_win()
-    if winner == '狼人':
+    if winner == "狼人":
         await matcher.finish("狼人阵营胜利！")
-    elif winner == '好人':
+    elif winner == "好人":
         await matcher.finish("好人阵营胜利！")
     else:
         await matcher.finish("游戏尚未结束。")
 
 
 @wolf_kill_new.handle()
+@handle_errors
 async def _wolf_kill_new(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_file: Path = Depends(require_room_not_exists),
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    room_file: Path = Depends(require_room_not_exists),
 ):
     args = str(event.get_plaintext()).strip().split()
     # 解析自定义人数
@@ -136,65 +140,62 @@ async def _wolf_kill_new(
         try:
             num_players = int(args[1])
             if num_players < min_player or num_players > max_player:
-                await matcher.finish(
-                    MessageSegment.reply(event.message_id) +
-                    f"请输入{min_player}-{max_player}之间的玩家人数。"
-                )
+                raise UserVisibleError(f"请输入{min_player}-{max_player}之间的玩家人数。")
         except ValueError:
-            await matcher.finish(
-                MessageSegment.reply(event.message_id) +
-                "请输入有效的玩家人数。"
-            )
+            raise UserVisibleError("请输入有效的玩家人数。")
     data = {
         "owner": event.user_id,
         "players": [event.user_id],
         "status": "waiting",
         "game_data": {},
-        "max_players": num_players
+        "max_players": num_players,
     }
-    utils.handle_json(room_file, 'w', data)
+    handle_json(room_file, "w", data)
     await matcher.finish(
-        MessageSegment.reply(event.message_id) +
-        f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，"
+        MessageSegment.reply(event.message_id)
+        + f"欢迎使用狼人杀小游戏awa\n已将您设置为本群的游戏房主。\n本局设置人数为{num_players}人，"
         f"未达到人数或未达到最低开始人数（{min_player}人）前无法开始游戏。\n通过“加入狼人杀”来加入游戏\n"
-        f"通过“开始狼人杀”可以开始游戏。\n通过“删除狼人杀房间”可以删除当前房间。"
-        f"因为客户端暂不支持发起群临时会话，要正常发起私聊，请先添加机器人好友。"
+        "通过“开始狼人杀”可以开始游戏。\n通过“删除狼人杀房间”可以删除当前房间。"
+        "因为客户端暂不支持发起群临时会话，要正常发起私聊，请先添加机器人好友。"
     )
 
 
 @wolf_kill_join.handle()
+@handle_errors
 async def _wolf_kill_join(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_not_full),
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    room_data: tuple[Path, dict] = Depends(require_not_full),
 ):
     room_file, data = room_data
-    if event.user_id in data['players']:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "你已经在游戏房间里了，不可以重复进入呢")
+    if event.user_id in data["players"]:
+        raise UserVisibleError("你已经在游戏房间里了，不可以重复进入呢")
 
-    data['players'].append(event.user_id)
-    utils.handle_json(room_file, 'w', data)
+    data["players"].append(event.user_id)
+    handle_json(room_file, "w", data)
     await matcher.finish(
-        MessageSegment.reply(event.message_id) + f"加入成功！当前人数：{len(data['players'])}/{data['max_players']}")
+        MessageSegment.reply(event.message_id) + f"加入成功！当前人数：{len(data['players'])}/{data['max_players']}"
+    )
 
 
 @wolf_kill_start.handle()
+@handle_errors
 async def _wolf_kill_start(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_waiting),
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    room_data: tuple[Path, dict] = Depends(require_waiting),
 ):
     room_file, data = room_data
-    if event.user_id != data['owner']:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "只有房主才能开始游戏！")
+    if event.user_id != data["owner"]:
+        raise UserVisibleError("只有房主才能开始游戏！")
 
-    if len(data['players']) < min_player:
-        await matcher.finish(MessageSegment.reply(event.message_id) + f"当前人数不足，最低需要 {min_player} 人。")
+    if len(data["players"]) < min_player:
+        raise UserVisibleError(f"当前人数不足，最低需要 {min_player} 人。")
 
     # 分配角色
     game = WolfKillGame(room_file, data)
     role_map = game.assign_roles()
-    data['status'] = 'gaming'
+    data["status"] = "gaming"
     game.save()
     # 通知房主分配结果（实际应私聊通知每位玩家自己的身份，这里仅示例）
     msg = "游戏开始！已分配角色。\n"
@@ -204,24 +205,27 @@ async def _wolf_kill_start(
 
 
 @wolf_kill_over.handle()
+@handle_errors
 async def _wolf_kill_over(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        room_data: tuple[Path, dict] = Depends(require_room_exists),
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    room_data: tuple[Path, dict] = Depends(require_room_exists),
 ):
     room_file, data = room_data
-    if event.user_id != data['owner']:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "只有房主才能解散房间！")
+    if event.user_id != data["owner"]:
+        raise UserVisibleError("只有房主才能解散房间！")
 
     room_file.unlink(missing_ok=True)
     await matcher.finish(MessageSegment.reply(event.message_id) + "游戏房间已解散！")
 
 
 @wolf_kill_up_people.handle()
-async def _wolf_kill_up_people():
+@handle_errors
+async def _wolf_kill_up_people(matcher: Matcher):
     pass
 
 
 @wolf_kill_down_people.handle()
-async def _wolf_kill_down_people():
+@handle_errors
+async def _wolf_kill_down_people(matcher: Matcher):
     pass

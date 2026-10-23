@@ -10,10 +10,9 @@ from ..commands import (
     cmd_suit_review_upload,
     cmd_suit_review_modify,
 )
-from src.plugins.utils import handle_errors, handle_json
+from ...utils import batch_get, handle_errors, handle_json
+from .models import FurryPictureData, add_furry_picture, update_furry_picture
 from .upload import UPLOAD_CACHE_DIR
-from ...utils import batch_get
-from .models import add_furry_picture, FurryPictureData, update_furry_picture
 
 
 @cmd_suit_review_list.handle()

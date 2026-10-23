@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.plugins import utils
+from .. import utils
 
 ALL_MENU_MD = Path() / 'markdown' / 'all_menu.md'
 FURRY_MENU_MD = Path() / 'markdown' / 'furry_system.md'
