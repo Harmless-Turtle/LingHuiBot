@@ -28,7 +28,7 @@ class Config(BaseModel):
                 HttpUrl(v)
             except Exception as e:
                 logger.error(
-                    f"[FurryModule] 配置项 {info.field_name} 不是合法的 HTTP(S) URL: {v} ({e})"
+                    f"配置项 {info.field_name} 不是合法的 HTTP(S) URL: {v} ({e})"
                 )
         return v
 
@@ -39,24 +39,30 @@ async def print_furry_config():
 
     # 1. FurryBar 状态
     if config.FURRY_AI_KEY and config.FURRY_AI_BASE_URL and config.FURRY_AI_MODEL_LIST:
-        logger.info("[FurryModule] FurryBar 配置已加载")
+        logger.info(
+            f"FurryBar 配置已加载: BASE_URL={config.FURRY_AI_BASE_URL}, MODEL_LIST={config.FURRY_AI_MODEL_LIST}"
+        )
     else:
         logger.warning(
-            "[FurryModule] FurryBar 配置不完整，该子功能未启用！"
+            "FurryBar 配置不完整，该功能未启用！"
         )
 
     # 2. FurryCon 状态
     if config.FURRY_CON_TOKEN and config.FURRY_CON_USER and config.FURRY_CON_PASSWORD:
-        logger.info(f"[FurryModule] 兽聚 (FurryCon) 配置已加载")
+        logger.info(
+            f"兽聚 (FurryCon) 配置已加载: USER={config.FURRY_CON_USER}, SPECIAL_EVENTS={config.FURRY_CON_SPECIAL_EVENTS}"
+        )
     else:
         logger.warning(
-            "[FurryModule] FurryCon 配置不完整，该子功能未启用！"
+            "FurryCon 配置不完整，该功能未启用！"
         )
 
     # 3. FurrySuit (鉴毛) 状态
     if config.FURRY_SUIT_BASE_URL and config.FURRY_SUIT_KEY:
-        logger.info("[FurryModule] 鉴毛 (FurrySuit) 配置已加载")
+        logger.info(
+            f"鉴毛 (FurrySuit) 配置已加载: BASE_URL={config.FURRY_SUIT_BASE_URL}"
+        )
     else:
         logger.warning(
-            "[FurryModule] FurrySuit 配置不完整，该子功能未启用！"
+            "FurrySuit 配置不完整，该功能未启用！"
         )

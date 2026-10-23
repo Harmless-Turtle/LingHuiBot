@@ -20,8 +20,8 @@ async def print_sensitive_config() -> None:
 
     # 敏感词管理员状态
     if config.SENSITIVEADMIN:
-        logger.info(f"[SensitiveManager] 敏感词管理员配置已加载: {config.SENSITIVEADMIN}")
+        logger.info(f"敏感词管理员配置已加载: {config.SENSITIVEADMIN}")
     else:
         logger.warning(
-            "[SensitiveManager] 敏感词管理员 (SENSITIVEADMIN) 未配置，该功能未启用！"
+            "敏感词管理员配置不完整，该功能未启用！"
         )

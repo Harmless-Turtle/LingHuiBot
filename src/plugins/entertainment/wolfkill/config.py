@@ -29,9 +29,9 @@ async def print_wolfkill_config() -> None:
 
     if config.LRS_MIN_PLAYER is not None and config.LRS_MAX_PLAYER is not None:
         logger.info(
-            f"[WolfKill] 狼人杀人数范围配置已加载: {config.LRS_MIN_PLAYER}~{config.LRS_MAX_PLAYER}"
+            f"狼人杀人数范围配置已加载: {config.LRS_MIN_PLAYER}~{config.LRS_MAX_PLAYER}"
         )
     else:
         logger.warning(
-            "[WolfKill] 狼人杀 配置不完整，该子模块未启用！"
+            "狼人杀配置不完整，该功能未启用！"
         )

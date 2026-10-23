@@ -11,4 +11,7 @@ class Config(BaseModel):
 @driver.on_startup
 async def print_order_config():
     config = get_plugin_config(Config)
-    logger.info(f"[Order] 当前配置项 ORDER_ADMIN: {config.ORDER_ADMIN}")
+    if config.ORDER_ADMIN:
+        logger.info(f"点单管理员配置已加载: {config.ORDER_ADMIN}")
+    else:
+        logger.warning("点单管理员配置不完整，该功能未启用！")
