@@ -22,12 +22,16 @@ class Config(BaseModel):
                 )
         return self
 
+    @property
+    def is_configured(self) -> bool:
+        return self.LRS_MIN_PLAYER is not None and self.LRS_MAX_PLAYER is not None
+
 
 @driver.on_startup
 async def print_wolfkill_config() -> None:
     config = get_plugin_config(Config)
 
-    if config.LRS_MIN_PLAYER is not None and config.LRS_MAX_PLAYER is not None:
+    if config.is_configured:
         logger.info(
             f"狼人杀人数范围配置已加载: {config.LRS_MIN_PLAYER}~{config.LRS_MAX_PLAYER}"
         )

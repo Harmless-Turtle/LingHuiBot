@@ -7,11 +7,15 @@ driver = get_driver()
 class Config(BaseModel):
     ORDER_ADMIN: list = Field(default_factory=list)
 
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.ORDER_ADMIN)
+
 
 @driver.on_startup
 async def print_order_config():
     config = get_plugin_config(Config)
-    if config.ORDER_ADMIN:
+    if config.is_configured:
         logger.info(f"点单管理员配置已加载: {config.ORDER_ADMIN}")
     else:
         logger.warning("点单管理员配置不完整，该功能未启用！")
