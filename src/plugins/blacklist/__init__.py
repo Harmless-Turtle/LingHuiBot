@@ -1,1 +1,3 @@
-from . import handler, __main__
+from . import __main__, handler
+
+__all__ = ["__main__", "handler"]

@@ -1,6 +1,5 @@
 from nonebot import get_plugin_config
 
-from . import config
 from .config import Config
 
 _config = get_plugin_config(Config)
