@@ -56,7 +56,7 @@ class WolfKillGame:
         return self.game_data.get('roles', {}).get(user_id)
 
     def save(self):
-        from src.plugins import utils
+        from ... import utils
         utils.handle_json(self.room_file, 'w', self.data)
 
     # 夜晚行动相关
@@ -154,7 +154,7 @@ class WolfKillGame:
         return self.game_data.get('roles', {}).get(user_id)
 
     def save(self):
-        from src.plugins import utils
+        from ... import utils
         utils.handle_json(self.room_file, 'w', self.data)
 
     # 其他游戏流程方法可继续补充，如夜晚行动、投票、胜负判定等

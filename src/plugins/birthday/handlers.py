@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from nonebot.adapters import Message
@@ -8,16 +8,17 @@ from nonebot.message import event_postprocessor
 from nonebot.params import CommandArg, Depends
 from nonebot.plugin.on import on_command
 
+from ..Exceptions import UserVisibleError
+from ..utils import handle_errors
 from .models import (
-    UserBirthday,
     GroupSettings,
+    UserBirthday,
     UserGroupUsage,
-    get_or_create_user_birthday,
     delete_user_birthday,
     get_or_create_group_settings,
+    get_or_create_user_birthday,
     inc_user_group_usage_today,
 )
-from .. import utils
 
 toggle_birthday_feature = on_command("生日祝贺", priority=5, block=True)
 set_birthday = on_command("我的生日是", priority=5, block=True)
@@ -26,10 +27,11 @@ birthday_greeting_responder = on_command("生日快乐", priority=5, block=True)
 
 
 @set_birthday.handle()
+@handle_errors
 async def _set_birthday(
-        matcher: Matcher,
-        user_birthday: Annotated[UserBirthday, Depends(get_or_create_user_birthday)],
-        args: Message = CommandArg()
+    matcher: Matcher,
+    user_birthday: Annotated[UserBirthday, Depends(get_or_create_user_birthday)],
+    args: Message = CommandArg(),
 ):
     text = args.extract_plain_text().strip()
     try:
@@ -37,13 +39,14 @@ async def _set_birthday(
         user_birthday.birthday_date = parsed_birthday.date()
         await matcher.send(f"你的生日已设置为 {parsed_birthday.strftime('%m-%d')}")
     except ValueError:
-        await matcher.finish("请按格式发送，例如：/我的生日是 01-01")
+        raise UserVisibleError("请按格式发送，例如：/我的生日是 01-01")
 
 
 @delete_birthday.handle()
+@handle_errors
 async def _delete_birthday(
-        matcher: Matcher,
-        deleted: Annotated[bool, Depends(delete_user_birthday)]
+    matcher: Matcher,
+    deleted: Annotated[bool, Depends(delete_user_birthday)],
 ):
     if not deleted:
         await matcher.send("你还没有设置生日呢。")
@@ -52,20 +55,21 @@ async def _delete_birthday(
 
 
 @toggle_birthday_feature.handle()
+@handle_errors
 async def _toggle_birthday_feature(
-        matcher: Matcher,
-        group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)]
+    matcher: Matcher,
+    group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)],
 ):
     group_settings.enable = not group_settings.enable
     await matcher.send("已开启生日祝贺功能" if group_settings.enable else "已关闭生日祝贺功能")
 
 
-@utils.handle_errors
 @birthday_greeting_responder.handle()
+@handle_errors
 async def _birthday_greeting_responder(
-        matcher: Matcher,
-        event: GroupMessageEvent,
-        group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)]
+    matcher: Matcher,
+    event: GroupMessageEvent,
+    group_settings: Annotated[GroupSettings, Depends(get_or_create_group_settings)],
 ):
     group_msg = event.get_plaintext()
     if group_msg != "生日快乐" or not group_settings.enable:
@@ -85,6 +89,6 @@ async def _birthday_greeting_responder(
 
 @event_postprocessor
 async def _track_user_group_usage(
-        _user_group_usage: Annotated[UserGroupUsage, Depends(inc_user_group_usage_today)]
+    _user_group_usage: Annotated[UserGroupUsage, Depends(inc_user_group_usage_today)],
 ):
     pass

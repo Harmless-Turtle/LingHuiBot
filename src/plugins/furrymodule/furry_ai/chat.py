@@ -195,6 +195,7 @@ async def handle_ai_user_config(matcher: Matcher, event: MessageEvent, args: Mes
 
 
 @cmd_ai_chat_clear.handle()
+@handle_errors
 async def handle_ai_chat_clear(matcher: Matcher, event: MessageEvent):
     user = event.user_id
     main_path_temp = AI_USER_DATA_DIR / f"{user}"
@@ -206,22 +207,26 @@ async def handle_ai_chat_clear(matcher: Matcher, event: MessageEvent):
 
 
 @cmd_ai_chat_last.handle()
+@handle_errors
 async def handle_ai_chat_last(matcher: Matcher, event: MessageEvent):
     user = event.user_id
     path = AI_USER_DATA_DIR / f"{user}" / f"{user}.json"
     if not os.path.exists(path):
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到聊天记录")
-    text = handle_json(AI_USER_DATA_DIR / f"{user}" / f"{user}.json", 'r')
-    if text[-1]['role'] == 'system':
+    text = handle_json(AI_USER_DATA_DIR / f"{user}" / f"{user}.json", "r")
+    if text[-1]["role"] == "system":
         await matcher.finish(MessageSegment.reply(event.message_id) + "未找到聊天记录")
-    user = text[-2]['content']
-    text = text[-1]['content']
-    text = re.sub(r'.*?(<think.*?>|</think>|<think/>)', '', text, flags=re.DOTALL).strip()
-    await matcher.finish(MessageSegment.reply(
-        event.message_id) + f"用户：{user}\n模型回复：{text}\n\n为防止刷屏，已经去除思考内容。\n该内容由AI生成.请注意辨别！")
+    user = text[-2]["content"]
+    text = text[-1]["content"]
+    text = re.sub(r".*?(<think.*?>|</think>|<think/>)", "", text, flags=re.DOTALL).strip()
+    await matcher.finish(
+        MessageSegment.reply(event.message_id)
+        + f"用户：{user}\n模型回复：{text}\n\n为防止刷屏，已经去除思考内容。\n该内容由AI生成.请注意辨别！"
+    )
 
 
 @cmd_ai_model_list.handle()
+@handle_errors
 async def handle_ai_model_list(matcher: Matcher, bot: Bot, event: GroupMessageEvent):
     plugin_config = get_plugin_config(Config)
     if not plugin_config.FURRY_AI_MODEL_LIST:

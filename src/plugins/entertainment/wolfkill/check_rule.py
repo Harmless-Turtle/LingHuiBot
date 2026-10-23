@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from nonebot.adapters.onebot.v11 import MessageSegment, GroupMessageEvent
-from nonebot.internal.matcher import Matcher
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, MessageSegment
+from nonebot.matcher import Matcher
 from nonebot.params import Depends
 
-from src.plugins import utils  # 统一修改为和 wolfkill 相同的绝对导入以防报错
+from ... import utils
 
 path = Path.cwd() / "data" / "entertainment" / "wolfkill"
 
