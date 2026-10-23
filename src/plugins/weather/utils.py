@@ -14,7 +14,7 @@ from sqlalchemy import select
 from .check_file import typhoon_id_path
 from .models import TyphoonSubscribe
 # 从全局公共工具包导入
-from src.plugins.utils import handle_errors, handle_json, batch_get
+from ..utils import batch_get, handle_errors, handle_json
 
 # 核心气象学代码中文动态映射表
 GRADE_MAP = {
