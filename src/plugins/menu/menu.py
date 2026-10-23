@@ -2,40 +2,47 @@ import io
 
 from PIL import Image
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, MessageEvent, GroupMessageEvent
-from nonebot.internal.matcher import Matcher
+from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_htmlrender import md_to_pic
 
 from .check_files import *
 from .commands import *
+from ..utils import handle_errors
 
 
 @menu.handle()
+@handle_errors
 async def menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, ALL_MENU_MD, ALL_MENU_PIC_DATA, args)
 
 
 @main_menu.handle()
+@handle_errors
 async def main_menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, MAIN_MENU_MD, MAIN_MENU_PIC_DATA, args)
 
 
 @furry_menu.handle()
+@handle_errors
 async def furry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, FURRY_MENU_MD, FURRY_MENU_PIC_DATA, args)
 
 
 @service_menu.handle()
+@handle_errors
 async def service_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, SERVICE_MENU_MD, SERVICE_MENU_PIC_DATA, args)
 
 
 @marry_menu.handle()
+@handle_errors
 async def marry_menu_func(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, MARRY_MENU_MD, MARRY_MENU_PIC_DATA, args)
 
 
 @admin_menu.handle()
+@handle_errors
 async def admin_menu_func(matcher: Matcher, event: MessageEvent, args: Message = CommandArg()):
     await handle_menu_command(matcher, event, ADMIN_MENU_MD, ADMIN_MENU_PIC_DATA, args)
 

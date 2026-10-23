@@ -12,10 +12,17 @@ import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
 from nonebot import get_driver, logger
-from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment, GroupMessageEvent
+from nonebot.adapters.onebot.v11 import (
+    Message,
+    MessageSegment,
+    GroupMessageEvent,
+    MessageEvent,
+)
 from nonebot.exception import MatcherException
-from nonebot.matcher import Matcher
-from nonebot.params import CommandArg
+from nonebot.matcher import current_bot, current_event, current_matcher
+from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
+
+from .Exceptions import LingHuiError
 
 FONT_PATH = Path() / 'data' / 'SarasaFixedSlabJ-SemiBoldItalic.ttf'
 ERROR_DIR = Path() / "logs"
@@ -32,9 +39,9 @@ else:
 # 捕获并处理函数执行中的异常，生成错误日志并构造用户友好的反馈
 def handle_errors(func):
     """
-    装饰一个函数以捕获异常（除了 MatcherException），提供统一的错误处理逻辑，使用该装饰器需要填写 matcher 和 event 参数。
-        - 记录详细的错误日志到文件
-        - 提供用户友好的错误提示
+    装饰一个事件函数以捕获异常，提供统一的错误处理逻辑。
+        - 业务异常（LingHuiError）会自动回滚事务并直接回复用户友好的提示文案
+        - 系统异常会自动回滚事务，记录详细错误日志并发送带图反馈
 
     Args:
         func: 被装饰的异步函数，通常是一个事件处理函数。
@@ -45,51 +52,81 @@ def handle_errors(func):
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
+        bot = current_bot.get()
+        event = current_event.get()
+        matcher = current_matcher.get()
+        session = next((x for x in (*args, *kwargs.values())
+                        if isinstance(x, (async_scoped_session, AsyncSession))), None)
+
         try:
             return await func(*args, **kwargs)
         except MatcherException:
             raise
-        except Exception as error:
-            # 追踪并格式化错误日志
-            error_script = traceback.extract_tb(error.__traceback__)[-1].filename
-            times = lambda x: time.strftime(x)
-            error_msg = (
-                f"脚本：{error_script}\n"
-                f"在“{times('%Y-%m-%d %a %H:%M:%S')}”时返回了异常错误。内容如下：\n\n"
-                f"{traceback.format_exc()}\n"
-                "---------------------异常错误截止---------------------\n"
-            )
+        # 预期异常
+        except LingHuiError as biz_err:
+            if session: await session.rollback()
 
-            # 追加到工作目录的 ERROR_DIR/error.log
-            ERROR_DIR.mkdir(parents=True, exist_ok=True)
-            with open(ERROR_DIR / "error.log", 'a', encoding='utf-8') as filestream:
-                filestream.write(error_msg)
-
-            # 按时间戳生成并保存报错图片到 logs/error_****.png
-            error_image = generate_text_image(error_msg, FONT_PATH)
-            error_image.save(ERROR_DIR / f"error_{times('%Y%m%d%H%M%S')}.png", format="PNG")
-
-            # 如果事件是消息类型，则尝试回复用户报错图片和消息
-            event = next((x for x in args if isinstance(x, MessageEvent)), kwargs.get("event"))
-            matcher = next((x for x in args if isinstance(x, Matcher)), kwargs.get("matcher"))
-
-            if isinstance(event, MessageEvent) and matcher:
-                buffer_image = BytesIO()
-                error_image.save(buffer_image, format="PNG")
-                buffer_image.seek(0)
-                error_response = create_error_reply(error, event, buffer_image)
-                if error_response:
-                    await matcher.finish(error_response + "\nTips:您可以通过发送“bug反馈”来将此错误日志直接反馈给开发者")
+            if isinstance(event, MessageEvent):
+                await matcher.finish(MessageSegment.reply(event.message_id) + biz_err.message)
+            # 对非交互事件如群通知之类的异常则直接通知超级管理员
             else:
-                logger.warning(
-                    f"{__name__}捕获到错误，但由于被装饰的函数没有填写 matcher 和 event 参数，无法告知用户")
+                await notify_superusers(bot, f"事件类型：{event.get_event_name()}\n提示内容：{biz_err.message}")
+                await matcher.finish()
+
+        # 非预期异常
+        except Exception as error:
+            if session: await session.rollback()
+
+            error_msg, buffer_image = _record_error_snapshot(error)
+
+            if isinstance(event, MessageEvent):
+                error_response = create_error_reply(error, event, buffer_image)
+                await matcher.finish(
+                    error_response
+                    + "\nTips:您可以通过发送“bug反馈”来将此错误日志直接反馈给开发者"
+                )
+            else:
                 logger.error(error_msg)
+                await notify_superusers(bot, f"LingHuiBot 事件异常告警\n{error_msg}")
+                await matcher.finish()
 
     return wrapper
 
 
+async def notify_superusers(bot, text: str):
+    for su_id in getattr(get_driver().config, "superusers", set()):
+        try:
+            await bot.send_private_msg(user_id=int(su_id), message=text)
+        except Exception as e:
+            logger.warning(f"向超级管理员 {su_id} 推送私聊失败: {e}")
+
+
+def _record_error_snapshot(error: Exception) -> tuple[str, BytesIO]:
+    """格式化错误栈，写入 error.log，并保存一份错误图片到磁盘，返回日志文本与图片字节流"""
+    error_script = traceback.extract_tb(error.__traceback__)[-1].filename
+    times = lambda x: time.strftime(x)
+    error_msg = (
+        f"脚本：{error_script}\n"
+        f"在“{times('%Y-%m-%d %a %H:%M:%S')}”时返回了异常错误。内容如下：\n\n"
+        f"{traceback.format_exc()}\n"
+        "---------------------异常错误截止---------------------\n"
+    )
+
+    ERROR_DIR.mkdir(parents=True, exist_ok=True)
+    with open(ERROR_DIR / "error.log", 'a', encoding='utf-8') as filestream:
+        filestream.write(error_msg)
+
+    error_image = generate_text_image(error_msg, FONT_PATH)
+    error_image.save(ERROR_DIR / f"error_{times('%Y%m%d%H%M%S')}.png", format="PNG")
+
+    buffer_image = BytesIO()
+    error_image.save(buffer_image, format="PNG")
+    buffer_image.seek(0)
+    return error_msg, buffer_image
+
+
 # 根据异常类型生成对应的错误回复消息
-def create_error_reply(error: Exception, event: MessageEvent, buffer_image: BytesIO) -> Optional[Message]:
+def create_error_reply(error: Exception, event: MessageEvent, buffer_image: BytesIO) -> Message:
     """
     根据异常类型生成用户友好的错误响应消息。
 
@@ -99,10 +136,9 @@ def create_error_reply(error: Exception, event: MessageEvent, buffer_image: Byte
         event: 事件对象，用于构建回复引用
 
     Returns:
-        构建的错误响应消息，如果无法构建则返回None
+        构建的错误响应消息
     """
-    # 获取消息 ID 上下文
-    reply_part = (MessageSegment.reply(event.message_id))
+    reply_part = MessageSegment.reply(event.message_id)
 
     # 根据异常类型构建不同的响应消息
     if isinstance(error, httpx.ReadTimeout):
@@ -111,8 +147,11 @@ def create_error_reply(error: Exception, event: MessageEvent, buffer_image: Byte
         return reply_part + "服务器断开了连接且未发送任何数据给凌辉qwq...请稍后再试"
 
     # 默认错误消息
-    return (reply_part + f"没有正确处理请求呢qwq...请联系管理员[{get_admin_qq()}]协助解决哦"
-            + MessageSegment.image(buffer_image))
+    return (
+            reply_part
+            + f"没有正确处理请求呢qwq...请联系管理员[{get_admin_qq()}]协助解决哦"
+            + MessageSegment.image(buffer_image)
+    )
 
 
 # 根据多行文本和字体生成一张自动排版的图片
