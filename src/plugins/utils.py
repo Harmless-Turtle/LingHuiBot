@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 import time
 import traceback
 from datetime import datetime, timedelta, timezone
@@ -212,7 +213,21 @@ def handle_json(json_path: Path, mode: str, data: Optional[dict | list] = None) 
                 raise ValueError("未找到应写入的 data！")
             path_obj = Path(json_path)
             content = json.dumps(data, ensure_ascii=False, indent=4)
-            path_obj.write_text(content, encoding="utf-8")
+            path_obj.parent.mkdir(parents=True, exist_ok=True)
+            # 先写临时文件再原子替换，避免进程中断把原 JSON 写坏
+            fd, tmp_name = tempfile.mkstemp(
+                prefix=f"{path_obj.name}.", suffix=".tmp", dir=str(path_obj.parent)
+            )
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as fp:
+                    fp.write(content)
+                os.replace(tmp_name, path_obj)
+            except BaseException:
+                try:
+                    os.unlink(tmp_name)
+                except OSError:
+                    pass
+                raise
             return None
         else:
             raise ValueError(f"非法的 mode 参数: {mode}")
