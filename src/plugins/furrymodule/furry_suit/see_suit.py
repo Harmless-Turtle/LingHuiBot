@@ -3,7 +3,7 @@ import time
 
 import httpx
 import jwt
-from httpx import NetworkError
+from httpx import NetworkError, TimeoutException
 from nonebot import get_plugin_config, logger
 from nonebot.adapters.onebot.v11 import Message, MessageEvent, MessageSegment
 from nonebot.matcher import Matcher
@@ -50,19 +50,25 @@ async def handle_suit_see(
     logger.debug(f"生成的 JWT: {token}")
     logger.debug(f"最终生成的params数据：{params_data}")
     try:
-        async with httpx.AsyncClient(timeout=None) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(f"{plugin_config.FURRY_SUIT_BASE_URL}/{splice_url}",
                                          json={"qq": payload["qq"], "token": token},
-                                         params=params_data,
-                                         timeout=None)
-    except NetworkError:
-        await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常，无法访问鉴毛API，请稍后再试。")
-    data = response.json()
+                                         params=params_data)
+    except (NetworkError, TimeoutException):
+        await matcher.finish(MessageSegment.reply(event.message_id) + "网络异常或请求超时，无法访问鉴毛API，请稍后再试。")
+    try:
+        data = response.json()
+    except ValueError:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "鉴毛API返回了无法解析的数据，请稍后再试。")
+    if not isinstance(data, dict):
+        await matcher.finish(MessageSegment.reply(event.message_id) + "鉴毛API返回了无法解析的数据，请稍后再试。")
     if response.status_code != 200:
-        text = data['message']
+        text = data.get('message', '未知错误')
         await matcher.finish(
             MessageSegment.reply(event.message_id) + f"鉴毛API返回：{text}[HTTP {response.status_code}]，请稍后再试。")
-    data = data['data']
+    data = data.get('data') or []
+    if not isinstance(data, list) or not data:
+        await matcher.finish(MessageSegment.reply(event.message_id) + "没有找到匹配的鉴毛记录呢qwq")
     select = rd.randint(0, len(data) - 1)
     data = data[select]
     qishu = data['qishu']
