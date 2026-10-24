@@ -123,38 +123,3 @@ class WolfKillGame:
         alive_players = self.game_data.get('alive_players', self.players)
         return WolfKillVote.check_win(role_map, alive_players)
 
-    def assign_roles(self) -> Dict[int, str]:
-        """
-        分配角色，返回玩家ID到角色的映射。
-        """
-        num_players = len(self.players)
-        roles = self._get_roles(num_players)
-        random.shuffle(self.players)
-        random.shuffle(roles)
-        role_map = {pid: role for pid, role in zip(self.players, roles)}
-        self.game_data['roles'] = role_map
-        self.data['game_data'] = self.game_data
-        return role_map
-
-    def _get_roles(self, num_players: int) -> List[str]:
-        """
-        根据人数生成角色列表。
-        """
-        # 以12人为例：3狼3民1预言家1女巫1猎人1守卫2白痴
-        # 可根据实际需求调整
-        if num_players < 8:
-            raise ValueError('人数不足，无法分配角色')
-        roles = ['狼人'] * (num_players // 4)
-        roles += ['预言家', '女巫', '猎人', '守卫', '白痴']
-        while len(roles) < num_players:
-            roles.append('村民')
-        return roles[:num_players]
-
-    def get_player_role(self, user_id: int) -> Optional[str]:
-        return self.game_data.get('roles', {}).get(user_id)
-
-    def save(self):
-        from ... import utils
-        utils.handle_json(self.room_file, 'w', self.data)
-
-    # 其他游戏流程方法可继续补充，如夜晚行动、投票、胜负判定等

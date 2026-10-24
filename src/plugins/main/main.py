@@ -200,9 +200,6 @@ async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
         for name in filtered_member_names:
             if match.group(1) in name:
                 select = name
-        if select is None:
-            await matcher.finish("未找到")
-            return
         for i in members:
             if i['nickname'] == select or i['card'] == select or i['title'] == select:
                 select_qq = int(i['user_id'])

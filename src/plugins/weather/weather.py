@@ -283,7 +283,7 @@ async def process_weather_check(
         rendered_html = await template.render_async(**render_context)
         logger.debug(f"天气卡片模板渲染成功！体积: {len(rendered_html)} 字节")
     except FinishedException:
-        pass
+        raise
     except Exception as e:
         logger.error(f"Jinja2 模板渲染发生错误: {e}")
         await matcher.finish(MessageSegment.reply(event.message_id) + f"模板渲染发生局部错误: {e}")
@@ -292,7 +292,7 @@ async def process_weather_check(
         img_bytes = await html_to_pic(html=rendered_html, viewport={"width": 400, "height": 600})
         await matcher.finish(MessageSegment.image(img_bytes))
     except FinishedException:
-        pass
+        raise
     except Exception as e:
         logger.error(f"Playwright 截图失败: {e}")
         await matcher.finish(MessageSegment.reply(event.message_id) + f"卡片截图失败，错误原因: {e}")
@@ -373,7 +373,7 @@ async def process_weather_forecast(
     try:
         await bot.send_group_forward_msg(group_id=event.group_id, messages=forward_nodes)
     except FinishedException:
-        pass
+        raise
     except Exception as e:
         logger.error(f"发送天气预报合并转发消息失败: {e}")
         await matcher.finish("发送合并转发天气流失败，请检查机器人发群合并转发的相关权限。")
