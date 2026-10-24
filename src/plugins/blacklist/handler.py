@@ -161,7 +161,7 @@ async def handle_check_user_blacklist(
         user_id = user.user_id
         try:
             user_info = await bot.get_stranger_info(user_id=int(user_id))
-            user_name = user_info.get("nickname")
+            user_name = user_info.get("nickname") or "<昵称获取失败>"
         except ActionFailed:
             user_name = "<昵称获取失败>"
         text += f"{user_name}[{user_id}]\n"
