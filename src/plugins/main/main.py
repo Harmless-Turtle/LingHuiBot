@@ -223,7 +223,9 @@ async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
 async def lf_function(bot: Bot, matcher: Matcher, event: NoticeEvent):
     data = event.model_dump()
     user_data = handle_json(friend_like_path, 'r')
-    user_id = data['operator_id']
+    user_id = data.get('operator_id') or data.get('user_id')
+    if user_id is None:
+        await matcher.finish()
     now = dt.now()
     day = now.day
     dict_day = day
