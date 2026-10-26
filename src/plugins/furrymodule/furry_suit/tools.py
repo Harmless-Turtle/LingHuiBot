@@ -7,6 +7,10 @@ from nonebot import logger
 from nonebot_plugin_orm import async_scoped_session
 from sqlalchemy import select
 from .models import FurryPictureData
+from ...Exceptions import UserVisibleError
+
+# 单张图上限，避免被超大文件拖垮磁盘/内存
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 async def download_image(
         client: httpx.AsyncClient,
@@ -19,6 +23,8 @@ async def download_image(
     """
     response = await client.get(url)
     response.raise_for_status()
+    if len(response.content) > MAX_IMAGE_BYTES:
+        raise UserVisibleError("图片太大了，请上传 10MB 以内的图片呢xwx")
     image = Image.open(BytesIO(response.content))
     image_format = image.format
     if image_format == "PNG":

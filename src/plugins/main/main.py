@@ -55,35 +55,28 @@ except AttributeError:
     logger.warning("未加载到NICKNAME配置，请前往dotEnv文件新建该配置项，否则部分功能可能不可用")
 
 # 定义全局变量
-poke_count = 0
-time_count = time.time()
-send = True
+_poke_records: dict[str, list[float]] = {}
+POKE_LIMIT = 3
+POKE_WINDOW = 120.0
 at_count = 0
 at_time = time.time()
 
 
 @poke_check.handle()
 @handle_errors
-async def pc_function(matcher: Matcher):
-    global poke_count, time_count, send
-    if poke_count >= 3 and time.time() - time_count <= 120:
-        if time.time() - time_count >= 120:
-            poke_count = 0
-            await pc_function(matcher)
-        else:
-            if send:
-                send = False
-                await matcher.finish("呜呜...不可以再捏了~（2分钟后可以继续捏~）")
-            else:
-                pass
-    else:
-        send = True
-        text_list = handle_json(poke_path, 'r')
+async def pc_function(matcher: Matcher, event: PokeNotifyEvent):
+    user_id = str(event.user_id)
+    now = time.monotonic()
+    records = [t for t in _poke_records.get(user_id, []) if now - t <= POKE_WINDOW]
+    if len(records) >= POKE_LIMIT:
+        _poke_records[user_id] = records
+        await matcher.finish("呜呜...不可以再捏了~（2分钟后可以继续捏~）")
 
-        poke_count += 1
-        time_count = time.time()
-        random_message = text_list[rd.randint(0, len(text_list) - 1)]
-        await matcher.finish(f"{random_message}")
+    records.append(now)
+    _poke_records[user_id] = records
+    text_list = handle_json(poke_path, 'r')
+    random_message = text_list[rd.randint(0, len(text_list) - 1)]
+    await matcher.finish(f"{random_message}")
 
 
 @add_welcome.handle()
@@ -223,7 +216,9 @@ async def wc_btfrk(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
 async def lf_function(bot: Bot, matcher: Matcher, event: NoticeEvent):
     data = event.model_dump()
     user_data = handle_json(friend_like_path, 'r')
-    user_id = data['operator_id']
+    user_id = data.get('operator_id') or data.get('user_id')
+    if user_id is None:
+        await matcher.finish()
     now = dt.now()
     day = now.day
     dict_day = day
@@ -260,7 +255,7 @@ async def af_function(bot: Bot, matcher: Matcher, event: FriendRequestEvent):
     request_type, user_id, flag, comment = event.request_type, event.user_id, event.flag, event.comment
     stranger_info = await bot.get_stranger_info(user_id=int(user_id))
     user_nickname = stranger_info.get('nickname', '昵称获取失败')
-    friend_request_message = (
+    friend_request_message = MessageSegment.text(
         f"发现新用户试图添加Bot为好友，请查看参数后决定是否批准Bot添加好友。\n"
         f"用户参数如下：\n"
         f"加好友请求来源：{request_type}\n"

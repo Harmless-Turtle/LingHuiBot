@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 
-from nonebot import logger
+from nonebot import get_driver, logger
 from nonebot.adapters.onebot.v11 import (
     GroupDecreaseNoticeEvent,
     GroupMessageEvent,
@@ -90,12 +90,14 @@ async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, match
     else:
         reason = "未知原因"
 
-    # 构造消息
+    # 构造消息（用户昵称/原因可能被恶意构造，统一按纯文本发送，避免 CQ 码注入）
     message = Message(
-        f"似乎有人离开了我们...？"
-        f"时间：{dt.fromtimestamp(event.time).strftime('%Y-%m-%d %H:%M:%S')}\n"
-        f"用户：{user_nickname} ({event.user_id})\n"
-        f"原因：{reason}"
+        MessageSegment.text(
+            "似乎有人离开了我们...？\n"
+            f"时间：{dt.fromtimestamp(event.time).strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"用户：{user_nickname} ({event.user_id})\n"
+            f"原因：{reason}"
+        )
     )
 
     # 发送到群聊
@@ -108,6 +110,10 @@ async def handle_group_decrease(event: GroupDecreaseNoticeEvent, bot: Bot, match
 @exit_change.handle()
 @handle_errors
 async def change_exit_function(matcher: Matcher, event: GroupMessageEvent, args: Message = CommandArg()):
+    # 只有群管理员/群主/超级用户能改开关，避免普通成员随意关闭提醒
+    user_role = event.sender.role
+    if str(event.user_id) not in get_driver().config.superusers and user_role == "member":
+        raise UserVisibleError("只有群管理员或超级用户才能修改退群提示开关哦")
     args = str(args)
     data = handle_json(check_group_member_path, "r")
     exit_message, write = "", None

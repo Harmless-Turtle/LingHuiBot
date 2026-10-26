@@ -148,7 +148,7 @@ async def handle_check(
         try:
             await bot.send_private_msg(
                 user_id=int(admin_id),
-                message=(
+                message=MessageSegment.text(
                     f"群{group_id}有用户触发敏感词:\n"
                     f"用户：{event.user_id}\n"
                     f"内容：{text}\n"
