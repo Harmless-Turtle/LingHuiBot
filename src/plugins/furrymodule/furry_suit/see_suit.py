@@ -11,11 +11,10 @@ from nonebot.params import CommandArg
 
 from ..commands import cmd_suit_see
 from ..config import Config
-from ...utils import cooldown, handle_errors
+from ...utils import handle_errors
 
 
 @cmd_suit_see.handle()
-@cooldown(5)
 @handle_errors
 async def handle_suit_see(
         matcher: Matcher,
