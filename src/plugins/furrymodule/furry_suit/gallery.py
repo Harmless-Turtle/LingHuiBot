@@ -11,7 +11,9 @@ from ..commands import (
     cmd_suit_list,
 )
 from ...utils import batch_get, handle_errors
+from ..check_files import SUIT_PICTURE_DATA_DIR
 from .models import FurryPictureData
+from .tools import load_picture, picture_segment
 from ..furry_con.tools import get_http_api
 
 
@@ -43,7 +45,8 @@ async def handle_suit_random(
             description = f"ta的留言是：{picture.description}\n"
         text = f"这只兽兽叫做“{picture.furry_name}”~\n{description}图片码为：{picture.id}"
         await matcher.finish(
-            MessageSegment.reply(event.message_id) + f"{text}" + MessageSegment.image(picture.file_path) + "来源：本地\n"
+            MessageSegment.reply(event.message_id) + f"{text}"
+            + picture_segment(picture.file_path, SUIT_PICTURE_DATA_DIR) + "来源：本地\n"
             "您想上传图片吗？仅需发送“上传”即可开始上传流程（上传到本地）\n"
             f"想要从网络获取图片吗？仅需使用命令“云来只{picture.furry_name}”即可~"
         )
@@ -87,6 +90,8 @@ async def handle_suit_list(
 图片类型：{picture.type}
 上传时间：{picture.upload_timestamp}
 """
-        batch_text = await batch_get(text, picture.file_path, event.user_id, "furry_list")
+        batch_text = await batch_get(
+            text, load_picture(picture.file_path, SUIT_PICTURE_DATA_DIR), event.user_id, "furry_list"
+        )
         final_list.append(batch_text)
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=final_list)

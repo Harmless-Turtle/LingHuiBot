@@ -1,6 +1,5 @@
 from datetime import datetime
-from pathlib import Path
-import os
+from pathlib import PurePath
 
 from nonebot_plugin_orm import Model,async_scoped_session
 from sqlalchemy import DateTime, ForeignKey, String
@@ -39,7 +38,6 @@ async def update_furry_picture(
         picture_id: int,
         attr: str,
         new_value: str,
-        picture: Path | bool
 ) -> bool:
     picture_db = await session.get(FurryPictureData, picture_id)
 
@@ -52,9 +50,8 @@ async def update_furry_picture(
     elif attr == "图片类型":
         picture_db.type = new_value
     elif attr == "图片":
-        picture_db.file_path = str(picture)
-        if picture:
-            picture_db.file_name = os.path.basename(picture)
+        picture_db.file_path = new_value
+        picture_db.file_name = PurePath(new_value).name
     elif attr == "图片留言":
         if new_value == " " or new_value == "无":
             picture_db.description = None

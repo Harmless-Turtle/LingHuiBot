@@ -10,21 +10,27 @@ from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
 
 from ...utils import ensure_files_exist, handle_errors, handle_json
+from ..check_files import SUIT_UPLOAD_DIR
 from ..commands import cmd_suit_modify, cmd_suit_upload
 from .models import FurryPictureData
-from .tools import download_image, is_picture
+from .tools import download_image, is_picture, to_relative_path
 
 # 用户输入 1 -> 毛照，输入 2 -> 稿子
 FURRY_TYPE_MAP = {"1": "毛照", "2": "稿子"}
 
-# 缓存目录
-UPLOAD_CACHE_DIR = Path(__file__).parent / "upload"
+# 待审核缓存放在 data 下，以便 Docker 挂载持久化，并与正式目录处于同一文件系统
+UPLOAD_CACHE_DIR = SUIT_UPLOAD_DIR / "furry_suit"
 UPLOAD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-# 兼容迁移：若旧目录 furry/upload 存在未审核文件，自动迁移到新目录 furry_suit/upload
-LEGACY_UPLOAD_DIR = Path(__file__).parent.parent / "furry" / "upload"
-if LEGACY_UPLOAD_DIR.is_dir():
-    for f in LEGACY_UPLOAD_DIR.iterdir():
+# 兼容迁移：旧版缓存目录（furry/upload、furry_suit/upload）中的未审核文件迁移到新目录
+LEGACY_UPLOAD_DIRS = (
+    Path(__file__).parent.parent / "furry" / "upload",
+    Path(__file__).parent / "upload",
+)
+for legacy_upload_dir in LEGACY_UPLOAD_DIRS:
+    if not legacy_upload_dir.is_dir():
+        continue
+    for f in legacy_upload_dir.iterdir():
         target = UPLOAD_CACHE_DIR / f.name
         if not target.exists():
             shutil.move(str(f), str(target))
@@ -38,8 +44,8 @@ if LEGACY_UPLOAD_DIR.is_dir():
                 f.unlink(missing_ok=True)
             except Exception:
                 pass
-    shutil.rmtree(LEGACY_UPLOAD_DIR, ignore_errors=True)
-    legacy_parent = LEGACY_UPLOAD_DIR.parent
+    shutil.rmtree(legacy_upload_dir, ignore_errors=True)
+    legacy_parent = legacy_upload_dir.parent
     if legacy_parent.is_dir() and not any(p for p in legacy_parent.iterdir() if p.name != "__pycache__"):
         shutil.rmtree(legacy_parent, ignore_errors=True)
 
@@ -124,7 +130,7 @@ async def handle_suit_upload_image(
             "timestamp": datetime.now().isoformat(),
             "user_id": event.user_id,
             "group_id": event.group_id,
-            "file_path": str(file_path),
+            "file_path": to_relative_path(file_path),
             "message": message,
         }
         upload_furry_data.append(upload_info)
@@ -239,7 +245,7 @@ async def handle_suit_modify_attr(
         "timestamp": datetime.now().isoformat(),
         "user_id": event.user_id,
         "group_id": event.group_id,
-        "file_path": str(file_path),
+        "file_path": to_relative_path(file_path),
     }
     modify_json.append(modify_data)
     handle_json(UPLOAD_CACHE_DIR / "modify.json", "w", modify_json)

@@ -1,4 +1,4 @@
-import os
+import shutil
 
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot, MessageSegment
 from nonebot.matcher import Matcher
@@ -12,6 +12,7 @@ from ..commands import (
 )
 from ...utils import batch_get, handle_errors, handle_json
 from .models import FurryPictureData, add_furry_picture, update_furry_picture
+from .tools import load_picture, picture_segment, resolve_picture_path, to_relative_path
 from .upload import UPLOAD_CACHE_DIR
 
 
@@ -43,7 +44,7 @@ async def handle_suit_review_list(
 管理员可通过命令“同意修改#{index}”或“拒绝修改#{index}”进行审核。
 """
         if item["attr"] == "图片":
-            picture = item["file_path"]
+            picture = load_picture(item["file_path"], UPLOAD_CACHE_DIR)
         else:
             db_picture = await session.get(
                 FurryPictureData,
@@ -52,7 +53,7 @@ async def handle_suit_review_list(
             if db_picture is None:
                 picture = None
             else:
-                picture = db_picture.file_path
+                picture = load_picture(db_picture.file_path, SUIT_PICTURE_DATA_DIR)
         batch_text = await batch_get(text, picture, item['user_id'], "待审核图片")
         final_list.append(batch_text)
     for index, item in enumerate(upload_list, start=1):
@@ -65,7 +66,9 @@ async def handle_suit_review_list(
 上传群聊：{item['group_id']}
 管理员可通过命令“同意上传#{index}”或“拒绝上传#{index}”进行审核。
 """
-        batch_text = await batch_get(message, item['file_path'], item['user_id'], "待审核图片")
+        batch_text = await batch_get(
+            message, load_picture(item['file_path'], UPLOAD_CACHE_DIR), item['user_id'], "待审核图片"
+        )
         final_list.append(batch_text)
 
     await bot.call_api("send_group_forward_msg", group_id=event.group_id, messages=final_list, time_noend=True)
@@ -95,7 +98,8 @@ async def handle_suit_review_upload(
     # 根据status的值进行相应的处理
     if not status:
         del_review = review_list.pop(review_id)
-        picture_path = del_review['file_path']
+        picture_path = resolve_picture_path(del_review['file_path'], UPLOAD_CACHE_DIR)
+        picture = picture_segment(del_review['file_path'], UPLOAD_CACHE_DIR)
         user_id = del_review['user_id']
         group_id = del_review['group_id']
         handle_json(UPLOAD_CACHE_DIR / "manifest.json", 'w', review_list)
@@ -107,27 +111,27 @@ async def handle_suit_review_upload(
             group_id=group_id,
             message=MessageSegment.at(user_id) +
             f" 您的图片“{del_review['furryname']}”已被管理员拒绝上传。拒绝理由：{reason}" +
-            MessageSegment.image(f"file:///{picture_path}"))
-        os.remove(picture_path)
+            picture)
+        picture_path.unlink(missing_ok=True)
         if not group_id == event.group_id:
             await matcher.finish(MessageSegment.reply(event.message_id) + f"已拒绝上传第{review_id + 1}张图片，文件已删除。已告知上传者。")
         await matcher.finish()
     # 生成临时目录与正式目录
-    original_file_path = review_list[review_id]['file_path']
-    new_save_data = SUIT_PICTURE_DATA_DIR / os.path.basename(original_file_path)
+    original_file_path = resolve_picture_path(review_list[review_id]['file_path'], UPLOAD_CACHE_DIR)
+    new_save_data = SUIT_PICTURE_DATA_DIR / original_file_path.name
     # 写入SQL
     await add_furry_picture(
         session,
         file_name=review_list[review_id]['filename'],
-        file_path=new_save_data,
+        file_path=to_relative_path(new_save_data),
         furry_name=review_list[review_id]['furryname'],
         type=review_list[review_id]['type'],
         uploader_id=review_list[review_id]['user_id'],
         group_id=review_list[review_id]['group_id'],
         description=review_list[review_id]['message'],
     )
-    # 移动文件到正式目录
-    os.rename(original_file_path, new_save_data)
+    # 移动文件到正式目录（shutil.move 支持跨文件系统，如 Docker 挂载卷）
+    shutil.move(original_file_path, new_save_data)
     # 获取审核Review_id
     del_review = review_list[review_id]
     group_id = del_review['group_id']
@@ -169,8 +173,7 @@ async def handle_suit_review_modify(
     user_id = del_review['user_id']
     group_id = del_review['group_id']
     if del_review['attr'] == "图片":
-        picture_path = del_review['file_path']
-        picture = MessageSegment.image(f"file:///{picture_path}")
+        picture = picture_segment(del_review['file_path'], UPLOAD_CACHE_DIR)
     # 检查status状态
     if not status:
         review_list.pop(review_id)
@@ -190,11 +193,11 @@ async def handle_suit_review_modify(
     new_save_data, nb_picture = False, ""
     if del_review['attr'] == "图片":
         # 移动文件到正式目录
-        original_file_path = del_review['file_path']
-        new_save_data = SUIT_PICTURE_DATA_DIR / os.path.basename(del_review['file_path'])
-        os.rename(original_file_path, new_save_data)
-        del_review['new_value'] = str(new_save_data)
-        nb_picture = MessageSegment.image(f"file:///{new_save_data}")
+        original_file_path = resolve_picture_path(del_review['file_path'], UPLOAD_CACHE_DIR)
+        new_save_data = SUIT_PICTURE_DATA_DIR / original_file_path.name
+        shutil.move(original_file_path, new_save_data)
+        del_review['new_value'] = to_relative_path(new_save_data)
+        nb_picture = MessageSegment.image(new_save_data.read_bytes())
     if del_review['attr'] == "图片类型":
         del_review['new_value'] = "毛照" if del_review['new_value'] == "1" else "稿子"
     success = await update_furry_picture(
@@ -202,11 +205,10 @@ async def handle_suit_review_modify(
         int(del_review["id"]),
         del_review["attr"],
         del_review["new_value"],
-        new_save_data
     )
     if not success:
         if new_save_data and new_save_data.exists():
-            os.rename(str(new_save_data), original_file_path)
+            shutil.move(new_save_data, original_file_path)
         await matcher.finish(MessageSegment.reply(event.message_id) + "修改失败，找不到对应的图片记录。")
     review_list.pop(review_id)
     handle_json(UPLOAD_CACHE_DIR / "modify.json", 'w', review_list)
