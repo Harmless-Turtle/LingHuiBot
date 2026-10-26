@@ -1,26 +1,57 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
-  pull_request:
+    paths-ignore:
+      - "**.md" # 忽略所有 markdown 改动
+      - "markdown/**" # 忽略文档目录
+      - ".gitignore"
 
 jobs:
   check:
-    name: 依赖安装与语法检查
+    name: 环境配置与语法检查
     runs-on: ubuntu-latest
     steps:
       - name: 拉取代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: 安装 uv（Python 3.12.0，与锁文件一致）
-        uses: astral-sh/setup-uv@v5
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           python-version: "3.12.0"
           enable-cache: true
 
-      - name: 安装依赖（验证依赖解析，含 pyncm 本地 zip 源）
+      - name: 安装依赖
         run: uv sync --frozen --no-install-project
 
-      - name: 全量语法检查
+      - name: 语法检查
         run: uv run --no-sync python -m compileall -q src bot.py
+
+      - name: 类型检查
+        run: uv run --with pyright pyright
+
+  smoke-test:
+    name: 启动冒烟测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v7
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.12.0"
+          enable-cache: true
+
+      - name: 安装依赖
+        run: uv sync --frozen --no-install-project
+
+      - name: 准备运行配置
+        run: cp .env.example .env
+
+      - name: 同步数据库结构
+        run: uv run nb orm sync
+
+      - name: 启动冒烟测试
+        run: uv run --with pytest pytest tests/test_smoke.py

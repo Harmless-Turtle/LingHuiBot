@@ -79,9 +79,8 @@ async def handle_sample(matcher: Matcher, event: MessageEvent, session: async_sc
 
 ## 3. 验证与交付标准
 - **禁止编写单测**：不要新增 `pytest` / `unittest` 用例或临时测试脚本。
-- **本地三步必检**：
-  1. 编译检查：`uv run python -m compileall -q src bot.py`
-  2. 类型检查：`uv run pyright`
-  3. 启动冒烟：`uv run python bot.py`（确认输出 `Application startup complete` 且无报错）
+- **本地两步必检**：
+  1. 语法与类型检查：`uv run --with pyright pyright`
+  2. 启动冒烟：`uv run --with pytest pytest tests/test_smoke.py`
 - **真机测试提示**：完成验证后，在最终回复中提示用户进行实际上机测试，并给出具体的触发指令示例。
 - **Git 提交前缀**：`feat:` / `fix:` / `refactor:` / `chore:` / `docs:`。
