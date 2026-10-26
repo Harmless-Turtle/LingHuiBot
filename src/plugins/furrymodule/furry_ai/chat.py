@@ -31,7 +31,8 @@ from ..commands import (
     cmd_ai_user_config,
 )
 from ..config import Config
-from ...utils import handle_json, handle_errors, batch_get
+from ...Exceptions import UserVisibleError
+from ...utils import batch_get, handle_errors, handle_json
 
 
 @cmd_ai_chat.handle()
@@ -233,16 +234,24 @@ async def handle_ai_model_list(matcher: Matcher, bot: Bot, event: GroupMessageEv
         await matcher.finish(MessageSegment.reply(event.message_id) + "未配置 FURRY_AI_MODEL_LIST，无法获取模型列表。")
         return
     # 获取模型列表
-    async with httpx.AsyncClient(timeout=None) as client:
-        data = await client.get(plugin_config.FURRY_AI_MODEL_LIST)
-        if data.status_code != 200:
-            await matcher.finish(MessageSegment.reply(event.message_id) + f"API 返回了错误码：[HTTP {data.status_code}]")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            data = await client.get(plugin_config.FURRY_AI_MODEL_LIST)
+    except httpx.HTTPError as e:
+        raise UserVisibleError("FurryBar 模型列表接口请求超时或网络异常，请稍后再试。") from e
+    if data.status_code != 200:
+        await matcher.finish(MessageSegment.reply(event.message_id) + f"API 返回了错误码：[HTTP {data.status_code}]")
     # 将获取的数据转化为json格式
-    data = data.json()
+    try:
+        data = data.json()
+    except ValueError as e:
+        raise UserVisibleError("FurryBar 模型列表接口返回了无法解析的数据。") from e
     # 获取用户组
     user_groups = data['auto_groups']
     # 获取模型数据
     model_dict = data['data']
+    if not model_dict:
+        raise UserVisibleError("FurryBar 模型列表为空，请稍后再试。")
     # 构建默认列表
     model_list, vendor_list = [], []
     temp = await batch_get(f"用户组类型：{user_groups[0]}", None, event.self_id, "FurryBar 模型列表")
@@ -290,17 +299,24 @@ async def handle_ai_model_switch(matcher: Matcher, event: MessageEvent, args: Me
     if not plugin_config.FURRY_AI_MODEL_LIST:
         await matcher.finish(MessageSegment.reply(event.message_id) + "未配置 FURRY_AI_MODEL_LIST，无法验证模型。")
         return
-    async with httpx.AsyncClient(timeout=None) as client:
-        response = await client.get(plugin_config.FURRY_AI_MODEL_LIST)
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(plugin_config.FURRY_AI_MODEL_LIST)
+    except httpx.HTTPError as e:
+        raise UserVisibleError("FurryBar 模型列表接口请求超时或网络异常，请稍后再试。") from e
     if response.status_code != 200:
         await matcher.finish(MessageSegment.reply(event.message_id) + f"API 返回了错误码：[HTTP {response.status_code}]")
-    response = response.json()
+    try:
+        response = response.json()
+    except ValueError as e:
+        raise UserVisibleError("FurryBar 模型列表接口返回了无法解析的数据。") from e
     model_dict = response['data']
-    model_list = []
-    for model_name in model_dict:
-        model_list.append(model_name['model_name'])
+    model_list = [item['model_name'] for item in model_dict]
     if args.isdigit():
-        args = model_list[int(args) - 1]
+        index = int(args) - 1
+        if not 0 <= index < len(model_list):
+            raise UserVisibleError("没有这个编号的模型，请先使用「模型列表」查看可用模型。")
+        args = model_list[index]
     if args not in model_list:
         await matcher.finish(
             MessageSegment.reply(event.message_id) + "未检索到此模型，请使用”模型列表“命令来查找可用模型")
