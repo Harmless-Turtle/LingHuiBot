@@ -32,11 +32,10 @@ from ..commands import (
 )
 from ..config import Config
 from ...Exceptions import UserVisibleError
-from ...utils import batch_get, cooldown, handle_errors, handle_json
+from ...utils import batch_get, handle_errors, handle_json
 
 
 @cmd_ai_chat.handle()
-@cooldown(5)
 @handle_errors
 async def handle_ai_chat(matcher: Matcher, event: MessageEvent, reply: GroupMessageEvent):
     content = str(event.get_message())  # 用户输入内容
