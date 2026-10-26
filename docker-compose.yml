@@ -1,0 +1,31 @@
+services:
+  napcat:
+    image: mlikiowa/napcat-docker:latest
+    container_name: LingHuiBot
+    restart: unless-stopped
+    environment:
+      MODE: reverse_ws
+      ONEBOT_URL: ws://nb2:9093/onebot/v11/ws
+      WEBUI_TOKEN: LingHui
+    ports:
+      - "7001:6099"
+    volumes:
+      - /turtle/Docker/NapCatData/qq:/app/.config/QQ
+      - /turtle/Docker/NapCatData/config:/app/napcat/config
+      - /turtle/Docker/NapCatData/plugins:/app/napcat/plugins
+    command: ["-q", "3806419216"]
+  nb2:
+    build:
+      context: .
+    container_name: LingHuiBot-nb2
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./migrations:/app/migrations
+      - ./linghui.db:/app/linghui.db
+      - ./extra_package/background.png:/app/.venv/lib/python3.12/site-packages/nonebot_plugin_kawaii_status/resources/images/background.png:ro
+    command: ["uv", "run", "--frozen", "python", "bot.py"]
