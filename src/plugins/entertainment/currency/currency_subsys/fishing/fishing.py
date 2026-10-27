@@ -392,14 +392,16 @@ async def _fishing_pull(
 ) -> None:
     user_id = str(event.user_id)
 
-    # 1. 只要发送了起竿指令，立刻先行扣除 1 点鱼钩耐久
-    hook_still_functional = await reduce_hook_durability(session=session, user_id=user_id)
+    # 1. 先确认正在钓鱼，避免空放收竿白白消耗鱼钩耐久
     state = await get_state(session, user_id)
     if not state or not state.is_fishing:
         await matcher.finish(MessageSegment.reply(event.message_id) + "你还没抛竿呢捏！快去发送“钓鱼”抛竿吧 awa")
+
+    # 2. 确认在钓鱼中，才扣除 1 点鱼钩耐久
+    hook_still_functional = await reduce_hook_durability(session=session, user_id=user_id)
     fishing_data = await get_fishing_data(session, user_id)
 
-    # 2. 提竿过早：鱼还没咬钩（定时器未执行）
+    # 3. 提竿过早：鱼还没咬钩（定时器未执行）
     if not state.reminder_sent:
         try:
             scheduler.remove_job(f"fishing_{user_id}")
