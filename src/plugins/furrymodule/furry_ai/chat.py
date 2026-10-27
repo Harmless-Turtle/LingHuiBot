@@ -34,6 +34,9 @@ from ..config import Config
 from ...Exceptions import UserVisibleError
 from ...utils import batch_get, handle_errors, handle_json
 
+# 单个用户保留的对话条数上限，避免 JSON 无限增长
+MAX_HISTORY_MESSAGES = 20
+
 
 @cmd_ai_chat.handle()
 @handle_errors
@@ -96,6 +99,8 @@ async def handle_ai_chat(matcher: Matcher, event: MessageEvent, reply: GroupMess
     user_json_data['messages'].append(user_message_data)
     # 将用户的模型数据写入
     user_json_data['model'] = user_model
+    # 限制历史长度，避免用户 JSON 无限增长
+    user_json_data['messages'] = user_json_data['messages'][-MAX_HISTORY_MESSAGES:]
     # Async httpx Request to API
     async with httpx.AsyncClient(
             http2=True,
@@ -145,6 +150,7 @@ async def handle_ai_chat(matcher: Matcher, event: MessageEvent, reply: GroupMess
         }
         # 写入答复数据
         user_json_data['messages'].append(assistant_data)
+        user_json_data['messages'] = user_json_data['messages'][-MAX_HISTORY_MESSAGES:]
         # 写入用户文件进行保存
         handle_json(user_json_path, 'w', user_json_data)
         await matcher.finish(
