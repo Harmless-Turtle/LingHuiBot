@@ -1,3 +1,5 @@
+import os
+import tempfile
 from pathlib import Path
 
 import httpx
@@ -85,10 +87,17 @@ async def upload_order_function(
     except httpx.HTTPError as e:
         raise UserVisibleError("图片下载超时或网络错误，请稍后重试~") from e
 
+    if len(img_content) > 10 * 1024 * 1024:
+        raise UserVisibleError("图片太大了，请上传 10MB 以内的图片呢xwx")
+
+    tmp_path: Path | None = None
     try:
         PICTURE_DIR.mkdir(parents=True, exist_ok=True)
         pic_path = PICTURE_DIR / f"{name}.jpg"
-        pic_path.write_bytes(img_content)
+        fd, tmp_name = tempfile.mkstemp(prefix=f"{name}.", suffix=".tmp", dir=str(PICTURE_DIR))
+        tmp_path = Path(tmp_name)
+        with os.fdopen(fd, "wb") as f:
+            f.write(img_content)
 
         await add_or_update_order_item(
             session=session,
@@ -97,7 +106,15 @@ async def upload_order_function(
             uploader_id=str(event.user_id),
         )
         await session.commit()
+        # 提交成功后再替换，避免 DB 写失败时把旧图覆盖掉
+        os.replace(tmp_path, pic_path)
+        tmp_path = None
     except Exception as e:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
         raise OrderImageSaveError() from e
 
     await matcher.finish(

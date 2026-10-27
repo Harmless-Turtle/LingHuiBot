@@ -169,10 +169,7 @@ async def general_divine(bot: Bot, matcher: Matcher, event: MessageEvent, args: 
             await matcher.finish(msg_body)
 
         if isinstance(event, PrivateMessageEvent):
-            if i < cards_num:
-                await matcher.send(msg_header + msg_body)
-            else:
-                await matcher.finish(msg_header + msg_body)
+            await matcher.send(msg_header + msg_body)
 
         elif isinstance(event, GroupMessageEvent):
             nickname: Set[str] = {"Bot"}
@@ -188,4 +185,7 @@ async def general_divine(bot: Bot, matcher: Matcher, event: MessageEvent, args: 
         else:
             raise EventNotSupport
 
-    await bot.send_group_forward_msg(group_id=event.group_id, messages=chain)
+    # 私聊逐张发送即可；群聊才需要合并转发
+    if isinstance(event, GroupMessageEvent):
+        await bot.send_group_forward_msg(group_id=event.group_id, messages=chain)
+    await matcher.finish()
