@@ -2,7 +2,7 @@ import random as rd
 from pathlib import Path
 
 # 导入调度器
-from nonebot import require, get_bot
+from nonebot import get_bot, logger, require
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot_plugin_orm import get_session
 from sqlalchemy.exc import SQLAlchemyError
@@ -35,14 +35,17 @@ async def bottle_run():
                         group_id = int(open_group)
                     except (TypeError, ValueError):
                         continue
-                    await bot.send_group_msg(
-                        group_id=group_id,
-                        message=MessageSegment.text(
-                            "大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
-                            "但是有一个一言的瓶子，送给群友捏w\n"
-                            f"“{result}”"
-                        ),
-                    )
+                    try:
+                        await bot.send_group_msg(
+                            group_id=group_id,
+                            message=MessageSegment.text(
+                                "大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
+                                "但是有一个一言的瓶子，送给群友捏w\n"
+                                f"“{result}”"
+                            ),
+                        )
+                    except Exception as e:
+                        logger.warning(f"[DriftBottle] 向群 {group_id} 发送失败: {e}")
                 return
 
             user = bottle.user_id
@@ -56,18 +59,25 @@ async def bottle_run():
             raise DriftBottleError from e
 
     bot: Bot = get_bot()
-    stranger_info = await bot.get_stranger_info(user_id=int(user))
-    nickname = stranger_info.get('nickname', '来自远方的旅人')
+    try:
+        stranger_info = await bot.get_stranger_info(user_id=int(user))
+        nickname = stranger_info.get('nickname', '来自远方的旅人')
+    except Exception as e:
+        logger.warning(f"[DriftBottle] 获取用户 {user} 昵称失败: {e}")
+        nickname = "来自远方的旅人"
     # 循环发送
     for open_group in open_group_list:
         try:
             group_id = int(open_group)
         except (TypeError, ValueError):
             continue
-        await bot.send_group_msg(
-            group_id=group_id,
-            message=MessageSegment.text(
-                f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n"
-                f"署名是：“{nickname}”"
-            ),
-        )
+        try:
+            await bot.send_group_msg(
+                group_id=group_id,
+                message=MessageSegment.text(
+                    f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n"
+                    f"署名是：“{nickname}”"
+                ),
+            )
+        except Exception as e:
+            logger.warning(f"[DriftBottle] 向群 {group_id} 发送失败: {e}")
