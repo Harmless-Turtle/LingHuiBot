@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 import nonebot
-from nonebot import get_bot
+from nonebot import get_bot, logger
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_orm import get_session
@@ -72,4 +72,7 @@ async def _init_birthday_jobs():
         except (TypeError, ValueError):
             continue
         message = Message(MessageSegment.at(uid) + MessageSegment.text(" 生日快乐！"))
-        await bot.send_group_msg(group_id=gid, message=message)
+        try:
+            await bot.send_group_msg(group_id=gid, message=message)
+        except Exception as e:
+            logger.warning(f"[birthday] 向群 {gid} 发送生日祝福失败: {e}")
