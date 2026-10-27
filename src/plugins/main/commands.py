@@ -1,5 +1,4 @@
 import re
-from pathlib import Path
 from types import SimpleNamespace
 
 from nonebot import logger, on_request, on_notice
@@ -18,11 +17,11 @@ from nonebot.plugin import on_command, on_type
 from nonebot.rule import to_me, is_type, Rule
 
 from ..utils import handle_json
-
-path = Path.cwd() / 'data' / 'main'
-welcome_path = path / "welcome_system.json"
-check_group_member_path = path / "GroupMemberChange.json"
-add_group_check_path = path / "add_group_switch.json"
+from .check_file import (
+    add_group_check_path,
+    check_group_member_path,
+    welcome_path,
+)
 
 
 async def check_bt(event: GroupMessageEvent):
