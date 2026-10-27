@@ -99,17 +99,25 @@ class FishingBait:
 class Fish:
     trash = {
         "bonus": 40,
-        "price": 0
+        "price": 0,
+        "rarity": "垃圾",
+        "weight_range": (0.1, 2.0),
     }
     basic_fish = {
         "bonus": 40,
-        "price": 30
+        "price": 30,
+        "rarity": "普通",
+        "weight_range": (0.3, 3.0),
     }
     intermediate_fish = {
         "bonus": 15,
-        "price": 150
+        "price": 150,
+        "rarity": "稀有",
+        "weight_range": (1.0, 8.0),
     }
     advanced_fish = {
         "bonus": 5,
-        "price": 800
+        "price": 800,
+        "rarity": "传说",
+        "weight_range": (3.0, 20.0),
     }
