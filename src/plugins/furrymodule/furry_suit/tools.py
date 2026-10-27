@@ -10,6 +10,10 @@ from sqlalchemy import select
 
 from ..check_files import BASE_DIR, SUIT_PICTURE_DATA_DIR
 from .models import FurryPictureData
+from ...Exceptions import UserVisibleError
+
+# 单张图上限，避免被超大文件拖垮磁盘/内存
+MAX_IMAGE_BYTES = 25 * 1024 * 1024
 
 
 def to_relative_path(path: Path) -> str:
@@ -76,6 +80,8 @@ async def download_image(
     """
     response = await client.get(url)
     response.raise_for_status()
+    if len(response.content) > MAX_IMAGE_BYTES:
+        raise UserVisibleError("图片太大了，请上传 25MB 以内的图片呢xwx")
     image = Image.open(BytesIO(response.content))
     image_format = image.format
     if image_format == "PNG":

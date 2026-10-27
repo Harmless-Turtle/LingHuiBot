@@ -3,7 +3,7 @@ from pathlib import Path
 
 # 导入调度器
 from nonebot import require, get_bot
-from nonebot.adapters.onebot.v11 import Bot
+from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot_plugin_orm import get_session
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -37,9 +37,11 @@ async def bottle_run():
                         continue
                     await bot.send_group_msg(
                         group_id=group_id,
-                        message=f"大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
-                                f"但是有一个一言的瓶子，送给群友捏w\n"
-                                f"“{result}”"
+                        message=MessageSegment.text(
+                            "大海里一眼望不到头，但就是没有看到漂流瓶呢qwq...\n"
+                            "但是有一个一言的瓶子，送给群友捏w\n"
+                            f"“{result}”"
+                        ),
                     )
                 return
 
@@ -64,6 +66,8 @@ async def bottle_run():
             continue
         await bot.send_group_msg(
             group_id=group_id,
-            message=f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n"
-                    f"署名是：“{nickname}”"
+            message=MessageSegment.text(
+                f"在遥远的大海中飘来了一个小小的瓶子，它的里面写着：{result}\n"
+                f"署名是：“{nickname}”"
+            ),
         )

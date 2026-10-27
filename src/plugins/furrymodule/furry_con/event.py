@@ -19,7 +19,7 @@ from ..commands import (
     cmd_con_info,
     cmd_con_history,
 )
-from ...utils import handle_errors, batch_get, handle_json
+from ...utils import batch_get, handle_errors, handle_json
 from .tools import (
     get_fur_session,
     render_fursion_timeline_image,

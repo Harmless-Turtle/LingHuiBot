@@ -78,9 +78,9 @@ async def handle_suit_upload(matcher: Matcher, args: Message = CommandArg()):
         await matcher.finish("请提供图片类型（1: 毛照, 2: 稿子）。")
     # 获取图片类型
     furry_type = FURRY_TYPE_MAP[user_input[1]]
-    matcher.set_arg("furryname", Message(user_input[0]))
-    matcher.set_arg("image_type", Message(furry_type))
-    matcher.set_arg("message", Message(user_input[2] if len(user_input) > 2 else ""))
+    matcher.set_arg("furryname", Message(MessageSegment.text(user_input[0])))
+    matcher.set_arg("image_type", Message(MessageSegment.text(furry_type)))
+    matcher.set_arg("message", Message(MessageSegment.text(user_input[2] if len(user_input) > 2 else "")))
     if image_segments:
         matcher.set_arg("image", Message(image_segments))
 

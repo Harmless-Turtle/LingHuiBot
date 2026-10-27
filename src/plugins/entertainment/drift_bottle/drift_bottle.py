@@ -30,6 +30,11 @@ async def _add_battle(
         raise UserVisibleError("唔...参数解析失败了，请检查是否按照“扔漂流瓶<这里输入你想说的话>”的格式使用呢")
     if len(text) >= 150:
         raise UserVisibleError("唔...你输入的内容太长了哦，请限制在150字以内呢xwx")
+    if "[CQ:" in text.upper() or "&#91;" in text:
+        raise UserVisibleError(
+            "漂流瓶里好像夹带了一段聊天软件的特殊标记，"
+            "请把以 `[CQ:` 开头的那一小段删掉后再发送哦~"
+        )
 
     await add_drift_bottle(session, event, text)
     await session.commit()
