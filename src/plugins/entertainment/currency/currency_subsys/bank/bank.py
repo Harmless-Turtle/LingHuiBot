@@ -94,7 +94,7 @@ async def bank_transfer(
             if text.isdigit():
                 amount = int(text)
 
-    if not target_id or amount <= 0:
+    if not target_id or not target_id.isdigit() or amount <= 0:
         raise UserVisibleError("请指定转账对象和有效金额！格式：转账@某人 <金额>")
 
     await transfer_money(
