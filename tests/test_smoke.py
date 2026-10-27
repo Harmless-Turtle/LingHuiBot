@@ -1,5 +1,3 @@
-"""NoneBot 启动冒烟测试（Pytest 版本）。"""
-
 import os
 import queue
 import subprocess
@@ -18,9 +16,8 @@ def test_nonebot_startup_smoke():
     start_time = time.time()
     timeout_seconds = 60
     success = False
-    captured_logs: list[str] = []
 
-    # 启动 NoneBot ASGI 服务子进程
+    # 启动 NoneBot
     process = subprocess.Popen(
         ["uv", "run", "nb", "run"],
         stdout=subprocess.PIPE,
@@ -51,7 +48,6 @@ def test_nonebot_startup_smoke():
                     break
                 continue
 
-            captured_logs.append(line)
             # 兼容实时控制台输出（避免 Windows GBK 终端字符集异常）
             try:
                 sys.stdout.write(line)
@@ -73,8 +69,6 @@ def test_nonebot_startup_smoke():
             except subprocess.TimeoutExpired:
                 process.kill()
 
-    error_summary = "".join(captured_logs[-30:])
     assert success, (
-        f"NoneBot 启动冒烟测试失败：未在 {timeout_seconds} 秒内检测到 'Application startup complete'。\n"
-        f"最近的启动日志如下：\n{error_summary}"
+        f"NoneBot 启动冒烟测试失败：未在 {timeout_seconds} 秒内检测到 'Application startup complete'。"
     )
