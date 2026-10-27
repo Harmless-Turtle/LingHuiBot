@@ -7,6 +7,18 @@ on:
       - "**.md" # 忽略所有 markdown 改动
       - "markdown/**" # 忽略文档目录
       - ".gitignore"
+  pull_request:
+    branches:
+      - dev111
+      - main
+    paths-ignore:
+      - "**.md"
+      - "markdown/**"
+      - ".gitignore"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
