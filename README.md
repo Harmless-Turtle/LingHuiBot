@@ -4,7 +4,10 @@
 
 <h1 align="center">LingHuiBot</h1>
 
-_✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
+<p align="center">
+_✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_<br>
+您可以在这里反馈您在使用凌辉 Bot 时遇到的问题。也可以在这里提出你的新功能诉求。
+</p>
 
 <p align="center">
   <a href="./LICENSE">
@@ -13,43 +16,36 @@ _✨ 欢迎来到凌辉 Bot GitHub 仓库 ✨_
   <img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="python">
 </p>
 
-## 写在前面
-
-欢迎您来到由凌辉Bot 开发组开发与维护的凌辉 Bot 开源仓库~ <br>
-您可以在这里提交 Issue 或 bug 以反馈您在使用凌辉 Bot 时遇到的问题。也可以在这里提出你的新功能诉求。
-
-> 您可以在`任何界面`通过单击头部的凌辉Bot图片回到本页。
-
-## 用户协议
-
-详见 [用户协议](markdown/user_agreement.md)
 
 <h2><em>凌辉Bot是什么?</em></h2>
-凌辉Bot是一个<em>Tencent QQ</em>的Q群Robot，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>
-Furry服务</em>，它使用OneBot V11标准、NoneBot作为Robot框架、NapCat作为监听客户端、使用Python语言进行功能开发。使用了部分<em>
-NoneBot商店功能</em>以改进凌辉Bot的部分功能。
+凌辉Bot是一个用于QQ群的机器人，同时是一个应该达到了平均水准的<em>FurBot</em>，可以为您提供一定的<em>
+Furry服务</em>，它使用OneBot V11标准的NoneBot作为Robot后端、NapCat作为QQ协议端。使用了部分<em>
+NoneBot商店插件</em>以改进凌辉Bot的部分功能。
 
 <h2><em>凌辉Bot可以做什么?</em></h2>
 您可以通过查阅Markdown文件以了解凌辉Bot的可用/开发中的功能，详见下列超链接：<br>
 
-| 系统名称                                                  | 系统介绍        |
-|-------------------------------------------------------|-------------|
-| <a href="./markdown/main_system.md">主要系统</a>          | 基本的QRobot功能 |
-| <a href="./markdown/furry_system.md">furry系统</a>      | furry功能     |
-| <a href="./markdown/entertainment_system.md">娱乐系统</a> | 娱乐系统        |
+| 系统名称                                                  | 系统介绍           |
+|-----------------------------------------------------------|--------------------|
+| <a href="./markdown/main_system.md">主要系统</a>          | 基本的QRobot功能   |
+| <a href="./markdown/furry_system.md">furry系统</a>        | furry功能          |
+| <a href="./markdown/entertainment_system.md">娱乐系统</a> | 娱乐系统           |
 | <a href="./markdown/admin_system.md">管理系统</a>         | (SU)凌辉管理员菜单 |
 
-<h2><em>怎么使用凌辉Bot(普通用户)?</em></h2>
+<h2><em>怎么使用凌辉Bot?</em></h2>
 通过联系主要开发者：一只无害的py海龟（A Harmless py Turtle）以将凌辉Bot添加进您的群聊中。<br>
-联系方式：<br>
-QQ：1097740481<br>
-项目链接（可直接跳转至内测用的QQ群）<br>
-加入凌辉Bot内测用群：795413705
+联系方式 QQ：1097740481 <br>
+凌辉Bot内测用群：795413705
 
-<h2><em>怎么使用凌辉Bot(开发者和高级用户)?</em></h2>
+<h2><em>部署和开发</em></h2>
 
-所有的高级使用教程均已迁移至 Wiki 页面，详见[Wiki](https://github.com/Harmless-Turtle/LingHuiBot/wiki)<br>
-关于使用 Vibe Coding(AI 开发) 的相关注意事项已写入 Wiki 页面，详见[Vibe Coding](https://github.com/Harmless-Turtle/LingHuiBot/wiki/%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97#%E4%BD%BF%E7%94%A8-vibe-coding-%E8%BF%9B%E8%A1%8C%E8%B4%A1%E7%8C%AE)
+部署详见 [Wiki](https://github.com/Harmless-Turtle/LingHuiBot/wiki)<br>
+开发详见 [架构与设计理念](https://github.com/Harmless-Turtle/LingHuiBot/wiki/%E6%9E%B6%E6%9E%84%E4%B8%8E%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5) 
+和 [贡献指南](https://github.com/Harmless-Turtle/LingHuiBot/wiki/%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97)
+
+## 用户协议
+
+详见 [用户协议](markdown/user_agreement.md)
 
 <h2>联系开发组</h2>
 
