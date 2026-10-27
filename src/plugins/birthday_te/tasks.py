@@ -1,7 +1,8 @@
 from datetime import date
 
 import nonebot
-from nonebot.adapters.onebot.v11 import MessageSegment, Bot, ActionFailed
+from nonebot import logger
+from nonebot.adapters.onebot.v11 import MessageSegment, Bot
 from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_orm import get_session
 from sqlalchemy import select
@@ -70,5 +71,8 @@ async def _init_birthday_jobs():
                         group_id=int(group_settings.group_id),
                         message=MessageSegment.at(user_id) + f" {age_text}\n祝{nickname}生日快乐呢~\n"
                     )
-                except ActionFailed:
+                except Exception as e:
+                    logger.warning(
+                        f"[birthday_te] 向群 {group_settings.group_id} 发送 {user_id} 的生日祝福失败: {e}"
+                    )
                     continue

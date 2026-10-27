@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 
 import httpx
+from nonebot import logger
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message, MessageSegment
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
@@ -30,10 +31,15 @@ LEGACY_UPLOAD_DIRS = (
 for legacy_upload_dir in LEGACY_UPLOAD_DIRS:
     if not legacy_upload_dir.is_dir():
         continue
+    failed = False
     for f in legacy_upload_dir.iterdir():
         target = UPLOAD_CACHE_DIR / f.name
         if not target.exists():
-            shutil.move(str(f), str(target))
+            try:
+                shutil.move(str(f), str(target))
+            except Exception as e:
+                failed = True
+                logger.warning(f"[furry_suit] 迁移旧缓存 {f} 失败: {e}")
         elif f.suffix == ".json":
             try:
                 old_data = handle_json(f, "r") or []
@@ -42,8 +48,12 @@ for legacy_upload_dir in LEGACY_UPLOAD_DIRS:
                     combined = new_data + [item for item in old_data if item not in new_data]
                     handle_json(target, "w", combined)
                 f.unlink(missing_ok=True)
-            except Exception:
-                pass
+            except Exception as e:
+                failed = True
+                logger.warning(f"[furry_suit] 合并旧缓存 {f} 失败: {e}")
+    # 有迁移失败的条目时保留旧目录，避免数据丢失
+    if failed or any(legacy_upload_dir.iterdir()):
+        continue
     shutil.rmtree(legacy_upload_dir, ignore_errors=True)
     legacy_parent = legacy_upload_dir.parent
     if legacy_parent.is_dir() and not any(p for p in legacy_parent.iterdir() if p.name != "__pycache__"):
