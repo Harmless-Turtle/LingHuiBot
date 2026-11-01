@@ -1,10 +1,11 @@
 from nonebot import logger
+import re
 from nonebot.adapters.onebot.v11 import MessageSegment, GroupMessageEvent, Message
 from nonebot.adapters.onebot.v11.bot import Bot
 from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot_plugin_orm import async_scoped_session
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 
 from ..commands import (
     cmd_suit_random,
@@ -36,8 +37,19 @@ async def handle_suit_random(
             select(FurryPictureData).where(FurryPictureData.id == int(furry_name)).order_by(func.random()).limit(1))
         is_number = True
     elif furry_name:
+        # 第一阶段：整体子串模糊匹配（纯“字符串 in 字符串”，不预设任何分隔符）。
+        # 第二阶段：未命中时才按常见分隔符（“/”“或”“和”“、”等）拆分关键词兜底，
+        #   要求每个片段都包含在 furry_name 中（AND、顺序无关），复杂度 O(关键词数)，
+        #   不枚举任何排列；因此无论库中名字使用哪种分隔符、两种命名含义（多角色或
+        #   同一角色的多个名字）、用户输入顺序如何，均可命中。
         result = await session.execute(
-            select(FurryPictureData).where(FurryPictureData.furry_name == furry_name).order_by(func.random()).limit(1))
+            select(FurryPictureData).where(FurryPictureData.furry_name.contains(furry_name)).order_by(func.random()).limit(1))
+        if result.scalar_one_or_none() is None:
+            tokens = [t for t in re.split(r"[/或和、&·，,;；\s]+", furry_name) if t]
+            if len(tokens) > 1:
+                conditions = [FurryPictureData.furry_name.contains(tok) for tok in tokens]
+                result = await session.execute(
+                    select(FurryPictureData).where(and_(*conditions)).order_by(func.random()).limit(1))
     picture = result.scalar_one_or_none()
     if picture and not get_api:
         description = ""
