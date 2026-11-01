@@ -30,11 +30,11 @@ async def handle_suit_random(
     get_api = False
     if "云" in str(event.get_message()):
         get_api = True
-    result = await session.execute(select(FurryPictureData).order_by(func.random()).limit(1))
     is_number = False
+    picture = None
     if furry_name.isdigit():
-        result = await session.execute(
-            select(FurryPictureData).where(FurryPictureData.id == int(furry_name)).order_by(func.random()).limit(1))
+        picture = (await session.execute(
+            select(FurryPictureData).where(FurryPictureData.id == int(furry_name)).order_by(func.random()).limit(1))).scalar_one_or_none()
         is_number = True
     elif furry_name:
         # 第一阶段：整体子串模糊匹配（纯“字符串 in 字符串”，不预设任何分隔符）。
@@ -42,15 +42,19 @@ async def handle_suit_random(
         #   要求每个片段都包含在 furry_name 中（AND、顺序无关），复杂度 O(关键词数)，
         #   不枚举任何排列；因此无论库中名字使用哪种分隔符、两种命名含义（多角色或
         #   同一角色的多个名字）、用户输入顺序如何，均可命中。
-        result = await session.execute(
-            select(FurryPictureData).where(FurryPictureData.furry_name.contains(furry_name)).order_by(func.random()).limit(1))
-        if result.scalar_one_or_none() is None:
+        #   注意：SQLAlchemy 的 Result 只能消费一次，故每段查询直接取出 picture，
+        #   避免复用已关闭的结果对象（ResourceClosedError）。
+        picture = (await session.execute(
+            select(FurryPictureData).where(FurryPictureData.furry_name.contains(furry_name)).order_by(func.random()).limit(1))).scalar_one_or_none()
+        if picture is None:
             tokens = [t for t in re.split(r"[/或和、&·，,;；\s]+", furry_name) if t]
             if len(tokens) > 1:
                 conditions = [FurryPictureData.furry_name.contains(tok) for tok in tokens]
-                result = await session.execute(
-                    select(FurryPictureData).where(and_(*conditions)).order_by(func.random()).limit(1))
-    picture = result.scalar_one_or_none()
+                picture = (await session.execute(
+                    select(FurryPictureData).where(and_(*conditions)).order_by(func.random()).limit(1))).scalar_one_or_none()
+    else:
+        picture = (await session.execute(
+            select(FurryPictureData).order_by(func.random()).limit(1))).scalar_one_or_none()
     if picture and not get_api:
         description = ""
         if picture.description:
