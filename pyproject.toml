@@ -28,6 +28,7 @@ dependencies = [
     "bilichat-request>=0.5.12",
     "uv>=0.11.15",
     "nonebot-plugin-mc-server-status>=0.4.2",
+    "xlrd>=2.0.2",
 ]
 
 [tool.nonebot]
