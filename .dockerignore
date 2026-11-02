@@ -2,7 +2,13 @@
 .git/
 .github/
 .env
+.env.*
 __pycache__/
 *.py[cod]
 logs/
 cache/
+data/
+config/
+*.db
+tests/
+tests_local/

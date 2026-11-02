@@ -9,6 +9,7 @@ services:
       MODE: reverse_ws
       ONEBOT_URL: ws://nb2:9093/onebot/v11/ws
       WEBUI_TOKEN: LingHui
+      TZ: Asia/Shanghai
       # ACCOUNT: 12345678
 
     ports:
@@ -23,6 +24,26 @@ services:
       context: .
     container_name: nb2
     restart: unless-stopped
+    init: true
+
+    depends_on:
+      - napcat
+
+    environment:
+      TZ: Asia/Shanghai
+
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import os,socket; socket.create_connection((\"127.0.0.1\", int(os.environ.get(\"PORT\", \"9090\"))), 3)'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     env_file:
       - .env
