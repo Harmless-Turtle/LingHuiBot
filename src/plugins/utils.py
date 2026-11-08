@@ -7,12 +7,12 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import httpcore
 import httpx
 from PIL import Image, ImageDraw, ImageFont
-from nonebot import get_driver, logger
+from nonebot import get_driver, get_plugin_config, logger
 from nonebot.adapters.onebot.v11 import (
     Message,
     MessageSegment,
@@ -21,6 +21,7 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.exception import MatcherException
 from nonebot.matcher import current_bot, current_event, current_matcher
+from pydantic import BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session
 
 from .Exceptions import LingHuiError
@@ -69,9 +70,9 @@ def handle_errors(func):
 
             if isinstance(event, MessageEvent):
                 await matcher.finish(MessageSegment.reply(event.message_id) + biz_err.message)
-            # 对非交互事件如群通知之类的异常则直接通知超级管理员
+            # 对非交互事件如群通知之类的异常则直接通知 BOT_ADMIN_QQ
             else:
-                await notify_superusers(bot, f"事件类型：{event.get_event_name()}\n提示内容：{biz_err.message}")
+                logger.warning(f"事件类型 [{event.get_event_name()}] 校验未通过：{biz_err.message}")
                 await matcher.finish()
 
         # 非预期异常
@@ -88,23 +89,21 @@ def handle_errors(func):
                 )
             else:
                 logger.error(error_msg)
-                await notify_superusers(bot, f"LingHuiBot 事件异常告警\n{error_msg}")
+                await notify_admin(bot, f"LingHuiBot 事件异常\n{error_msg}")
                 await matcher.finish()
 
     return wrapper
 
 
-
-
-async def notify_superusers(bot, text: str):
-    for su_id in getattr(get_driver().config, "superusers", set()):
-        try:
-            await bot.send_private_msg(
-                user_id=int(su_id),
-                message=MessageSegment.text(str(text)),
-            )
-        except Exception as e:
-            logger.warning(f"向超级管理员 {su_id} 推送私聊失败: {e}")
+async def notify_admin(bot, text: str):
+    admin_qq = get_admin_qq()
+    try:
+        await bot.send_private_msg(
+            user_id=admin_qq,
+            message=MessageSegment.text(str(text)),
+        )
+    except Exception as e:
+        logger.warning(f"向机器人管理员 {admin_qq} 推送私聊失败: {e}")
 
 
 def _record_error_snapshot(error: Exception) -> tuple[str, BytesIO]:
@@ -359,25 +358,49 @@ def get_config_item(key: str, default=None, required=False, desc=None):
     except AttributeError:
         pass
     if required:
-        logger.warning(f"[Furry模块] 缺少必要配置项: {key} ，{desc or ''}")
+        logger.warning(f"缺少必要配置项: {key} ，{desc or ''}")
     return default
 
 
-DEFAULT_ADMIN_QQ = 1097740481
+driver = get_driver()
+
+
+class Config(BaseModel):
+    """全局基础与管理员配置。"""
+
+    BOT_ADMIN_QQ: int | None = None
+
+    @field_validator("BOT_ADMIN_QQ", mode="before")
+    @classmethod
+    def check_admin_qq(cls, v: Any) -> int | None:
+        if v is None or v == "":
+            return None
+        try:
+            val = int(v)
+            return val if val > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    @property
+    def is_configured(self) -> bool:
+        return self.BOT_ADMIN_QQ is not None and self.BOT_ADMIN_QQ > 0
+
+
+@driver.on_startup
+async def print_admin_config() -> None:
+    config = get_plugin_config(Config)
+    if config.is_configured:
+        logger.info(f"Bot 管理员配置已加载: BOT_ADMIN_QQ={config.BOT_ADMIN_QQ}")
+    else:
+        logger.error("BOT_ADMIN_QQ 未配置或格式不正确，该项为必填配置，Bot 终止启动！")
+        raise RuntimeError("BOT_ADMIN_QQ 未配置或格式不正确，终止启动！")
 
 
 def get_admin_qq() -> int:
-    """Bot 管理员 QQ，用于私聊告警 / bug 反馈等通知目标。
-
-    优先读取配置项 BOT_ADMIN_QQ；未配置时回落到历史硬编码值，行为保持不变。
-    自建部署者可以通过该配置把告警发给自己，而不是原仓库作者。
-    """
-    value = get_config_item("bot_admin_qq", default=DEFAULT_ADMIN_QQ)
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        logger.warning(f"BOT_ADMIN_QQ 配置不是合法数字：{value!r}，已回落到 {DEFAULT_ADMIN_QQ}")
-        return DEFAULT_ADMIN_QQ
+    """读取 BOT_ADMIN_QQ。启动自检保证该配置有效存在。"""
+    admin_qq = get_plugin_config(Config).BOT_ADMIN_QQ
+    assert admin_qq is not None
+    return admin_qq
 
 
 def ensure_files_exist(file_path: list[Path], description: str, normal_data: list) -> None:

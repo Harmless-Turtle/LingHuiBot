@@ -12,6 +12,7 @@ def test_nonebot_startup_smoke():
     env["PYTHONIOENCODING"] = "utf-8"
     # 若 CI 或新环境缺少 .env 文件，注入必要的基础配置确保插件顺利加载
     env.setdefault("LOCALSTORE_USE_CWD", "true")
+    env.setdefault("BOT_ADMIN_QQ", "1097740481")
 
     start_time = time.time()
     timeout_seconds = 60
