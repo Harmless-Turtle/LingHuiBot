@@ -1,8 +1,39 @@
+# 虚拟环境与依赖
 .venv/
+.agents/
+.gemini/
+
+# 版本控制与 CI
 .git/
 .github/
+
+# 敏感配置与密钥
 .env
+.env.*
+
+# Python 与测试缓存
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# 运行时数据与日志
 logs/
 cache/
+data/
+config/
+
+# 本地数据库及临时日志
+*.db
+*.db-*
+*.sqlite*
+
+# 测试用例
+tests/
+tests_local/
+
+# IDE 与文档
+.idea/
+.jbeval/
+Dockerfile
+docker-compose*.yml

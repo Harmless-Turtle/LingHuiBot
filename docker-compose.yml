@@ -28,11 +28,9 @@ services:
       - .env
 
     volumes:
-      - ./.env:/app/.env:ro
+      - ./.env:/app/.env
       - ./data:/app/data
       - ./config:/app/config
       - ./migrations:/app/migrations
       - ./linghui.db:/app/linghui.db
       - ./extra_package/background.png:/app/.venv/lib/python3.12/site-packages/nonebot_plugin_kawaii_status/resources/images/background.png:ro
-
-    command: ["uv", "run", "--frozen", "python", "bot.py"]

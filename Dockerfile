@@ -1,12 +1,13 @@
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-trixie-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libexpat1 \
+    && apt-get install -y --no-install-recommends libexpat1 tini \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+ENV TZ=Asia/Shanghai \
+    PYTHONUNBUFFERED=1
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 COPY extra_package/ ./extra_package/
@@ -16,4 +17,5 @@ RUN uv sync --frozen --no-install-project
 COPY . .
 RUN uv sync --frozen
 
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["uv", "run", "--frozen", "python", "bot.py"]
