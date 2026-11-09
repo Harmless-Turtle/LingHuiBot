@@ -442,6 +442,14 @@ async def _fishing_pull(
         "advanced_fish": ("传说鱼", Fish.advanced_fish["price"]),
     }
     fish_chinese_name, reward_coin = cat_details[chosen_cat]
+    fish_meta = {
+        "trash": Fish.trash,
+        "basic_fish": Fish.basic_fish,
+        "intermediate_fish": Fish.intermediate_fish,
+        "advanced_fish": Fish.advanced_fish,
+    }[chosen_cat]
+    fish_weight = round(random.uniform(*fish_meta["weight_range"]), 2)
+    fish_rarity = fish_meta["rarity"]
 
     user_coin = await get_mohui_data(session=session, user_id=user_id)
     user_coin.mohui_coin += reward_coin
@@ -453,10 +461,10 @@ async def _fishing_pull(
     if chosen_cat == "trash":
         await matcher.finish(
             MessageSegment.reply(event.message_id)
-            + f"🗑️ 感觉沉甸甸的...结果拉上来一看是个废弃垃圾！什么奖励都没有 qwq{durability_tip}"
+            + f"🗑️ 感觉沉甸甸的...结果拉上来一看是个废弃垃圾（{fish_weight}kg）！什么奖励都没有 qwq{durability_tip}"
         )
     else:
         await matcher.finish(
             MessageSegment.reply(event.message_id)
-            + f"🎉 收竿成功！你成功钓到了一只【{fish_chinese_name}】！获得了 {reward_coin} 墨辉币捏！{durability_tip}"
+            + f"🎉 收竿成功！你成功钓到了一只【{fish_rarity}·{fish_chinese_name}】（{fish_weight}kg）！获得了 {reward_coin} 墨辉币捏！{durability_tip}"
         )
