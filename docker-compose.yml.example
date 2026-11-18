@@ -14,9 +14,9 @@ services:
     ports:
       - "7001:6099"
     volumes:
-      - /turtle/Docker/NapCatData/qq:/app/.config/QQ
-      - /turtle/Docker/NapCatData/config:/app/napcat/config
-      - /turtle/Docker/NapCatData/plugins:/app/napcat/plugins
+      - ./Docker/NapCatData/qq:/app/.config/QQ
+      - ./Docker/NapCatData/config:/app/napcat/config
+      - ./Docker/NapCatData/plugins:/app/napcat/plugins
 
   nb2:
     build:
