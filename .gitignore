@@ -137,3 +137,5 @@ menu_config/
 config
 
 upload
+
+/docker-compose.yml
