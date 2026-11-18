@@ -166,7 +166,7 @@ wheels = [
 
 [[package]]
 name = "bilichat-request"
-version = "0.5.12"
+version = "0.5.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apscheduler" },
@@ -189,9 +189,9 @@ dependencies = [
     { name = "slowapi" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/58/05/38c416c1a16d2f9e6642aeb755c101c9d6cecc88552c516612af0782b0b4/bilichat_request-0.5.12.tar.gz", hash = "sha256:b629bdd067c7ca15bc55345efe90ffe40e696ce8af43abd17002979b08c79be0", size = 145467, upload-time = "2026-05-06T01:13:54.502Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/99/c3/c792dcb9fb8e810d093b3c26ec28fcfa0bd9406648e2a5e685c2da39f700/bilichat_request-0.5.13.tar.gz", hash = "sha256:a5c88dee087bea756f8956d21eeba04cdff943fef2489514d8214c6055207571", size = 145914, upload-time = "2026-11-17T03:42:41.27Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/3d/c2360928785d522de6732d1e5addd3b1e690e6d79f8762245543a26e9e6d/bilichat_request-0.5.12-py3-none-any.whl", hash = "sha256:28449f4abf786b300da1ea06c5d6a523c3ff3e32f159bf13cfbf1fe61fec0c6e", size = 158017, upload-time = "2026-05-06T01:13:52.983Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/52/1beb13ec5567d2bacbd816050021bfe59d457145d08487c49c1327643675/bilichat_request-0.5.13-py3-none-any.whl", hash = "sha256:349a34dcedf581507c0187c2a1934685e5f2ca1a6671efaa4f89f0f12ea3a31d", size = 158068, upload-time = "2026-11-17T03:42:39.99Z" },
 ]
 
 [[package]]
@@ -673,7 +673,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bilichat-request", specifier = ">=0.5.12" },
+    { name = "bilichat-request", specifier = ">=0.5.13" },
     { name = "emoji", specifier = "==2.15.0" },
     { name = "meme-generator", specifier = "==0.2.3" },
     { name = "nb-cli", specifier = ">=1.7.4" },
