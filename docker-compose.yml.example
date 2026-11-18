@@ -27,6 +27,9 @@ services:
     env_file:
       - .env
 
+    environment:
+      MEME_HOME: /app/data/meme_generator
+
     volumes:
       - ./.env:/app/.env
       - ./data:/app/data
